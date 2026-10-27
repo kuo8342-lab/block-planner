@@ -170,7 +170,7 @@ const left = [...s.matchAll(PERSONAL)].map(m => s.slice(Math.max(0, m.index - 60
 if (left.length) throw new Error('personal text left:\n' + left.join('\n'));
 
 /* ---------- everyone keeps different hours: the timetable's range and the bedtime come from Settings → 作息 (A's 08:00–23:30 and 23:30 bedtime were the owner's) ---------- */
-rep('const START = 8 * 60, END = 23 * 60 + 30, SPAN = END - START, OFF = 10;',
+rep('const START = 8 * 60, END = 24 * 60, SPAN = END - START, OFF = 10;',
   `const PACE_HOURS = (() => { const g = (k, d, lo, hi) => { let v = NaN; try { v = Number(localStorage.getItem(k)); } catch (e) {} return Number.isInteger(v) && v >= lo && v <= hi && localStorage.getItem(k) !== null ? v : d; };
   return { from: g('pace-day-from', 6, 0, 12), to: g('pace-day-to', 24, 14, 24), bed: g('pace-bedtime', -1, -1, 1439) }; })();   // bed: minutes after midnight, -1 = no bedtime
 const START = PACE_HOURS.from * 60, END = PACE_HOURS.to * 60, SPAN = END - START, OFF = 10;`);
@@ -178,7 +178,6 @@ rep('const SUGGEST_WINDOWS = { 0: [[1080, 1380]], 1: [[1080, 1380]], 2: [[1080, 
   'const SUGGEST_WINDOWS = Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map(d => [d, [[START, END]]]));   // anywhere in your own day; fixed items and other blocks are skipped');
 rep("Array.from({ length: 16 }, (_, i) => `<div style=\"top:${i * 60 + OFF}px\">${pad(8 + i)}:00</div>`)",
   "Array.from({ length: SPAN / 60 }, (_, i) => `<div style=\"top:${i * 60 + OFF}px\">${pad(START / 60 + i)}:00</div>`)");
-rep('個方塊超過 23:30 被疊在最後', '個方塊超過 ${hm(END)} 被疊在最後');
 { const night = /function nightCheck\(\) \{[\s\S]*?\n\}\n/.exec(s)[0];
   rep(night, `function nightCheck() {
   const bar = document.getElementById('nightBar');
@@ -199,7 +198,7 @@ rep('個方塊超過 23:30 被疊在最後', '個方塊超過 ${hm(END)} 被疊�
 `); }
 rep("  if (now.getHours() >= 23 || now.getHours() < 5) return [{ kind: 'sleep', title: '去睡覺', why: '已經 23:00 以後了，今天的事明天再做，睡飽比較有效率。' }];",
   "  const sinceBed = PACE_HOURS.bed < 0 ? -1 : (n - PACE_HOURS.bed + 1440) % 1440;\n  if (sinceBed >= 0 && sinceBed < 300) return [{ kind: 'sleep', title: '去睡覺', why: `已經過了你設定的睡覺時間 ${hm(PACE_HOURS.bed)}，今天的事明天再做，睡飽比較有效率。` }];");
-rep('  const light = n >= 21 * 60 + 30;', '  const light = sinceBed >= 1290;   // the last 2½ hours before bedtime: lighter subjects first');
+rep('  const light = tiredNow() || n >= 21 * 60 + 30;', '  const light = tiredNow() || sinceBed >= 1290;   // the last 2½ hours before bedtime: lighter subjects first');
 rep('<label class="check"><input type="checkbox" id="prefNight"> 23:00 後每 10 分鐘晚睡警告（這個頁面開著時）</label>',
   '<label class="check"><input type="checkbox" id="prefNight"> 睡前提醒：睡覺時間前 30 分鐘開始，每 10 分鐘一次（這個頁面開著時）</label>');
 rep('    <h3 class="set-h">提醒與聲音</h3>', `    <h3 class="set-h">作息</h3>

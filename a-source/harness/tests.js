@@ -14,6 +14,7 @@ window.runTests = async function () {
   const fakeNow = (y, mo, d, h, mi) => { const t = new realDate(y, mo, d, h, mi).getTime(); window.Date = class extends realDate { constructor(...a) { super(...(a.length ? a : [t])); } static now() { return t; } }; };
   const restoreDate = () => { window.Date = realDate; };
   try {
+    prefSet('planner-rem-blocks', '0');
     await sleep(300);
     ok('boot: config loaded', !!state.config && state.config.modules.length > 10);
     ok('boot: palette chips', document.querySelectorAll('#palette [data-drag^="module:"]').length === state.config.modules.length);
@@ -87,9 +88,85 @@ window.runTests = async function () {
 
     // block-start reminder pops up on the timetable view, not only in the sticky note
     const nn = 10 * 60;
+    prefSet('planner-rem-blocks', '1'); alarmQueue.length = 0;
     checkReminders([{ id: 'rem1', s: nn + 3, e: nn + 33, start: '10:03', name: '提醒測試', cat: 'study' }], nn); await sleep(80);
     ok('remind: shown on timetable view', !$('#alarm').hidden && $('#alarmMsg').textContent.includes('提醒測試'), $('#alarmMsg').textContent);
-    closeAlarm(); await sleep(320);
+    closeAlarm(); await sleep(320); prefSet('planner-rem-blocks', '0');
+
+    // 1. quick note while focusing becomes a task
+    const nTasks0 = state.tasks.length;
+    $('#fNote').value = '回 LINE 給同學'; $('#fNoteForm').dispatchEvent(new Event('submit', { cancelable: true })); await sleep(30);
+    ok('quick note: task added', state.tasks.length === nTasks0 + 1 && state.tasks.some(t => t.title === '回 LINE 給同學' && t.minutes === 15));
+    ok('quick note: box cleared and confirmed', $('#fNote').value === '' && $('#toastText').textContent.includes('繼續專注'));
+    state.tasks = state.tasks.filter(t => t.title !== '回 LINE 給同學'); render();
+
+    // 3. sick day: cancel every unfinished block that day, with undo
+    state.week.blocks.push({ id: 'sk1', day: 1, start: '19:00', minutes: 30, name: '數學', cat: 'study', done: false }, { id: 'sk2', day: 1, start: '20:00', minutes: 30, name: '英文', cat: 'lang', done: true });
+    openDayOff(ymd(addDays(state.monday, 1))); $('#doSkipAll').click(); await sleep(30);
+    ok('sick day: unfinished blocks skipped, done ones kept', state.week.blocks.find(b => b.id === 'sk1').skipped === true && !state.week.blocks.find(b => b.id === 'sk2').skipped);
+    $('#toastUndo').click(); await sleep(30);
+    ok('sick day: undo', !state.week.blocks.find(b => b.id === 'sk1').skipped);
+    state.week.blocks = state.week.blocks.filter(b => !['sk1', 'sk2'].includes(b.id)); saveWeek(); render();
+
+    // 4. tired button
+    $('#npTired').click(); await sleep(20);
+    ok('tired: on for a while', tiredNow() && $('#npTired').textContent === '恢復一般');
+    $('#npTired').click(); await sleep(20);
+    ok('tired: off again', !tiredNow() && $('#npTired').textContent.includes('腦袋累了'));
+
+    // 5. coach card folds
+    $('#coachFold').click();
+    ok('coach: folded', $('#coachBody').hidden && localStorage.getItem('planner-coach-folded') === '1');
+    $('#coachFold').click();
+    ok('coach: unfolded', !$('#coachBody').hidden);
+
+    // 6. the same reminder rings once even if asked twice (another tab)
+    localStorage.removeItem('ring:test'); let rang = 0;
+    ringOnce('test', () => rang++); ringOnce('test', () => rang++);
+    ok('one ring: second call skipped', rang === 1);
+    localStorage.removeItem('ring:test');
+
+    // 2. resize: +N 分 tip, a detent at whole hours, spill past midnight into the next day
+    state.week.blocks.push({ id: 'rz1', day: 2, start: '20:00', minutes: 30, name: '物理', cat: 'study', done: false });
+    render(); await sleep(30);
+    let h1 = document.querySelector('[data-resize="rz1"]'), hr = h1.getBoundingClientRect();
+    ptr(h1, 'pointerdown', hr.left + 5, hr.top + 3); ptr(document, 'pointermove', hr.left + 5, hr.top + 3 + 57);
+    ok('resize: snaps to a whole hour and says so', $('#rzTip').textContent.startsWith('＋1 小時') && drag.min === 90, $('#rzTip').textContent);
+    ptr(document, 'pointerup', hr.left + 5, hr.top + 60); await sleep(50);
+    ok('resize: hour added', state.week.blocks.find(b => b.id === 'rz1').minutes === 90 && $('#rzTip').hidden);
+    state.week.blocks = state.week.blocks.filter(b => b.id !== 'rz1');
+    state.week.blocks.push({ id: 'rz2', day: 2, start: '23:00', minutes: 30, name: '化學', cat: 'study', done: false });
+    render(); await sleep(30);
+    h1 = document.querySelector('[data-resize="rz2"]'); hr = h1.getBoundingClientRect();
+    ptr(h1, 'pointerdown', hr.left + 5, hr.top + 3); ptr(document, 'pointermove', hr.left + 5, hr.top + 3 + 90);
+    ok('resize: tip shows the part that continues tomorrow', $('#rzTip').textContent.includes('隔天 00:00–01:00'), $('#rzTip').textContent);
+    ptr(document, 'pointerup', hr.left + 5, hr.top + 93); await sleep(50);
+    const rz2 = state.week.blocks.find(b => b.id === 'rz2'), cont = state.week.blocks.find(b => b.name === '化學（續）');
+    ok('resize: cut at midnight, rest continues 00:00 next day', rz2.minutes === 60 && cont && cont.day === 3 && cont.start === '00:00' && cont.minutes === 60, JSON.stringify(cont));
+    state.week.blocks = state.week.blocks.filter(b => b.id !== 'rz2' && b !== cont); saveWeek(); render();
+
+    // typing a length in the dialog spills the same way
+    state.week.blocks.push({ id: 'rz3', day: 1, start: '22:00', minutes: 30, name: '英文', cat: 'lang', done: false });
+    openBlock('rz3'); $('#dMin').value = '200'; $('#dlgForm').dispatchEvent(new Event('submit', { cancelable: true })); await sleep(30);
+    const rz3 = state.week.blocks.find(b => b.id === 'rz3'), c3 = state.week.blocks.find(b => b.name === '英文（續）');
+    ok('dialog: long length continues next day', rz3.minutes === 120 && c3 && c3.day === 2 && c3.minutes === 80, rz3.minutes + ' ' + JSON.stringify(c3));
+    state.week.blocks = state.week.blocks.filter(b => b.id !== 'rz3' && b !== c3); saveWeek(); render();
+
+    // Sunday spills into next week's Monday
+    const sun = { id: 'rz4', day: 6, start: '23:30', minutes: 30, name: '數學', cat: 'study', done: false };
+    state.week.blocks.push(sun); spillPastMidnight(sun, 90); await sleep(120);
+    const nextKey = ymd(addDays(state.monday, 7)), nextDoc = window.__store['weeks/' + nextKey];
+    ok('sunday: rest goes to next Monday 00:00', sun.minutes === 30 && nextDoc && nextDoc.blocks.some(b => b.name === '數學（續）' && b.day === 0 && b.start === '00:00' && b.minutes === 60), JSON.stringify(nextDoc));
+    state.week.blocks = state.week.blocks.filter(b => b.id !== 'rz4'); delete window.__store['weeks/' + nextKey]; saveWeek(); render();
+
+    // ripple: a block pushed past midnight moves to a later free slot instead of piling up
+    state.week.blocks.push({ id: 'ov1', day: 3, start: '23:00', minutes: 60, name: '生物', cat: 'study', done: false });
+    placeNew({ name: '地理', cat: 'study', minutes: 90 }, 3, 22 * 60 + 30); await sleep(50);
+    const ov1 = state.week.blocks.find(b => b.id === 'ov1');
+    ok('overflow: moved to a later free slot', ov1.day > 3 && $('#toastText').textContent.includes('已移到'), ov1.day + ' ' + ov1.start + ' / ' + $('#toastText').textContent);
+    $('#toastUndo').click(); await sleep(30);
+    ok('overflow: move can be undone', state.week.blocks.find(b => b.id === 'ov1').day === 3);
+    state.week.blocks = state.week.blocks.filter(b => b.id !== 'ov1' && b.name !== '地理'); saveWeek(); render();
 
     // ripple leaves finished blocks alone and warns when the day overflows
     state.week.blocks.push({ id: 'rA', day: 2, start: '19:00', minutes: 30, name: '國文', cat: 'study', done: false }, { id: 'rD', day: 2, start: '19:40', minutes: 30, name: '英文', cat: 'lang', done: true });
@@ -97,9 +174,9 @@ window.runTests = async function () {
     const rA = state.week.blocks.find(b => b.id === 'rA'), rDone = state.week.blocks.find(b => b.id === 'rD');
     ok('ripple: finished block not moved', rDone.start === '19:40', rDone.start);
     ok('ripple: pushed block jumps over finished one', toMin(rA.start) >= 20 * 60 + 10, rA.start);
-    state.week.blocks.push({ id: 'rX', day: 3, start: '22:50', minutes: 40, name: '生物', cat: 'study', done: false });
-    placeNew({ name: '德文', cat: 'lang', minutes: 30 }, 3, 22 * 60 + 30); await sleep(50);
-    ok('ripple: overflow past 23:30 is reported', $('#toastText').textContent.includes('排不下'), $('#toastText').textContent);
+    state.week.blocks.push({ id: 'rX', day: 3, start: '23:20', minutes: 40, name: '生物', cat: 'study', done: false });
+    placeNew({ name: '德文', cat: 'lang', minutes: 30 }, 3, 23 * 60 + 10); await sleep(50);
+    ok('ripple: overflow past midnight is reported', $('#toastText').textContent.includes('排不下'), $('#toastText').textContent);
     state.week.blocks = state.week.blocks.filter(b => !['rA', 'rD', 'rX'].includes(b.id) && !['化學題目', '德文'].includes(b.name)); saveWeek(); render();
 
     // header busy tags come from fixed items
@@ -503,7 +580,7 @@ window.runTests = async function () {
     ok('now-pick: 換一個 gives another suggestion', $('#npTitle').textContent !== '數學題目', $('#npTitle').textContent);
     ok('now-pick: missed block is a candidate', nowCandidates().some(c => c.kind === 'missed' && c.block.id === 's3'));
     restoreDate();
-    fakeNow(2026, 9, 21, 23, 20); nowPickIndex = 0; renderNowPick(); restoreDate();
+    { const wed = addDays(state.monday, 2); fakeNow(wed.getFullYear(), wed.getMonth(), wed.getDate(), 23, 20); } nowPickIndex = 0; renderNowPick(); restoreDate();
     ok('now-pick: after 23:00 it says go to sleep', $('#npTitle').textContent === '去睡覺');
     renderNowPick();
 

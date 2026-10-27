@@ -169,6 +169,9 @@ form.add label { display: flex; flex-direction: column; gap: 3px; color: var(--m
 .blk .rz::after { content: ""; position: absolute; left: 50%; bottom: 2px; width: 22px; height: 3px; margin-left: -11px; border-radius: 2px; background: currentColor; opacity: 0; transition: opacity .15s; }
 .blk:hover .rz::after, .blk.resizing .rz::after { opacity: .45; }
 .blk.resizing { box-shadow: 0 0 0 2px var(--accent); z-index: 3; }
+.rztip { position: fixed; z-index: 60; pointer-events: none; padding: 4px 10px; border-radius: 999px; background: var(--fg); color: var(--bg); font-size: .78rem; font-weight: 700; box-shadow: var(--shadow); white-space: nowrap; }
+.rztip.hour { background: var(--accent); color: var(--panel); }
+.blk.cont-preview { opacity: .55; outline: 2px dashed currentColor; pointer-events: none; }
 .blk.bumped { animation: bump .6s ease-out; }
 @keyframes bump { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
 .head .load { font-family: var(--f-mono); font-size: .66rem; color: var(--muted); }
@@ -424,6 +427,8 @@ body.w .planner { display: none; }
 .focus .fbar { height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--panel) 30%, transparent); overflow: hidden; }
 .focus .fbar span { display: block; height: 100%; width: 0; background: var(--panel); border-radius: 999px; }
 .focus .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.focus .fnote input { width: 100%; box-sizing: border-box; margin-top: 8px; padding: 7px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 40%, transparent); background: color-mix(in srgb, currentColor 10%, transparent); color: inherit; font: inherit; font-size: .85rem; }
+.focus .fnote input::placeholder { color: inherit; opacity: .7; }
 .focus .fround { font-size: .8rem; font-weight: 700; opacity: .9; }
 .focus .fall { font-size: .74rem; opacity: .85; font-family: var(--f-mono); }
 .focus.brk { background: var(--c-rest-dot, #3f8f6b); }
@@ -618,7 +623,7 @@ body.nofx[data-skin="neon"]::after { display: none; }
         <h2>現在做這件 <span class="count" id="npCount"></span></h2>
         <div class="np-title" id="npTitle"></div>
         <p class="np-why" id="npWhy"></p>
-        <div class="np-acts"><button class="btn primary" type="button" id="npAct">開始專注</button><button class="btn" type="button" id="npNext">換一個</button></div>
+        <div class="np-acts"><button class="btn primary" type="button" id="npAct">開始專注</button><button class="btn" type="button" id="npNext">換一個</button><button class="btn plain" type="button" id="npTired">⚡ 腦袋累了</button></div>
       </section>
       <section class="card">
         <h2>目標 <button class="btn" type="button" id="newGoalBtn">＋ 新目標</button></h2>
@@ -678,8 +683,9 @@ body.nofx[data-skin="neon"]::after { display: none; }
           <div class="bars" id="stats"></div>
         </div>
       </section>
-      <section class="card">
-        <h2>教練</h2>
+      <section class="card" id="coachCard">
+        <h2>教練 <button class="btn plain" type="button" id="coachFold" aria-expanded="true">收起</button></h2>
+        <div id="coachBody">
         <div class="note" id="claudeNote"><span class="muted">每天早上同步一次後，這裡會出現 Claude 的回饋。</span></div>
         <div class="coach-ask" data-ai hidden>
         <p class="hint">想問更多：教練會讀你這週真的排了什麼、做了多少再回答。每次提問會用到你的 Claude 用量。</p>
@@ -691,6 +697,7 @@ body.nofx[data-skin="neon"]::after { display: none; }
         <form id="coachForm" class="qa" autocomplete="off"><input id="coachInput" aria-label="問 AI 教練" placeholder="問教練，按 Enter"></form>
         <div class="coach-out" id="coachOut" aria-live="polite"></div>
         <button class="btn" type="button" id="coachStop" hidden>停止</button>
+        </div>
         </div>
       </section>
     </aside>
@@ -740,6 +747,7 @@ body.nofx[data-skin="neon"]::after { display: none; }
     <div class="fbar"><span id="fBar"></span></div>
     <div class="fall" id="fAll"></div>
     <div class="acts"><button type="button" id="fSkip" hidden>跳過休息</button><button type="button" id="fDone">完成了</button><button type="button" id="fStop">停止</button></div>
+    <form id="fNoteForm" class="fnote" autocomplete="off"><input id="fNote" aria-label="快記雜事" placeholder="腦中閃過雜事？記下來繼續專注…"></form>
   </div>
   <div class="now" id="wNow"></div>
   <section><h2>今天接下來</h2><ul id="wNext"></ul></section>
@@ -939,6 +947,7 @@ body.nofx[data-skin="neon"]::after { display: none; }
       <button class="btn" type="button" id="doLeave">請假</button>
       <button class="btn primary" type="button" id="doTyphoon">颱風假</button>
     </div>
+    <button class="btn" type="button" id="doSkipAll" style="margin-top:8px">這天的方塊全部取消（不算進達成率）</button>
   </form>
 </dialog>
 
@@ -968,7 +977,7 @@ body.nofx[data-skin="neon"]::after { display: none; }
 const CATS = { study: '讀書', preview: '預習', code: '程式', lang: '語言', exam: '考試', class: '補習／課程', swim: '游泳', rest: '休息', buffer: '緩衝', care: '心理師', life: '生活', school: '學校' };
 const GROUPS = [['讀書與預習', ['study', 'preview', 'exam']], ['語言與程式', ['lang', 'code']], ['休息與其他', ['rest', 'buffer', 'life', 'class', 'swim', 'care']]];
 const DAYN = ['一', '二', '三', '四', '五', '六', '日'];
-const START = 8 * 60, END = 23 * 60 + 30, SPAN = END - START, OFF = 10;
+const START = 8 * 60, END = 24 * 60, SPAN = END - START, OFF = 10;
 const SUGGEST_WINDOWS = { 0: [[1080, 1380]], 1: [[1080, 1380]], 2: [[1080, 1380]], 3: [[1080, 1380]], 4: [], 5: [[660, 805], [1260, 1350]], 6: [[570, 1320]] };
 
 const SUBJECTS = ['數學', '物理', '化學', '生物', '國文', '英文', '德文', '程式', '自主學習'];
@@ -1032,17 +1041,68 @@ function ripple(day, anchorId) {
   /* finished blocks stay where they happened and act as walls */
   state.week.blocks.filter(b => b.day === day && b.id !== anchorId && b.done).forEach(b => walls.push([toMin(b.start), toMin(b.start) + b.minutes]));
   const list = state.week.blocks.filter(b => b.day === day && b.id !== anchorId && !b.done).sort((a, b) => toMin(a.start) - toMin(b.start));
-  let prevEnd = -1, over = 0; const moved = [];
+  const before = JSON.parse(JSON.stringify(state.week.blocks));
+  let prevEnd = -1; const moved = [], over = [];
   for (const b of list) {
     let s = Math.max(toMin(b.start), prevEnd);
     for (let guard = 0; guard < 30; guard++) { const w = walls.find(([ws, we]) => ws < s + b.minutes && s < we); if (!w) break; s = w[1]; }
-    if (s > END - b.minutes) { over++; s = END - b.minutes; }
+    if (s > END - b.minutes) { over.push(b); continue; }
     if (hm(s) !== b.start) { b.start = hm(s); moved.push(b.id); }
     prevEnd = Math.max(prevEnd, s + b.minutes);
   }
+  // what no longer fits goes to a later buffer block, else the next free slot this week; only if there is none does it stay at the end
+  const placed = [], stuck = [];
+  for (const b of over) {
+    const buf = state.week.blocks.filter(x => x.cat === 'buffer' && x.day > day && !x.done && !x.skipped && x.minutes >= b.minutes).sort((x, y) => x.day - y.day || toMin(x.start) - toMin(y.start))[0];
+    const slot = buf ? null : freeSlotAfter(day, b.minutes);
+    if (buf) { b.day = buf.day; b.start = buf.start; buf.start = hm(toMin(buf.start) + b.minutes); buf.minutes -= b.minutes; if (buf.minutes < 5) state.week.blocks = state.week.blocks.filter(x => x !== buf); placed.push(b); }
+    else if (slot) { b.day = slot.day; b.start = hm(slot.start); placed.push(b); }
+    else { b.start = hm(END - b.minutes); stuck.push(b); }
+    moved.push(b.id);
+  }
   state.bumped = new Set(moved);
-  if (over) toast(`這天排不下了：${over} 個方塊超過 23:30 被疊在最後，拖到別天或週末的緩衝時間吧`);
+  const undo = () => { state.week.blocks = before; saveWeek(); render(); };
+  if (placed.length) toast(placed.length === 1 ? `「${placed[0].name}」這天排不下，已移到 週${DAYN[placed[0].day]} ${placed[0].start}` : `${placed.length} 個方塊這天排不下，已移到後面的空檔`, undo);
+  else if (stuck.length) toast(`這天排不下了：${stuck.length} 個方塊超過 ${hm(END)} 被疊在最後，這週也沒有空檔了，拖到別週吧`, undo);
   else if (moved.length) toast(`已把 ${moved.length} 個方塊往後順延`);
+}
+/* first free stretch of the given length after this day, inside each day's suggestion windows */
+function freeSlotAfter(day, minutes) {
+  for (let d = day + 1; d < 7; d++) {
+    const date = ymd(addDays(state.monday, d));
+    const busy = [...fixedFor(d), ...blocksFor(d)].map(x => [x.s, x.e]).sort((a, b) => a[0] - b[0]);
+    for (const [ws, we] of (holidayOf(date) ? SUGGEST_WINDOWS[6] : SUGGEST_WINDOWS[d])) {
+      let t = ws;
+      for (const [bs, be] of [...busy, [we, we]]) {
+        if (be <= t) continue;
+        if (Math.min(bs, we) - t >= minutes) return { day: d, start: t };
+        t = Math.max(t, be);
+        if (t >= we) break;
+      }
+    }
+  }
+  return null;
+}
+/* a block running past midnight: keep it up to the end of the day and continue the rest as 「（續）」 at 00:00 the next day (Sunday → next week's Monday) */
+function spillPastMidnight(b, total) {
+  const fit = END - toMin(b.start), extra = total - fit;
+  if (extra <= 0) { b.minutes = total; return null; }
+  b.minutes = fit;
+  const c = { ...b, id: uid(), start: '00:00', minutes: extra, name: b.name.replace(/（續）$/, '') + '（續）', done: false };
+  ['skipped', 'failed', 'taskId', 'actual', 'reflection', 'videoMin'].forEach(k => delete c[k]);
+  if (b.day < 6) { c.day = b.day + 1; state.week.blocks.push(c); ripple(c.day, c.id); }
+  else { c.day = 0; addToWeek(ymd(addDays(state.monday, 7)), c); }
+  toast(`已排到 ${hm(END)}，多出的 ${extra} 分接在${b.day < 6 ? '週' + DAYN[c.day] : '下週一'} 00:00${START > 0 ? `（時間表從 ${hm(START)} 開始，所以看不到 00:00 那段）` : ''}`);
+  return c;
+}
+async function addToWeek(mondayKey, blk) {
+  if (!state.db) return;
+  const ref = state.db.doc('weeks/' + mondayKey);
+  const snap = await ref.get();
+  const w = snap.exists ? snap.data() : { blocks: [] };
+  w.blocks = [...(w.blocks || []), blk];
+  delete weekCache[mondayKey];
+  queue(() => ref.set(JSON.parse(JSON.stringify(w))));
 }
 function saveWeek() { delete weekCache[ymd(state.monday)]; scheduleStreak(); state.flashUntil = Date.now() + 2200; state.flashCheck = true; if (!state.db) { renderTargets(); return; } const key = ymd(state.monday); const body = JSON.parse(JSON.stringify(state.week)); queue(() => state.db.doc('weeks/' + key).set(body)); renderTargets(); }
 function saveTask(t) { scheduleExport(); if (!state.db) return; const body = { ...t }; delete body.id; queue(() => state.db.doc('tasks/' + t.id).set(body)); }
@@ -1413,6 +1473,9 @@ function checkReminders(items, n) {
 }
 function showRemind(msg) {
   if (!document.body.classList.contains('w')) { showAlarm(msg, '方塊提醒'); return; }
+  ringOnce('remind|' + msg, () => showRemindNow(msg));
+}
+function showRemindNow(msg) {
   const el = document.getElementById('wRemind');
   document.getElementById('wRemindText').textContent = msg;
   el.hidden = false; el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse');
@@ -1520,8 +1583,19 @@ function playChime() {
   unlock();
 })();
 /* 等正在進行的儲存／背景作業做完，再跳出提醒 */
+/* several tabs open: the same reminder rings once; a visible tab gets first claim, hidden ones wait 1.5 s */
+function ringOnce(key, fn) {
+  const k = 'ring:' + key;
+  const go = () => {
+    let last = 0; try { last = Number(localStorage.getItem(k)) || 0; } catch (e) {}
+    if (Date.now() - last < 60000) return;
+    try { localStorage.setItem(k, String(Date.now())); } catch (e) {}
+    fn();
+  };
+  document.hidden ? setTimeout(go, 1500) : go();
+}
 function showAlarm(msg, label) {
-  writeChain.then(() => { alarmQueue.push({ msg, label }); if (!alarmOpen) nextAlarm(); });
+  ringOnce(label + '|' + msg, () => writeChain.then(() => { alarmQueue.push({ msg, label }); if (!alarmOpen) nextAlarm(); }));
 }
 function nextAlarm() {
   const a = alarmQueue.shift();
@@ -1613,6 +1687,17 @@ document.getElementById('doTyphoon').addEventListener('click', () => setDayOff('
 document.getElementById('doLeave').addEventListener('click', () => setDayOff('leave'));
 document.getElementById('doClear').addEventListener('click', () => setDayOff('clear'));
 document.getElementById('doCancel').addEventListener('click', () => dayOffDlg.close());
+/* sick or a day off: every unfinished block that day becomes 「這次取消」, so the completion rate isn't dragged down */
+document.getElementById('doSkipAll').addEventListener('click', () => {
+  const date = dayOffDate; dayOffDlg.close(); if (!date) return;
+  const day = Math.round((new Date(date + 'T00:00:00') - state.monday) / 86400000);
+  const list = state.week.blocks.filter(b => b.day === day && !b.done && !b.skipped);
+  if (!list.length) { toast('這天沒有要取消的方塊'); return; }
+  const before = JSON.parse(JSON.stringify(state.week.blocks));
+  list.forEach(b => { b.skipped = true; delete b.failed; });
+  saveWeek(); render();
+  toast(`已取消這天的 ${list.length} 個方塊，好好休息`, () => { state.week.blocks = before; saveWeek(); render(); });
+});
 document.getElementById('myCounty').addEventListener('change', e => { prefSet('planner-county', e.target.value); render(); });
 document.getElementById('myDistrict').addEventListener('change', e => { prefSet('planner-district', e.target.value.trim()); render(); });
 
@@ -1674,10 +1759,22 @@ document.addEventListener('pointermove', e => {
   if (drag.kind === 'resize') {
     e.preventDefault();
     const b = state.week.blocks.find(x => x.id === drag.id); if (!b) return;
-    const m = Math.max(5, Math.min(END - toMin(b.start), Math.round((drag.min0 + e.clientY - drag.y0) / 5) * 5));
-    drag.min = m;
-    drag.el.style.height = Math.max(m, 16) + 'px';
-    drag.el.querySelector('.t').textContent = `${b.start}–${hm(toMin(b.start) + m)}・${m} 分`;
+    let delta = Math.round((e.clientY - drag.y0) / 5) * 5;
+    const hrs = Math.round(delta / 60);
+    if (hrs !== 0 && Math.abs(delta - hrs * 60) <= 6) delta = hrs * 60;   // sticks at each whole hour for a moment
+    const m = Math.max(5, Math.min(drag.min0 + delta, END - toMin(b.start) + 24 * 60));
+    delta = m - drag.min0; drag.min = m;
+    const fit = END - toMin(b.start), extra = Math.max(0, m - fit);
+    drag.el.style.height = Math.max(Math.min(m, fit), 16) + 'px';
+    drag.el.querySelector('.t').textContent = `${b.start}–${hm(toMin(b.start) + Math.min(m, fit))}・${m} 分`;
+    const tip = document.getElementById('rzTip');
+    const sign = delta >= 0 ? '＋' : '−', abs = Math.abs(delta);
+    tip.textContent = (abs && abs % 60 === 0 ? `${sign}${abs / 60} 小時` : `${sign}${abs} 分`) + `（共 ${m} 分）` + (extra ? `・隔天 00:00–${hm(extra)}` : '');
+    tip.classList.toggle('hour', !!abs && abs % 60 === 0);
+    tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY - 10) + 'px'; tip.hidden = false;
+    document.querySelectorAll('.cont-preview').forEach(x => x.remove());
+    const next = document.querySelector(`.col[data-day="${b.day + 1}"]`);
+    if (extra && next && START === 0) next.insertAdjacentHTML('beforeend', `<div class="blk cont-preview cat-${b.cat}" style="top:${OFF}px;height:${Math.max(extra, 16)}px"><span class="t">00:00–${hm(extra)}</span><span class="n">${esc(b.name)}（續）</span></div>`);
     return;
   }
   if (!drag.moved && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < (drag.touch ? 8 : 5)) return;
@@ -1701,7 +1798,8 @@ document.addEventListener('pointerup', e => {
   if (d.moved) lastDragEnd = Date.now();
   if (d.kind === 'resize') {
     const b = state.week.blocks.find(x => x.id === d.id);
-    if (b && d.min && d.min !== b.minutes) { b.minutes = d.min; if (b.video) b.videoMin = null; ripple(b.day, b.id); saveWeek(); }
+    document.getElementById('rzTip').hidden = true; document.querySelectorAll('.cont-preview').forEach(x => x.remove());
+    if (b && d.min && d.min !== b.minutes) { if (b.video) b.videoMin = null; spillPastMidnight(b, d.min); ripple(b.day, b.id); saveWeek(); }
     render(); return;
   }
   document.querySelectorAll('.col.drop').forEach(c => c.classList.remove('drop'));
@@ -1788,8 +1886,9 @@ document.getElementById('dlgForm').addEventListener('submit', e => {
   b.name = document.getElementById('dName').value.trim() || b.name;
   b.cat = document.getElementById('dCat').value;
   b.day = Number(document.getElementById('dDay').value);
-  b.minutes = Math.max(5, Number(document.getElementById('dMin').value) || b.minutes);
-  b.start = hm(Math.min(toMin(document.getElementById('dStart').value || b.start), END - b.minutes));
+  const wantMin = Math.max(5, Number(document.getElementById('dMin').value) || b.minutes);
+  b.start = hm(Math.min(toMin(document.getElementById('dStart').value || b.start), END - 5));
+  spillPastMidnight(b, wantMin);
   const sub = document.getElementById('dSub').value;
   if (sub) b.subject = sub; else delete b.subject;
   ripple(b.day, b.id);
@@ -2019,6 +2118,7 @@ document.getElementById('replan').addEventListener('click', () => {
 });
 
 /* ---------- click an empty slot to add ---------- */
+document.body.insertAdjacentHTML('beforeend', '<div class="rztip" id="rzTip" hidden></div>');
 const pickDlg = document.getElementById('pickDlg');
 let pickAt = null, lastDragEnd = 0;
 document.getElementById('grid').addEventListener('click', e => {
@@ -2196,6 +2296,14 @@ function renderFocus() {
 }
 setInterval(() => { if (focus) renderFocus(); }, 1000);
 document.getElementById('fDone').addEventListener('click', () => finishFocus(true));
+/* a stray thought while focusing goes straight into this week's tasks; the timer keeps running */
+document.getElementById('fNoteForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const input = document.getElementById('fNote'), title = input.value.trim(); if (!title) return;
+  const t = { id: uid(), title, minutes: 15, cat: 'life', showFrom: ymd(new Date()), due: '', done: false, createdAt: new Date().toISOString() };
+  state.tasks.push(t); saveTask(t); renderTasks(); input.value = '';
+  toast(`已記下「${title}」，繼續專注`);
+});
 document.getElementById('fStop').addEventListener('click', () => finishFocus(false));
 document.getElementById('fSkip').addEventListener('click', skipBreak);
 document.addEventListener('click', e => { const w = e.target.closest('[data-tfocus]'); if (!w) return; const t = state.tasks.find(x => x.id === w.dataset.tfocus); if (t) { startTaskFocus(t); setWidget(true); } });
@@ -2514,13 +2622,23 @@ function hideAi(e) { if (['not_granted', 'sampling_disabled', 'not_declared', 'c
 function renderAiAvailability() { document.querySelectorAll('[data-ai]').forEach(el => { el.hidden = !aiOk(); }); }
 
 /* ---------- 1. 現在做這件 ---------- */
+const TIRED_KEY = 'planner-tired-until';
+function tiredNow() { try { return Number(localStorage.getItem(TIRED_KEY)) > Date.now(); } catch (e) { return false; } }
+function syncTired() { const b = document.getElementById('npTired'); if (b) b.textContent = tiredNow() ? '恢復一般' : '⚡ 腦袋累了'; }
+document.getElementById('npTired').addEventListener('click', () => {
+  const on = !tiredNow();
+  try { on ? localStorage.setItem(TIRED_KEY, String(Date.now() + 2 * 3600000)) : localStorage.removeItem(TIRED_KEY); } catch (e) {}
+  nowPickIndex = 0; renderNowPick(); syncTired();
+  toast(on ? '接下來 2 小時先推薦輕鬆一點的事' : '恢復一般推薦');
+});
+syncTired(); setInterval(syncTired, 60000);
 let nowPickIndex = 0;
 function nowCandidates() {
   const out = [], now = new Date(), n = now.getHours() * 60 + now.getMinutes();
   if (!isThisWeek()) return out;
   if (now.getHours() >= 23 || now.getHours() < 5) return [{ kind: 'sleep', title: '去睡覺', why: '已經 23:00 以後了，今天的事明天再做，睡飽比較有效率。' }];
   const d = (now.getDay() + 6) % 7, date = ymd(now);
-  const light = n >= 21 * 60 + 30;
+  const light = tiredNow() || n >= 21 * 60 + 30;
   const today = blocksFor(d).filter(b => counts(b) && !b.done && !b.skipped).sort((a, b) => a.s - b.s);
   const cur = today.find(b => b.s <= n && n < b.e);
   if (cur) out.push({ kind: 'block', block: cur, title: cur.name, why: `這就是現在排的方塊，到 ${hm(cur.e)}，還有 ${cur.e - n} 分鐘。` });
@@ -2709,6 +2827,15 @@ async function askCoach(question) {
 document.getElementById('coachForm').addEventListener('submit', e => { e.preventDefault(); askCoach(document.getElementById('coachInput').value.trim()); });
 document.getElementById('coachStop').addEventListener('click', () => coachCtl?.abort());
 document.getElementById('coachChips').addEventListener('click', e => { const c = e.target.closest('[data-q]'); if (c) { document.getElementById('coachInput').value = c.dataset.q; askCoach(c.dataset.q); } });
+
+/* coach card: fold it away and remember that on this device */
+(() => {
+  const btn = document.getElementById('coachFold'), body = document.getElementById('coachBody');
+  const apply = folded => { body.hidden = folded; btn.textContent = folded ? '展開' : '收起'; btn.setAttribute('aria-expanded', String(!folded)); };
+  let folded = false; try { folded = localStorage.getItem('planner-coach-folded') === '1'; } catch (e) {}
+  apply(folded);
+  btn.addEventListener('click', () => { folded = !folded; try { localStorage.setItem('planner-coach-folded', folded ? '1' : '0'); } catch (e) {} apply(folded); });
+})();
 
 /* ---------- 3. 專注結束：完成了嗎＋一句心得 ---------- */
 const reflDlg = document.getElementById('reflDlg');

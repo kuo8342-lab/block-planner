@@ -4,6 +4,10 @@ const cfg = JSON.parse(fs.readFileSync(path.join(root, 'seed_config.json'), 'utf
 cfg.holidays = [{ date: '2026-10-26', name: '光復節補假' }];
 cfg.targets = { 數學: 215, 物理: 145, 化學: 75, 生物: 50, 國文: 55, 英文: 140, 德文: 40, 程式: 90, 自主學習: 60 };
 cfg.defaultTemplate = 'default-plan';
+// the tests expect an ordinary school week: drop real holidays that fall in the current week (e.g. 光復節補假 on 2026-10-26)
+{ const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); const iso = x => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+  const mon = iso(d); d.setDate(d.getDate() + 6); const sun = iso(d);
+  cfg.holidays = (cfg.holidays || []).filter(h => h.date < mon || h.date > sun); }
 const dp = JSON.parse(fs.readFileSync(path.join(root, 'default-plan.json'), 'utf8'));
 const seed = { 'templates/default-plan': dp, ['weeks/' + (() => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })()]: { blocks: [] }, 'config/main': cfg, 'tasks/t1': { title: '確認英檢考場', minutes: 10, cat: 'lang', showFrom: '2026-10-19', due: '2026-10-21', done: false }, 'tasks/t2': { title: 'Kibo 提交', minutes: 60, cat: 'code', showFrom: '2026-12-21', due: '2026-12-27', done: false } };
 const mock = `<script>
