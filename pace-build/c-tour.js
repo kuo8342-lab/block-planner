@@ -1,0 +1,126 @@
+/* 步調 Pace: first-run guided tour. A spotlight on one part of the page at a time with a step card at the bottom
+   (上一步 / 下一步 / 略過). It puts a sample block and a sample task in place to show them; at the end it asks
+   whether to keep them, and skipping clears them. Runs once after the "who are you" question; Settings → 外觀
+   has 「重新看教學」. Injected by build-c.js after c-persona.js. */
+(() => {
+  const DONE = 'pace-tour-done';
+  const $ = id => document.getElementById(id);
+  const card = sel => () => { const el = document.querySelector(sel); return el && (el.closest('.card') || el); };
+  let sample = { block: null, task: null };
+
+  const STEPS = [
+    { title: '歡迎使用步調！', text: '跟著走一遍，大約 1 分鐘。過程中會先放一個範例方塊和一個範例任務給你看，最後再問你要不要留下。隨時可以按「略過」。' },
+    { el: card('#palette'), title: '方塊', text: '常做的事做成方塊，拖到時間表上就排好了（手機要先按住一下再拖）。點方塊可以改名、刪除，或直接選時間排進去。' },
+    { el: () => sample.block && document.querySelector(`[data-bid="${sample.block}"]`), title: '時間表', text: '這是剛放進時間表的範例方塊。點它可以改時間、開始專注；往下拉底部可以改長度；右上角 ✓ 是完成、✗ 是沒做完。灰色斜線是你的固定行程。' },
+    { el: card('#qa'), title: '這週的任務', text: '在框框打字按 Enter 就新增任務，到了那週會自動出現。任務可以拖進時間表變成方塊。範例任務就在這裡。' },
+    { el: card('#goals'), title: '目標', text: '寫下大目標和期限，拆成每週的小步驟，到那週會自動出現在任務裡。' },
+    { el: () => { const n = $('nowPick'); return n && !n.hidden ? n : null; }, title: '現在做這件', text: '幫你挑「現在最該做的一件事」。按「開始專注」就開始番茄鐘；累了按「⚡ 腦袋累了」，會改推薦輕鬆的事。' },
+    { el: card('#wishes'), title: '願望清單', text: '想做但還沒空的事先丟這裡，有空檔時一鍵排進時間表。' },
+    { el: () => $('weekMenu'), title: '本週工具', text: '沒做完的方塊一鍵重排到後面的空檔，也可以把排好的一週存成範本、複製上週。' },
+    { el: () => $('toReport'), title: '報表', text: '看這週完成多少、各科花了多少時間，還有每週回顧。' },
+    { el: () => $('toWidget'), title: '便利貼', text: '把畫面縮成一張小卡，只看現在和接下來要做的事。連點 5 下回到完整畫面。' },
+    { el: () => $('skinBtn'), title: '設定', text: '作息（時間表從幾點到幾點、睡覺時間）、語言、同步登入、AI、教練卡片和備份都在這裡。' },
+    { el: () => { const b = $('installBtn'); return b && !b.hidden ? b : null; }, title: '安裝 App', text: '裝到手機或電腦桌面，用起來像一般 App。Android 還有桌面小工具。' },
+    { title: '教學結束！', text: '剛剛的範例方塊和範例任務要留下來嗎？之後也可以在「設定 → 外觀」重新看一次教學。', last: true }
+  ];
+
+  /* ---------- sample items, marked so they can be cleared ---------- */
+  function addSamples() {
+    if (!state.config || !isThisWeek()) return;
+    const slot = suggest(50, null)[0];
+    const today = (new Date().getDay() + 6) % 7;
+    const b = { id: uid(), day: slot ? slot.day : today, start: hm(slot ? slot.start : Math.max(START, 19 * 60)), minutes: 50, name: '（範例）讀書', cat: 'study', done: false, tour: true };
+    state.week.blocks.push(b); saveWeek();
+    const t = { id: uid(), title: '（範例）交英文作業', minutes: 30, cat: 'study', showFrom: ymd(new Date()), due: '', done: false, createdAt: new Date().toISOString(), tour: true };
+    state.tasks.push(t); saveTask(t);
+    sample = { block: b.id, task: t.id };
+    render();
+  }
+  function clearSamples() {
+    state.week.blocks = state.week.blocks.filter(b => !b.tour); saveWeek();
+    for (const t of state.tasks.filter(t => t.tour)) { if (state.db) queue(() => state.db.doc('tasks/' + t.id).delete()); }
+    state.tasks = state.tasks.filter(t => !t.tour);
+    sample = { block: null, task: null }; render();
+  }
+  function keepSamples() {
+    state.week.blocks.forEach(b => { if (b.tour) { delete b.tour; b.name = b.name.replace('（範例）', ''); } }); saveWeek();
+    state.tasks.forEach(t => { if (t.tour) { delete t.tour; t.title = t.title.replace('（範例）', ''); saveTask(t); } });
+    sample = { block: null, task: null }; render();
+  }
+
+  /* ---------- spotlight + step card ---------- */
+  const root = document.createElement('div');
+  root.id = 'tour'; root.hidden = true;
+  root.innerHTML = '<div class="tour-block"></div><div class="tour-hi" id="tourHi"></div>' +
+    '<div class="tour-card" role="dialog" aria-live="polite"><div class="tour-top"><span class="tour-step" id="tourStep"></span><button type="button" class="btn plain" id="tourSkip">略過</button></div>' +
+    '<div class="tour-title" id="tourTitle"></div><p class="tour-text" id="tourText"></p><div class="tour-dots" id="tourDots"></div>' +
+    '<div class="tour-acts" id="tourActs"></div></div>';
+  document.body.appendChild(root);
+  let i = 0, target = null;
+
+  function place() {
+    const hi = $('tourHi');
+    const none = !target || !document.body.contains(target);
+    root.classList.toggle('nohi', none);   // nothing to point at: dim the whole page instead
+    if (none) { hi.hidden = true; return; }
+    const r = target.getBoundingClientRect(), pad = 6;
+    Object.assign(hi.style, { left: (r.left - pad) + 'px', top: (r.top - pad) + 'px', width: (r.width + pad * 2) + 'px', height: (r.height + pad * 2) + 'px' });
+    hi.hidden = false;
+  }
+  function show(n) {
+    i = n; const s = STEPS[i];
+    target = s.el ? s.el() : null;
+    if (s.el && !target) { show(n + 1); return; }   // e.g. 「現在做這件」 has nothing to show right now (上一步 skips these itself)
+    // instant, not smooth: on phones a smooth scroll inside the timetable stops the page itself from scrolling there
+    if (target) { target.scrollIntoView({ block: 'center' }); const r = target.getBoundingClientRect(); if (r.bottom > innerHeight - 240) scrollBy(0, r.bottom - (innerHeight - 260)); }
+    $('tourStep').textContent = (i + 1) + ' / ' + STEPS.length;
+    $('tourTitle').textContent = s.title; $('tourText').textContent = s.text;
+    $('tourDots').innerHTML = STEPS.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('');
+    $('tourSkip').hidden = !!s.last;
+    $('tourActs').innerHTML = s.last
+      ? '<button type="button" class="btn" id="tourClear">不要，清掉範例</button><button type="button" class="btn primary" id="tourKeep">留下來</button>'
+      : (i > 0 ? '<button type="button" class="btn" id="tourPrev">上一步</button>' : '') + `<button type="button" class="btn primary" id="tourNext">${i === 0 ? '開始' : '下一步'}</button>`;
+    place(); setTimeout(place, 400);
+  }
+  function finish(keep) {
+    root.hidden = true; document.body.classList.remove('touring'); target = null;
+    try { localStorage.setItem(DONE, '1'); } catch (e) {}
+    if (keep) { keepSamples(); toast('已留下範例方塊和任務'); } else { clearSamples(); toast('範例已清掉，開始排你自己的一週吧'); }
+  }
+  root.addEventListener('click', e => {
+    const id = e.target.id;
+    if (id === 'tourNext') { if (i === 0 && !sample.block) addSamples(); show(i + 1); }
+    else if (id === 'tourPrev') { let k = i - 1; while (k > 0 && STEPS[k].el && !STEPS[k].el()) k--; show(k); }
+    else if (id === 'tourSkip') finish(false);
+    else if (id === 'tourKeep') finish(true);
+    else if (id === 'tourClear') finish(false);
+  });
+  addEventListener('resize', place); addEventListener('scroll', place, true);
+  document.addEventListener('keydown', e => { if (!root.hidden && e.key === 'Escape') finish(false); });
+
+  window.paceTour = () => {
+    if (!state.ready || !state.config) return;
+    if (typeof setWidget === 'function' && document.body.classList.contains('w')) setWidget(false);
+    if (document.body.classList.contains('r')) $('toGrid')?.click();
+    document.body.classList.add('touring'); root.hidden = false; show(0);
+  };
+
+  /* ---------- first open: after the "who are you" question is answered ---------- */
+  let tries = 0;
+  (function wait() {
+    let done = false; try { done = localStorage.getItem(DONE) === '1'; } catch (e) {}
+    if (done) return;
+    const persona = $('personaDlg');
+    let picked = false; try { picked = !!localStorage.getItem('pace-persona'); } catch (e) {}
+    if (!state.ready || !state.config || !picked || persona?.open) { if (++tries < 600) setTimeout(wait, 500); return; }
+    setTimeout(window.paceTour, 500);
+  })();
+
+  /* ---------- Settings → 外觀: watch it again ---------- */
+  const anchor = document.querySelector('#skinDlg .lang-pick:last-of-type') || document.querySelector('#skinDlg .lang-pick');
+  if (anchor) {
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'btn', id: 'tourAgain', textContent: '重新看教學' });
+    anchor.after(b);
+    b.addEventListener('click', () => { $('skinDlg').close(); setTimeout(window.paceTour, 200); });
+  }
+})();

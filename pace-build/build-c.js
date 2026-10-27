@@ -45,6 +45,21 @@ h1, h2, .dtitle, .brandname { font-family: "LXGW WenKai TC", var(--f-body); }
 .brandname { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--accent); font-size: .95rem; letter-spacing: .04em; }
 .brandname img { width: 20px; height: 20px; }
 #exportNow, label:has(#exportSec) { display: none !important; }
+/* first-run tour (c-tour.js): a click-blocking layer, a spotlight ring that dims everything else, and a step card at the bottom */
+#tour .tour-block { position: fixed; inset: 0; z-index: 70; }
+#tour.nohi .tour-block { background: rgba(10, 14, 12, .55); }
+#tour .tour-hi { position: fixed; z-index: 71; border-radius: 14px; box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(10, 14, 12, .55); pointer-events: none; transition: left .25s, top .25s, width .25s, height .25s; }
+#tour .tour-card { position: fixed; z-index: 72; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(440px, calc(100vw - 32px)); box-sizing: border-box; background: var(--panel); color: var(--fg); border-radius: 18px; padding: 14px 16px 16px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+#tour .tour-top { display: flex; justify-content: space-between; align-items: center; }
+#tour .tour-step { font-family: var(--f-mono); font-size: .75rem; color: var(--muted); }
+#tour .tour-title { font-family: "LXGW WenKai TC", var(--f-body); font-size: 1.15rem; font-weight: 700; margin: 4px 0 6px; color: var(--accent); }
+#tour .tour-text { margin: 0; line-height: 1.6; font-size: .92rem; }
+#tour .tour-dots { display: flex; gap: 5px; margin: 12px 0 10px; }
+#tour .tour-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+#tour .tour-dots i.on { background: var(--accent); width: 16px; border-radius: 3px; }
+#tour .tour-acts { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+#tourAgain { margin-top: 6px; }
+body.touring { padding-bottom: 340px; }   /* room to scroll the last things on the page above the step card */
 /* iPhone / iPad: inputs under 16px make Safari zoom in on tap; 100vh includes the hidden toolbar; long-press must not select text */
 @supports (-webkit-touch-callout: none) { input, select, textarea { font-size: 16px !important; } }
 @supports (height: 100dvh) { .grid-scroll { max-height: calc(100dvh - 120px); } @media (min-width: 921px) { body:not(.r) .grid-scroll { max-height: calc(100dvh - 32px); } } }
@@ -268,6 +283,7 @@ rep('</body>', `<script>
 rep('<button class="btn" type="button" id="skinBtn">設定</button>', '<button class="btn" type="button" id="skinBtn">設定</button><button class="btn primary" type="button" id="installBtn">安裝 App</button>');
 rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-install.js'), 'utf8') + '</script>\n</body>');
 rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-persona.js'), 'utf8') + '</script>\n</body>');   // who are you → starter blocks
+rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-tour.js'), 'utf8') + '</script>\n</body>');   // first-run guided tour
 
 /* ---------- AI settings wiring (after the app's own boot hooks) ---------- */
 rep('</body>', PACE_CSS + `
