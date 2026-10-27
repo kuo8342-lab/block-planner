@@ -20,6 +20,8 @@ rep('</head>', `<title>步調 Pace</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2f7a5b">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="步調">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -43,6 +45,10 @@ h1, h2, .dtitle, .brandname { font-family: "LXGW WenKai TC", var(--f-body); }
 .brandname { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--accent); font-size: .95rem; letter-spacing: .04em; }
 .brandname img { width: 20px; height: 20px; }
 #exportNow, label:has(#exportSec) { display: none !important; }
+/* iPhone / iPad: inputs under 16px make Safari zoom in on tap; 100vh includes the hidden toolbar; long-press must not select text */
+@supports (-webkit-touch-callout: none) { input, select, textarea { font-size: 16px !important; } }
+@supports (height: 100dvh) { .grid-scroll { max-height: calc(100dvh - 120px); } @media (min-width: 921px) { body:not(.r) .grid-scroll { max-height: calc(100dvh - 32px); } } }
+@media (pointer: coarse) { .chip, .task .title, .wish .title, .blk { -webkit-user-select: none; } button, .btn { touch-action: manipulation; } }
 .persona-list { display: grid; gap: 8px; margin-top: 10px; }
 .persona-list .btn { justify-content: flex-start; text-align: left; padding: 10px 14px; }
 .ai-key { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }

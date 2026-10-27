@@ -24,7 +24,8 @@
     '<p class="hint" style="margin:0">裝好後桌面會出現「步調」圖示，打開是全螢幕。之後網站更新，App 打開就是新版，不用重裝。</p>' +
     sec('android', 'Android 手機', '<a class="btn primary" href="pace.apk" download="步調Pace.apk">下載 Android App（APK）</a>' +
       '<ol><li>下載後點檔案安裝；手機問「允許安裝不明來源的應用程式」時選允許。</li><li>需要 Android 7 以上，並裝有 Chrome。</li><li>APK 有新版時直接安裝蓋過去就好，資料會保留。</li></ol>') +
-    sec('ios', 'iPhone／iPad', '<ol><li>用 <b>Safari</b> 打開這個網站。</li><li>按下方的「分享」按鈕（方框加向上箭頭）。</li><li>選「加入主畫面」→「新增」。</li></ol><p class="hint" style="margin:0">iPhone 不能裝 APK；加入主畫面後一樣是全螢幕的 App。</p>') +
+    sec('ios', 'iPhone／iPad', '<ol><li>用 <b>Safari</b> 打開這個網站。</li><li>按下方的「分享」按鈕（方框加向上箭頭）。</li><li>選「加入主畫面」→「新增」。</li></ol><p class="hint" style="margin:0">iPhone 不能裝 APK；加入主畫面後一樣是全螢幕的 App。</p>' +
+      '<p class="hint" style="margin:0">注意：主畫面的 App 和 Safari 裡的網頁資料是<b>分開的</b>。之前在 Safari 用過的話，先在 Safari「設定 → 下載備份檔」，再到 App 裡「匯入備份」；或兩邊都登入同步。只用 Safari、不加入主畫面的話，超過 7 天沒打開，Safari 可能會清掉資料。</p>') +
     sec('pc', 'Windows／Mac 電腦', '<button class="btn primary" type="button" id="instPwa" hidden>安裝到這台電腦</button>' +
       '<ol><li><b>Chrome 或 Edge</b>：網址列右邊的「安裝」圖示（螢幕加箭頭），或選單 →「投放、儲存及分享」→「安裝網頁應用程式」。</li><li><b>Mac 的 Safari</b>：選單列「檔案」→「加入 Dock」。</li></ol>') +
     '<p class="hint" style="margin:0">' + (window.PACE_FIREBASE ? '每台裝置在「設定 → 同步」登入同一個帳號，資料就會自動同步。不想登入的話，' : '每台裝置的資料各自存在那台裝置上。要搬到另一台：') + '在舊裝置「設定 → 匯出全部資料」，再到新裝置「設定 → 匯入備份」。</p>' +
