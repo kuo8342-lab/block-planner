@@ -114,11 +114,13 @@ window.runTests = async function () {
     $('#npTired').click(); await sleep(20);
     ok('tired: off again', !tiredNow() && $('#npTired').textContent.includes('腦袋累了'));
 
-    // 5. coach card folds
-    $('#coachFold').click();
-    ok('coach: folded', $('#coachBody').hidden && localStorage.getItem('planner-coach-folded') === '1');
-    $('#coachFold').click();
-    ok('coach: unfolded', !$('#coachBody').hidden);
+    // 5. coach card is switched on or off in Settings
+    ok('coach: shown by default here', !$('#coachCard').hidden && $('#prefCoach').checked);
+    $('#prefCoach').checked = false; $('#prefCoach').dispatchEvent(new Event('change'));
+    ok('coach: hidden when unticked', $('#coachCard').hidden && localStorage.getItem('planner-coach-show') === '0');
+    $('#prefCoach').checked = true; $('#prefCoach').dispatchEvent(new Event('change'));
+    ok('coach: back when ticked', !$('#coachCard').hidden);
+    ok('backup: button and explanation shown when files can be saved', !$('#exportAll').hidden && $('#exportAll').textContent === '下載備份檔' && !$('#backupHint').hidden);
 
     // 6. the same reminder rings once even if asked twice (another tab)
     localStorage.removeItem('ring:test'); let rang = 0;

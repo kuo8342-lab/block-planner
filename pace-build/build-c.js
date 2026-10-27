@@ -214,6 +214,12 @@ rep('    <h3 class="set-h">提醒與聲音</h3>', `    <h3 class="set-h">作息<
     });</script>
     <h3 class="set-h">提醒與聲音</h3>`);
 
+/* ---------- coach off by default (tick it in Settings → 外觀); backup wording for people without Claude ---------- */
+rep("const COACH_DEFAULT = '1';", "const COACH_DEFAULT = '0';   // most people don't need the coach");
+rep('顯示「教練」卡片（每日回饋和 AI 讀書建議）', '顯示「教練」卡片（AI 讀書建議，要先在下面設定 AI 金鑰）');
+rep('「下載備份檔」會把你所有的方塊、任務、目標和設定存成一個 .json 檔，放到這台裝置裡，萬一資料不見可以用來還原。這不是提醒功能。',
+  '「下載備份檔」會把你所有的方塊、任務、目標和設定存成一個 .json 檔，放到這台裝置裡（手機會跳出分享畫面，選「儲存到檔案」或傳給自己）。換裝置或清除瀏覽器資料前先下載一份，到新裝置按「匯入備份」就能還原。這不是提醒功能。');
+
 /* ---------- day headers: study and rest time on one quiet line ---------- */
 rep('${busyTag}<span class="load${study > heavyAt', '${busyTag}<span class="stats"><span class="load${study > heavyAt');
 rep("休 ${rest} 分${restLow ? ' ⚠' : ''}</span>` : ''}</div>`;", "休 ${rest} 分</span>` : ''}</span></div>`;");

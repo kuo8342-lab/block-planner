@@ -149,12 +149,22 @@
   };
 
   /* ---------- downloads ---------- */
-  const downloads = { save: async ({ filename, data }) => {
-    const url = URL.createObjectURL(new Blob([typeof data === 'string' ? data : JSON.stringify(data)], { type: 'application/json' }));
+  // phones get the system share sheet (save to Files / Drive / send to yourself); computers a normal download.
+  // With neither, there is no way to save a file, and the app hides its backup button.
+  const touch = matchMedia('(pointer: coarse)').matches;
+  const canShareFile = (() => { try { return !!navigator.canShare && navigator.canShare({ files: [new File(['{}'], 'x.json', { type: 'application/json' })] }); } catch (e) { return false; } })();
+  const canDownload = 'download' in HTMLAnchorElement.prototype;
+  const downloads = (canShareFile && touch) || canDownload ? { save: async ({ filename, data }) => {
+    const text = typeof data === 'string' ? data : JSON.stringify(data);
+    if (canShareFile && touch) {
+      try { await navigator.share({ files: [new File([text], filename, { type: 'application/json' })], title: filename }); return { status: 'saved' }; }
+      catch (e) { if (e?.name === 'AbortError') throw fail('declined'); if (!canDownload) throw e; }
+    }
+    const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
     const a = Object.assign(document.createElement('a'), { href: url, download: filename });
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
     return { status: 'saved' };
-  } };
+  } } : null;
 
   window.claude = { use: async name => name === 'db' ? db : name === 'downloads' ? downloads : name === 'sample' ? (paceAi.key() ? ask : null) : null };
 })();

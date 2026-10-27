@@ -684,7 +684,7 @@ body.nofx[data-skin="neon"]::after { display: none; }
         </div>
       </section>
       <section class="card" id="coachCard">
-        <h2>教練 <button class="btn plain" type="button" id="coachFold" aria-expanded="true">收起</button></h2>
+        <h2>教練</h2>
         <div id="coachBody">
         <div class="note" id="claudeNote"><span class="muted">每天早上同步一次後，這裡會出現 Claude 的回饋。</span></div>
         <div class="coach-ask" data-ai hidden>
@@ -833,6 +833,7 @@ body.nofx[data-skin="neon"]::after { display: none; }
     <h3 class="set-h">外觀</h3>
     <div class="skins" id="skinList"></div>
     <label class="check"><input type="checkbox" id="fxToggle"> 動畫特效（背景動畫、完成時的彩帶）</label>
+    <label class="check"><input type="checkbox" id="prefCoach"> 顯示「教練」卡片（每日回饋和 AI 讀書建議）</label>
     <p class="hint" style="margin:0">主題會同步到你所有裝置（包括桌面便利貼）。動畫開關只記在這台裝置上；系統設定「減少動態效果」時，動畫會自動關閉。</p>
     <h3 class="set-h">提醒與聲音</h3>
     <label class="check"><input type="checkbox" id="prefRemBlocks"> 方塊開始前 5 分鐘、開始時提醒（這個頁面開著時）</label>
@@ -858,7 +859,8 @@ body.nofx[data-skin="neon"]::after { display: none; }
     <div class="mini" id="fixTrash"></div>
     <h3 class="set-h">資料與隱私</h3>
         <p class="hint">資料存在 claude.ai 上，只有你自己的帳號看得到，不會公開。可以隨時匯出備份或全部刪除。</p>
-        <div class="np-acts"><button class="btn" type="button" id="exportAll">匯出全部資料（JSON）</button><button class="btn" type="button" id="exportNow" title="把未完成的任務存成 planner-tasks.json，給電腦上的提醒程式用">匯出任務給電腦</button></div>
+        <div class="np-acts"><button class="btn" type="button" id="exportAll">下載備份檔</button><button class="btn" type="button" id="exportNow" title="把未完成的任務存成 planner-tasks.json，給電腦上的提醒程式用">匯出任務給電腦</button></div>
+        <p class="hint" id="backupHint" style="margin:0">「下載備份檔」會把你所有的方塊、任務、目標和設定存成一個 .json 檔，放到這台裝置裡，萬一資料不見可以用來還原。這不是提醒功能。</p>
         <details><summary>刪除資料</summary>
           <div class="mini">
             <label class="check" style="font-size:.8rem"><input type="checkbox" id="wipeConfig"> 連課表、方塊和目標設定一起刪</label>
@@ -2828,14 +2830,15 @@ document.getElementById('coachForm').addEventListener('submit', e => { e.prevent
 document.getElementById('coachStop').addEventListener('click', () => coachCtl?.abort());
 document.getElementById('coachChips').addEventListener('click', e => { const c = e.target.closest('[data-q]'); if (c) { document.getElementById('coachInput').value = c.dataset.q; askCoach(c.dataset.q); } });
 
-/* coach card: fold it away and remember that on this device */
-(() => {
-  const btn = document.getElementById('coachFold'), body = document.getElementById('coachBody');
-  const apply = folded => { body.hidden = folded; btn.textContent = folded ? '展開' : '收起'; btn.setAttribute('aria-expanded', String(!folded)); };
-  let folded = false; try { folded = localStorage.getItem('planner-coach-folded') === '1'; } catch (e) {}
-  apply(folded);
-  btn.addEventListener('click', () => { folded = !folded; try { localStorage.setItem('planner-coach-folded', folded ? '1' : '0'); } catch (e) {} apply(folded); });
-})();
+/* coach card: shown only if ticked in Settings → 外觀 (remembered on this device) */
+const COACH_DEFAULT = '1';
+function syncCoach() {
+  const on = prefGet('planner-coach-show', COACH_DEFAULT) === '1';
+  document.getElementById('coachCard').hidden = !on;
+  document.getElementById('prefCoach').checked = on;
+}
+document.getElementById('prefCoach').addEventListener('change', e => { prefSet('planner-coach-show', e.target.checked ? '1' : '0'); syncCoach(); });
+syncCoach();
 
 /* ---------- 3. 專注結束：完成了嗎＋一句心得 ---------- */
 const reflDlg = document.getElementById('reflDlg');
@@ -2961,7 +2964,8 @@ document.getElementById('prefNight').addEventListener('change', e => { prefSet('
   try { sampleFn = await window.claude?.use?.('sample') || null; } catch (e) { sampleFn = null; }
   try { downloadsApi = await window.claude?.use?.('downloads') || null; } catch (e) { downloadsApi = null; }
   renderAiAvailability();
-  document.getElementById('exportAll').disabled = !downloadsApi;
+  document.getElementById('exportAll').hidden = !downloadsApi;   // no way to save a file here: don't offer it
+  document.getElementById('backupHint').hidden = !downloadsApi;
 })();
 
 /* ---------- boot ---------- */

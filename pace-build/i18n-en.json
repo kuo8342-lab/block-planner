@@ -711,4 +711,7 @@
 "已排到 {0}，多出的 {1} 分接在週{2} 00:00":"Scheduled until {0}; the extra {1} min continues {2} 00:00",
 "已排到 {0}，多出的 {1} 分接在下週一 00:00":"Scheduled until {0}; the extra {1} min continues next Monday 00:00",
 "已排到 {0}，多出的 {1} 分接在週{2} 00:00（時間表從 {3} 開始，所以看不到 00:00 那段）":"Scheduled until {0}; the extra {1} min continues {2} 00:00 (your timetable starts at {3}, so that part is hidden — change it in Settings → Your hours)",
-"已排到 {0}，多出的 {1} 分接在下週一 00:00（時間表從 {2} 開始，所以看不到 00:00 那段）":"Scheduled until {0}; the extra {1} min continues next Monday 00:00 (your timetable starts at {2}, so that part is hidden)"}
+"已排到 {0}，多出的 {1} 分接在下週一 00:00（時間表從 {2} 開始，所以看不到 00:00 那段）":"Scheduled until {0}; the extra {1} min continues next Monday 00:00 (your timetable starts at {2}, so that part is hidden)",
+"顯示「教練」卡片（AI 讀書建議，要先在下面設定 AI 金鑰）":"Show the \"Coach\" card (AI study tips — set an AI key below first)",
+"下載備份檔":"Download backup file",
+"「下載備份檔」會把你所有的方塊、任務、目標和設定存成一個 .json 檔，放到這台裝置裡（手機會跳出分享畫面，選「儲存到檔案」或傳給自己）。換裝置或清除瀏覽器資料前先下載一份，到新裝置按「匯入備份」就能還原。這不是提醒功能。":"\"Download backup file\" saves all your blocks, tasks, goals and settings as one .json file on this device (on phones a share sheet opens — choose \"Save to Files\" or send it to yourself). Download one before switching devices or clearing browser data, then use \"Import backup\" on the new device. This is not a reminder."}
