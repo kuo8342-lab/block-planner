@@ -72,4 +72,20 @@
       setTimeout(() => location.reload(), 400);
     } catch (e) { msg.textContent = '匯入失敗：' + (e?.message || e); }
   });
+
+  /* ---------- backup reminder: computers only, for people who don't sync; at most once a day after 14 days ---------- */
+  setTimeout(() => {
+    try {
+      const ls = localStorage;
+      if (!ls.getItem('pace-first-seen')) { ls.setItem('pace-first-seen', String(Date.now())); return; }
+      if (!matchMedia('(pointer: fine)').matches || exp.hidden) return;        // phones: no pop-up
+      if (ls.getItem('pace-sync-on') === '1') return;                          // signed in: the cloud already keeps a copy
+      if (!state.week?.blocks?.length && !state.tasks?.length) return;         // nothing worth saving yet
+      const since = Number(ls.getItem('pace-last-backup') || ls.getItem('pace-first-seen'));   // c-shim stamps pace-last-backup on every saved backup
+      const days = Math.floor((Date.now() - since) / 86400000);
+      if (days < 14 || ls.getItem('pace-backup-nag') === ymd(new Date())) return;
+      ls.setItem('pace-backup-nag', ymd(new Date()));
+      showAlarm('已經 ' + days + ' 天沒有備份了。到「設定 → 資料與隱私」按「下載備份檔」存一份，換電腦或清除瀏覽器資料時才救得回來。（登入同步的話就不用）', '備份提醒');
+    } catch (e) {}
+  }, 8000);
 })();

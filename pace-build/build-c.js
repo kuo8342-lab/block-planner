@@ -226,6 +226,9 @@ rep('顯示「教練」卡片（每日回饋和 AI 讀書建議）', '顯示「�
 rep('「下載備份檔」會把你所有的方塊、任務、目標和設定存成一個 .json 檔，放到這台裝置裡，萬一資料不見可以用來還原。這不是提醒功能。',
   '「下載備份檔」會把你所有的方塊、任務、目標和設定存成一個 .json 檔，放到這台裝置裡（手機會跳出分享畫面，選「儲存到檔案」或傳給自己）。換裝置或清除瀏覽器資料前先下載一份，到新裝置按「匯入備份」就能還原。這不是提醒功能。');
 
+/* block reminders pop up only while the page is open; say plainly that phones in the background won't show them */
+rep('方塊開始前 5 分鐘、開始時提醒（這個頁面開著時）', '方塊開始前 5 分鐘、開始時跳出提醒（頁面開著時才會跳；手機切到背景就不會，電腦上最準）');
+
 /* ---------- day headers: study and rest time on one quiet line ---------- */
 rep('${busyTag}<span class="load${study > heavyAt', '${busyTag}<span class="stats"><span class="load${study > heavyAt');
 rep("休 ${rest} 分${restLow ? ' ⚠' : ''}</span>` : ''}</div>`;", "休 ${rest} 分</span>` : ''}</span></div>`;");

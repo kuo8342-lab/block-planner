@@ -156,14 +156,15 @@
   const canDownload = 'download' in HTMLAnchorElement.prototype;
   const downloads = (canShareFile && touch) || canDownload ? { save: async ({ filename, data }) => {
     const text = typeof data === 'string' ? data : JSON.stringify(data);
+    const done = () => { ls.set('pace-last-backup', String(Date.now())); return { status: 'saved' }; };   // the backup reminder counts from here
     if (canShareFile && touch) {
-      try { await navigator.share({ files: [new File([text], filename, { type: 'application/json' })], title: filename }); return { status: 'saved' }; }
+      try { await navigator.share({ files: [new File([text], filename, { type: 'application/json' })], title: filename }); return done(); }
       catch (e) { if (e?.name === 'AbortError') throw fail('declined'); if (!canDownload) throw e; }
     }
     const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
     const a = Object.assign(document.createElement('a'), { href: url, download: filename });
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
-    return { status: 'saved' };
+    return done();
   } } : null;
 
   window.claude = { use: async name => name === 'db' ? db : name === 'downloads' ? downloads : name === 'sample' ? (paceAi.key() ? ask : null) : null };
