@@ -24,6 +24,8 @@
 
     
         <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+        <!-- the 步調・今天 widget reads today's blocks itself (TodayData); the web app's own traffic goes through Chrome -->
+        <uses-permission android:name="android.permission.INTERNET"/>
     
 
     
