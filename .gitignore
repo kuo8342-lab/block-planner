@@ -1,0 +1,12 @@
+# personal data
+planner-data.json
+note-position.json
+export/
+
+# backups
+*.bak.js
+
+# secrets / signing
+*.keystore
+signing-info.txt
+local.properties

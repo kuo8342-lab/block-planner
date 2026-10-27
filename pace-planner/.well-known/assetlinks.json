@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.pace.planner",
+      "sha256_cert_fingerprints": [
+        "FD:07:53:ED:44:1D:F7:6C:6F:8F:FC:8C:E7:DD:C8:F0:65:D1:D8:89:14:14:22:28:96:B0:46:38:9A:7D:7B:1D"
+      ]
+    }
+  }
+]

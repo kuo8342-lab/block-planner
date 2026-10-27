@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- home-screen widget (PaceWidget): colours match the web app's paper + forest green -->
+<resources>
+    <color name="widget_panel">#FFFDF8</color>
+    <color name="widget_soft">#E1EFE7</color>
+    <color name="widget_accent">#2F7A5B</color>
+    <color name="widget_on_accent">#FFFFFF</color>
+    <color name="widget_text">#23251F</color>
+    <string name="widget_name">步調</string>
+    <string name="widget_open">打開步調</string>
+    <string name="widget_note">便利貼</string>
+    <string name="widget_add">＋新增</string>
+    <string name="widget_focus">專注</string>
+    <string name="widget_description">一鍵打開便利貼、快速新增或開始專注</string>
+    <style name="PaceWidgetButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">36dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:background">@drawable/widget_btn</item>
+        <item name="android:gravity">center</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textColor">@color/widget_text</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    <color name="widget_muted">#66665B</color>
+    <string name="today_title">步調・今天</string>
+    <string name="today_description">顯示現在該做什麼和今天接下來的方塊（需要登入同步）</string>
+    <string name="today_refresh">重新整理</string>
+    <string name="today_updated">%1$s 更新</string>
+    <string name="today_now">現在：%1$s（到 %2$s）</string>
+    <string name="today_next">下一個 %1$s：%2$s</string>
+    <string name="today_more">還有 %1$d 個</string>
+    <string name="today_none">今天沒有其他方塊了</string>
+    <string name="today_loading">更新中…</string>
+    <string name="today_offline">連不上網路，稍後會再試</string>
+    <string name="today_offline_short">離線</string>
+    <string name="today_unlinked_title">還沒連結帳號</string>
+    <string name="today_relink_title">需要重新連結</string>
+    <string name="today_unlinked_hint">打開 App →「設定 → 同步」登入，再按「連結 Android 桌面小工具」。</string>
+    <string name="today_linked">已連結桌面小工具，幾秒後會顯示今天的方塊。</string>
+    <string name="today_unlinked">已取消連結桌面小工具。</string>
+</resources>

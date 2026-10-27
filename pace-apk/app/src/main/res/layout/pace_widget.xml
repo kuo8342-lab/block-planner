@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 步調 widget: name on the left, three shortcut buttons on the right -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:id="@+id/widget_open"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="8dp">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:contentDescription="@string/widget_open"
+            android:src="@mipmap/ic_launcher" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:text="@string/widget_name"
+            android:textColor="@color/widget_accent"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_note"
+        style="@style/PaceWidgetButton"
+        android:text="@string/widget_note" />
+
+    <TextView
+        android:id="@+id/widget_add"
+        style="@style/PaceWidgetButton"
+        android:text="@string/widget_add" />
+
+    <TextView
+        android:id="@+id/widget_focus"
+        style="@style/PaceWidgetButton"
+        android:background="@drawable/widget_btn_primary"
+        android:textColor="@color/widget_on_accent"
+        android:text="@string/widget_focus" />
+</LinearLayout>

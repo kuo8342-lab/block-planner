@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- the web app's public Firebase config (same values the website ships); the today widget uses it to read the signed-in user's blocks -->
+<resources>
+    <string name="firebase_api_key" translatable="false">AIzaSyADaHf4Xhn6JyGLfaxINxWlwDQV2Vei-Ew</string>
+    <string name="firebase_project" translatable="false">pace-planner-83998</string>
+</resources>
