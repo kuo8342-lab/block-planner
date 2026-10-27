@@ -3635,14 +3635,43 @@ renderFixedTrash();
   dlg.addEventListener('click', e => { const b = e.target.closest('[data-persona]'); if (!b) return; apply(b.dataset.persona); dlg.close(); });
   dlg.addEventListener('cancel', () => set('student'));   // Esc keeps the starter blocks and doesn't ask again
 
+  /* ---------- very first question: the language, confirmed with a green 確定 / red 不要 (asked once) ---------- */
+  const langChosen = () => { try { return localStorage.getItem('pace-lang') !== null; } catch (e) { return true; } };
+  const ld = document.createElement('dialog');
+  ld.id = 'langDlg';
+  ld.innerHTML = '<form method="dialog"><div class="dtitle">選擇語言 · Choose language</div>' +
+    '<div class="persona-list" id="langPick"><button class="btn" type="button" data-lang="zh">繁體中文</button><button class="btn" type="button" data-lang="en">English</button></div>' +
+    '<div id="langConfirm" hidden><p class="lang-ask" id="langAsk"></p><div class="actions"><button class="btn no" type="button" id="langNo"></button><button class="btn yes" type="button" id="langYes"></button></div></div></form>';
+  document.body.appendChild(ld);
+  let langWanted = 'zh';
+  const TXT = { zh: ['使用繁體中文嗎？', '不要，重選', '確定'], en: ['Use English?', 'No, go back', 'Yes'] };
+  ld.addEventListener('click', e => {
+    const pick = e.target.closest('[data-lang]');
+    if (pick) {
+      langWanted = pick.dataset.lang; const [ask, no, yes] = TXT[langWanted];
+      document.getElementById('langAsk').textContent = ask; document.getElementById('langNo').textContent = no; document.getElementById('langYes').textContent = yes;
+      document.getElementById('langPick').hidden = true; document.getElementById('langConfirm').hidden = false; return;
+    }
+    if (e.target.id === 'langNo') { document.getElementById('langPick').hidden = false; document.getElementById('langConfirm').hidden = true; return; }
+    if (e.target.id === 'langYes') {
+      const changes = langWanted !== window.paceLang?.();
+      try { localStorage.setItem('pace-lang', langWanted); } catch (e2) {}
+      if (changes) { location.reload(); return; }   // the translation is set up at load
+      ld.close(); waitForData();
+    }
+  });
+  ld.addEventListener('cancel', e => e.preventDefault());   // it has to be answered once
+
   const isStarter = () => (state.config?.modules || []).every(m => /^m\d+$/.test(m.id));
   let tries = 0;
-  (function waitForData() {
+  function waitForData() {
+    if (!langChosen()) { if (!ld.open) ld.showModal(); return; }
     if (get()) return;
     if (!state.ready || !state.config) { if (++tries < 40) setTimeout(waitForData, 250); return; }
     if (!isStarter()) { set('custom'); return; }   // someone who already changed their blocks is not asked
     dlg.showModal();
-  })();
+  }
+  waitForData();
 
   /* ---------- settings: change later ---------- */
   const lang = document.querySelector('#skinDlg .lang-pick');
@@ -3741,7 +3770,7 @@ renderFixedTrash();
     $('tourDots').innerHTML = STEPS.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('');
     $('tourSkip').hidden = !!s.last;
     $('tourActs').innerHTML = s.last
-      ? '<button type="button" class="btn" id="tourClear">不要，清掉範例</button><button type="button" class="btn primary" id="tourKeep">留下來</button>'
+      ? '<button type="button" class="btn no" id="tourClear">不要，清掉範例</button><button type="button" class="btn yes" id="tourKeep">留下來</button>'
       : (i > 0 ? '<button type="button" class="btn" id="tourPrev">上一步</button>' : '') + `<button type="button" class="btn primary" id="tourNext">${i === 0 ? '開始' : '下一步'}</button>`;
     place(); setTimeout(place, 400);
   }
@@ -3752,7 +3781,7 @@ renderFixedTrash();
   }
   root.addEventListener('click', e => {
     const id = e.target.id;
-    if (id === 'tourNext') { if (i === 0 && !sample.block) addSamples(); show(i + 1); }
+    if (id === 'tourNext' || (id === 'tourHi' && !STEPS[i].last)) { if (i === 0 && !sample.block) addSamples(); show(i + 1); }   // tapping the lit spot also moves on
     else if (id === 'tourPrev') { let k = i - 1; while (k > 0 && STEPS[k].el && !STEPS[k].el()) k--; show(k); }
     else if (id === 'tourSkip') finish(false);
     else if (id === 'tourKeep') finish(true);
@@ -3809,7 +3838,7 @@ h1, h2, .dtitle, .brandname { font-family: "LXGW WenKai TC", var(--f-body); }
 /* first-run tour (c-tour.js): a click-blocking layer, a spotlight ring that dims everything else, and a step card at the bottom */
 #tour .tour-block { position: fixed; inset: 0; z-index: 70; }
 #tour.nohi .tour-block { background: rgba(10, 14, 12, .55); }
-#tour .tour-hi { position: fixed; z-index: 71; border-radius: 14px; box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(10, 14, 12, .55); pointer-events: none; transition: left .25s, top .25s, width .25s, height .25s; }
+#tour .tour-hi { position: fixed; z-index: 71; border-radius: 14px; box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(10, 14, 12, .55); cursor: pointer; transition: left .25s, top .25s, width .25s, height .25s; }
 #tour .tour-card { position: fixed; z-index: 72; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(440px, calc(100vw - 32px)); box-sizing: border-box; background: var(--panel); color: var(--fg); border-radius: 18px; padding: 14px 16px 16px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
 #tour .tour-top { display: flex; justify-content: space-between; align-items: center; }
 #tour .tour-step { font-family: var(--f-mono); font-size: .75rem; color: var(--muted); }
@@ -3820,6 +3849,10 @@ h1, h2, .dtitle, .brandname { font-family: "LXGW WenKai TC", var(--f-body); }
 #tour .tour-dots i.on { background: var(--accent); width: 16px; border-radius: 3px; }
 #tour .tour-acts { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 #tourAgain { margin-top: 6px; }
+/* yes / no pairs: green to go ahead, red to say no */
+.btn.yes { background: #2f7a5b; border-color: #2f7a5b; color: #fff; }
+.btn.no { background: #c2372c; border-color: #c2372c; color: #fff; }
+#langDlg .lang-ask { font-size: 1.05rem; margin: 10px 0; }
 body.touring { padding-bottom: 340px; }   /* room to scroll the last things on the page above the step card */
 /* iPhone / iPad: inputs under 16px make Safari zoom in on tap; 100vh includes the hidden toolbar; long-press must not select text */
 @supports (-webkit-touch-callout: none) { input, select, textarea { font-size: 16px !important; } }

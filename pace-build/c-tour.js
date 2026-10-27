@@ -78,7 +78,7 @@
     $('tourDots').innerHTML = STEPS.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('');
     $('tourSkip').hidden = !!s.last;
     $('tourActs').innerHTML = s.last
-      ? '<button type="button" class="btn" id="tourClear">不要，清掉範例</button><button type="button" class="btn primary" id="tourKeep">留下來</button>'
+      ? '<button type="button" class="btn no" id="tourClear">不要，清掉範例</button><button type="button" class="btn yes" id="tourKeep">留下來</button>'
       : (i > 0 ? '<button type="button" class="btn" id="tourPrev">上一步</button>' : '') + `<button type="button" class="btn primary" id="tourNext">${i === 0 ? '開始' : '下一步'}</button>`;
     place(); setTimeout(place, 400);
   }
@@ -89,7 +89,7 @@
   }
   root.addEventListener('click', e => {
     const id = e.target.id;
-    if (id === 'tourNext') { if (i === 0 && !sample.block) addSamples(); show(i + 1); }
+    if (id === 'tourNext' || (id === 'tourHi' && !STEPS[i].last)) { if (i === 0 && !sample.block) addSamples(); show(i + 1); }   // tapping the lit spot also moves on
     else if (id === 'tourPrev') { let k = i - 1; while (k > 0 && STEPS[k].el && !STEPS[k].el()) k--; show(k); }
     else if (id === 'tourSkip') finish(false);
     else if (id === 'tourKeep') finish(true);

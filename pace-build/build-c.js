@@ -48,7 +48,7 @@ h1, h2, .dtitle, .brandname { font-family: "LXGW WenKai TC", var(--f-body); }
 /* first-run tour (c-tour.js): a click-blocking layer, a spotlight ring that dims everything else, and a step card at the bottom */
 #tour .tour-block { position: fixed; inset: 0; z-index: 70; }
 #tour.nohi .tour-block { background: rgba(10, 14, 12, .55); }
-#tour .tour-hi { position: fixed; z-index: 71; border-radius: 14px; box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(10, 14, 12, .55); pointer-events: none; transition: left .25s, top .25s, width .25s, height .25s; }
+#tour .tour-hi { position: fixed; z-index: 71; border-radius: 14px; box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(10, 14, 12, .55); cursor: pointer; transition: left .25s, top .25s, width .25s, height .25s; }
 #tour .tour-card { position: fixed; z-index: 72; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(440px, calc(100vw - 32px)); box-sizing: border-box; background: var(--panel); color: var(--fg); border-radius: 18px; padding: 14px 16px 16px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
 #tour .tour-top { display: flex; justify-content: space-between; align-items: center; }
 #tour .tour-step { font-family: var(--f-mono); font-size: .75rem; color: var(--muted); }
@@ -59,6 +59,10 @@ h1, h2, .dtitle, .brandname { font-family: "LXGW WenKai TC", var(--f-body); }
 #tour .tour-dots i.on { background: var(--accent); width: 16px; border-radius: 3px; }
 #tour .tour-acts { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 #tourAgain { margin-top: 6px; }
+/* yes / no pairs: green to go ahead, red to say no */
+.btn.yes { background: #2f7a5b; border-color: #2f7a5b; color: #fff; }
+.btn.no { background: #c2372c; border-color: #c2372c; color: #fff; }
+#langDlg .lang-ask { font-size: 1.05rem; margin: 10px 0; }
 body.touring { padding-bottom: 340px; }   /* room to scroll the last things on the page above the step card */
 /* iPhone / iPad: inputs under 16px make Safari zoom in on tap; 100vh includes the hidden toolbar; long-press must not select text */
 @supports (-webkit-touch-callout: none) { input, select, textarea { font-size: 16px !important; } }

@@ -33,14 +33,43 @@
   dlg.addEventListener('click', e => { const b = e.target.closest('[data-persona]'); if (!b) return; apply(b.dataset.persona); dlg.close(); });
   dlg.addEventListener('cancel', () => set('student'));   // Esc keeps the starter blocks and doesn't ask again
 
+  /* ---------- very first question: the language, confirmed with a green 確定 / red 不要 (asked once) ---------- */
+  const langChosen = () => { try { return localStorage.getItem('pace-lang') !== null; } catch (e) { return true; } };
+  const ld = document.createElement('dialog');
+  ld.id = 'langDlg';
+  ld.innerHTML = '<form method="dialog"><div class="dtitle">選擇語言 · Choose language</div>' +
+    '<div class="persona-list" id="langPick"><button class="btn" type="button" data-lang="zh">繁體中文</button><button class="btn" type="button" data-lang="en">English</button></div>' +
+    '<div id="langConfirm" hidden><p class="lang-ask" id="langAsk"></p><div class="actions"><button class="btn no" type="button" id="langNo"></button><button class="btn yes" type="button" id="langYes"></button></div></div></form>';
+  document.body.appendChild(ld);
+  let langWanted = 'zh';
+  const TXT = { zh: ['使用繁體中文嗎？', '不要，重選', '確定'], en: ['Use English?', 'No, go back', 'Yes'] };
+  ld.addEventListener('click', e => {
+    const pick = e.target.closest('[data-lang]');
+    if (pick) {
+      langWanted = pick.dataset.lang; const [ask, no, yes] = TXT[langWanted];
+      document.getElementById('langAsk').textContent = ask; document.getElementById('langNo').textContent = no; document.getElementById('langYes').textContent = yes;
+      document.getElementById('langPick').hidden = true; document.getElementById('langConfirm').hidden = false; return;
+    }
+    if (e.target.id === 'langNo') { document.getElementById('langPick').hidden = false; document.getElementById('langConfirm').hidden = true; return; }
+    if (e.target.id === 'langYes') {
+      const changes = langWanted !== window.paceLang?.();
+      try { localStorage.setItem('pace-lang', langWanted); } catch (e2) {}
+      if (changes) { location.reload(); return; }   // the translation is set up at load
+      ld.close(); waitForData();
+    }
+  });
+  ld.addEventListener('cancel', e => e.preventDefault());   // it has to be answered once
+
   const isStarter = () => (state.config?.modules || []).every(m => /^m\d+$/.test(m.id));
   let tries = 0;
-  (function waitForData() {
+  function waitForData() {
+    if (!langChosen()) { if (!ld.open) ld.showModal(); return; }
     if (get()) return;
     if (!state.ready || !state.config) { if (++tries < 40) setTimeout(waitForData, 250); return; }
     if (!isStarter()) { set('custom'); return; }   // someone who already changed their blocks is not asked
     dlg.showModal();
-  })();
+  }
+  waitForData();
 
   /* ---------- settings: change later ---------- */
   const lang = document.querySelector('#skinDlg .lang-pick');
