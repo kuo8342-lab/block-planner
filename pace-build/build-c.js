@@ -43,6 +43,8 @@ h1, h2, .dtitle, .brandname { font-family: "LXGW WenKai TC", var(--f-body); }
 .brandname { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--accent); font-size: .95rem; letter-spacing: .04em; }
 .brandname img { width: 20px; height: 20px; }
 #exportNow, label:has(#exportSec) { display: none !important; }
+.persona-list { display: grid; gap: 8px; margin-top: 10px; }
+.persona-list .btn { justify-content: flex-start; text-align: left; padding: 10px 14px; }
 .ai-key { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
 .ai-key input, .ai-key select { width: 100%; min-width: 0; box-sizing: border-box; }
 .ai-key a.btn { text-decoration: none; color: inherit; white-space: nowrap; align-self: end; }
@@ -167,6 +169,52 @@ const PERSONAL = /石碇|心理師|高二理組|Kibo|kibo|德文|自主學習|cl
 const left = [...s.matchAll(PERSONAL)].map(m => s.slice(Math.max(0, m.index - 60), m.index + 40).replace(/\s+/g, ' '));
 if (left.length) throw new Error('personal text left:\n' + left.join('\n'));
 
+/* ---------- everyone keeps different hours: the timetable's range and the bedtime come from Settings → 作息 (A's 08:00–23:30 and 23:30 bedtime were the owner's) ---------- */
+rep('const START = 8 * 60, END = 23 * 60 + 30, SPAN = END - START, OFF = 10;',
+  `const PACE_HOURS = (() => { const g = (k, d, lo, hi) => { let v = NaN; try { v = Number(localStorage.getItem(k)); } catch (e) {} return Number.isInteger(v) && v >= lo && v <= hi && localStorage.getItem(k) !== null ? v : d; };
+  return { from: g('pace-day-from', 6, 0, 12), to: g('pace-day-to', 24, 14, 24), bed: g('pace-bedtime', -1, -1, 1439) }; })();   // bed: minutes after midnight, -1 = no bedtime
+const START = PACE_HOURS.from * 60, END = PACE_HOURS.to * 60, SPAN = END - START, OFF = 10;`);
+rep('const SUGGEST_WINDOWS = { 0: [[1080, 1380]], 1: [[1080, 1380]], 2: [[1080, 1380]], 3: [[1080, 1380]], 4: [], 5: [[660, 805], [1260, 1350]], 6: [[570, 1320]] };',
+  'const SUGGEST_WINDOWS = Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map(d => [d, [[START, END]]]));   // anywhere in your own day; fixed items and other blocks are skipped');
+rep("Array.from({ length: 16 }, (_, i) => `<div style=\"top:${i * 60 + OFF}px\">${pad(8 + i)}:00</div>`)",
+  "Array.from({ length: SPAN / 60 }, (_, i) => `<div style=\"top:${i * 60 + OFF}px\">${pad(START / 60 + i)}:00</div>`)");
+rep('個方塊超過 23:30 被疊在最後', '個方塊超過 ${hm(END)} 被疊在最後');
+{ const night = /function nightCheck\(\) \{[\s\S]*?\n\}\n/.exec(s)[0];
+  rep(night, `function nightCheck() {
+  const bar = document.getElementById('nightBar');
+  if (prefGet('planner-night', '1') !== '1' || PACE_HOURS.bed < 0) { bar.hidden = true; return; }
+  const now = new Date(), h = now.getHours(), m = now.getMinutes(), n = h * 60 + m;
+  const past = (n - PACE_HOURS.bed + 1440) % 1440;   // minutes since bedtime (wraps past midnight)
+  if (!(past >= 1410 || past < 180)) { nightSlot = null; return; }   // from 30 min before bedtime until 3 h after
+  const slot = ymd(now) + '-' + h + '-' + Math.floor(m / 10);
+  if (slot === nightSlot) return;
+  nightSlot = slot;
+  const bed = hm(PACE_HOURS.bed), late = past < 180;
+  const msg = late ? \`已經 \${hm(n)} 了，過了你設定的睡覺時間 \${bed}。存好檔、放下手機，去睡吧\` : \`\${hm(n)} 了，收尾準備睡覺，\${bed} 前上床\`;
+  document.getElementById('nightText').textContent = msg;
+  bar.hidden = false; bar.classList.remove('flash'); void bar.offsetWidth; bar.classList.add('flash');
+  if (document.body.classList.contains('w')) showRemind('晚睡警告：' + msg);
+  else { try { if ('Notification' in window && Notification.permission === 'granted') new Notification('晚睡警告', { body: msg }); } catch (e) {} }
+}
+`); }
+rep("  if (now.getHours() >= 23 || now.getHours() < 5) return [{ kind: 'sleep', title: '去睡覺', why: '已經 23:00 以後了，今天的事明天再做，睡飽比較有效率。' }];",
+  "  const sinceBed = PACE_HOURS.bed < 0 ? -1 : (n - PACE_HOURS.bed + 1440) % 1440;\n  if (sinceBed >= 0 && sinceBed < 300) return [{ kind: 'sleep', title: '去睡覺', why: `已經過了你設定的睡覺時間 ${hm(PACE_HOURS.bed)}，今天的事明天再做，睡飽比較有效率。` }];");
+rep('  const light = n >= 21 * 60 + 30;', '  const light = sinceBed >= 1290;   // the last 2½ hours before bedtime: lighter subjects first');
+rep('<label class="check"><input type="checkbox" id="prefNight"> 23:00 後每 10 分鐘晚睡警告（這個頁面開著時）</label>',
+  '<label class="check"><input type="checkbox" id="prefNight"> 睡前提醒：睡覺時間前 30 分鐘開始，每 10 分鐘一次（這個頁面開著時）</label>');
+rep('    <h3 class="set-h">提醒與聲音</h3>', `    <h3 class="set-h">作息</h3>
+    <p class="hint" style="margin:0">每個人的作息不一樣，開夜車也沒關係。時間表的範圍和睡覺時間都照你的習慣設定，改完會重新整理。</p>
+    <div class="pref-grid">
+      <label>時間表從<select id="dayFrom">${Array.from({ length: 13 }, (_, h) => `<option value="${h}">${String(h).padStart(2, '0')}:00</option>`).join('')}</select></label>
+      <label>到<select id="dayTo">${Array.from({ length: 11 }, (_, i) => `<option value="${i + 14}">${String(i + 14).padStart(2, '0')}:00</option>`).join('')}</select></label>
+      <label>睡覺時間<select id="bedTime"><option value="-1">不設定（不提醒）</option>${Array.from({ length: 16 }, (_, i) => { const m = (20 * 60 + i * 30) % 1440; return `<option value="${m}">${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}</option>`; }).join('')}</select></label>
+    </div>
+    <script>addEventListener('DOMContentLoaded', () => {   // PACE_HOURS is defined by the app script further down
+      const pairs = [['dayFrom', 'pace-day-from', PACE_HOURS.from], ['dayTo', 'pace-day-to', PACE_HOURS.to], ['bedTime', 'pace-bedtime', PACE_HOURS.bed]];
+      for (const [id, key, v] of pairs) { const el = document.getElementById(id); el.value = String(v); el.addEventListener('change', () => { try { localStorage.setItem(key, el.value); } catch (e) {} location.reload(); }); }
+    });</script>
+    <h3 class="set-h">提醒與聲音</h3>`);
+
 /* ---------- day headers: study and rest time on one quiet line ---------- */
 rep('${busyTag}<span class="load${study > heavyAt', '${busyTag}<span class="stats"><span class="load${study > heavyAt');
 rep("休 ${rest} 分${restLow ? ' ⚠' : ''}</span>` : ''}</div>`;", "休 ${rest} 分</span>` : ''}</span></div>`;");
@@ -205,6 +253,7 @@ rep('</body>', `<script>
 /* ---------- install button and backup import ---------- */
 rep('<button class="btn" type="button" id="skinBtn">設定</button>', '<button class="btn" type="button" id="skinBtn">設定</button><button class="btn primary" type="button" id="installBtn">安裝 App</button>');
 rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-install.js'), 'utf8') + '</script>\n</body>');
+rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-persona.js'), 'utf8') + '</script>\n</body>');   // who are you → starter blocks
 
 /* ---------- AI settings wiring (after the app's own boot hooks) ---------- */
 rep('</body>', PACE_CSS + `

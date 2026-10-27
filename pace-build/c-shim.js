@@ -10,11 +10,9 @@
   let store = {};
   try { store = JSON.parse(ls.get(LS) || '{}') || {}; } catch (e) { store = {}; }
   if (!store['config/main']) store['config/main'] = {
+    // a few basics only; c-persona.js swaps these for the chosen profile's starter blocks
     modules: [
-      ['數學練習', 'study', 50, '數學'], ['英文單字', 'lang', 20, '英文'], ['英文閱讀', 'lang', 30, '英文'], ['國文複習', 'study', 40, '國文'],
-      ['自然科複習', 'study', 45], ['社會科複習', 'study', 45], ['預習明天的課', 'preview', 25], ['寫作業', 'study', 60],
-      ['錯題訂正', 'study', 30], ['考前複習', 'exam', 60], ['程式練習', 'code', 60, '程式'], ['看教學影片', 'study', 30, null, true],
-      ['休息', 'rest', 30], ['運動', 'swim', 45], ['緩衝', 'buffer', 60]
+      ['讀書', 'study', 50], ['寫作業', 'study', 60], ['考前複習', 'exam', 60], ['休息', 'rest', 20]
     ].map(([name, cat, minutes, subject, video], i) => ({ id: 'm' + i, name, cat, minutes, ...(subject ? { subject } : {}), ...(video ? { video: true } : {}) })),
     fixed: [], special: [], targets: {}, restMin: 60, holidays: []
   };
