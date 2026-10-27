@@ -24,6 +24,20 @@
     { title: '教學結束！', text: '剛剛的範例方塊和範例任務要留下來嗎？之後也可以在「設定 → 外觀」重新看一次教學。', last: true }
   ];
 
+  /* ---------- what's new: people who already took the tour only see these after an update.
+     Every Pace update adds an entry here (English goes in i18n-en.json). ---------- */
+  const WHATS_NEW = [
+    { v: '2026-10-28', steps: [
+      { title: '更新了什麼', text: '步調更新了！接下來只介紹新的地方，按「下一步」或點亮起來的地方往下看。' },
+      { el: () => $('skinBtn'), title: '設定 → 外觀', text: '可以隨時換語言（中文／English）、換身份的預設方塊，也可以重新看完整教學。' },
+      { title: 'Android App 會提醒你更新', text: '用 Android App 的話，有新版本時畫面上方會出現「有新版本」，按一下就能下載更新，資料不會不見。' }
+    ] }
+  ];
+  const LATEST = WHATS_NEW[WHATS_NEW.length - 1].v;
+  const SEEN = 'pace-seen-version';
+  let steps = STEPS, mode = 'full';
+  const avail = st => !st.el || !!st.el();
+
   /* ---------- sample items, marked so they can be cleared ---------- */
   function addSamples() {
     if (!state.config || !isThisWeek()) return;
@@ -68,29 +82,37 @@
     hi.hidden = false;
   }
   function show(n) {
-    i = n; const s = STEPS[i];
+    if (n >= steps.length) { close(); return; }   // the last what's-new item had nothing to point at
+    i = n; const s = steps[i];
     target = s.el ? s.el() : null;
     if (s.el && !target) { show(n + 1); return; }   // e.g. 「現在做這件」 has nothing to show right now (上一步 skips these itself)
     // instant, not smooth: on phones a smooth scroll inside the timetable stops the page itself from scrolling there
     if (target) { target.scrollIntoView({ block: 'center' }); const r = target.getBoundingClientRect(); if (r.bottom > innerHeight - 240) scrollBy(0, r.bottom - (innerHeight - 260)); }
-    $('tourStep').textContent = (i + 1) + ' / ' + STEPS.length;
+    // count only the steps that will really be shown this time (skipped ones like an empty 「現在做這件」 don't count)
+    const shown = steps.filter(avail), pos = shown.indexOf(s), endNew = mode === 'new' && i === steps.length - 1;
+    $('tourStep').textContent = (pos + 1) + ' / ' + shown.length;
     $('tourTitle').textContent = s.title; $('tourText').textContent = s.text;
-    $('tourDots').innerHTML = STEPS.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('');
-    $('tourSkip').hidden = !!s.last;
+    $('tourDots').innerHTML = shown.map((_, k) => `<i class="${k === pos ? 'on' : ''}"></i>`).join('');
+    $('tourSkip').hidden = !!s.last || endNew;
     $('tourActs').innerHTML = s.last
       ? '<button type="button" class="btn no" id="tourClear">不要，清掉範例</button><button type="button" class="btn yes" id="tourKeep">留下來</button>'
-      : (i > 0 ? '<button type="button" class="btn" id="tourPrev">上一步</button>' : '') + `<button type="button" class="btn primary" id="tourNext">${i === 0 ? '開始' : '下一步'}</button>`;
+      : endNew ? (i > 0 ? '<button type="button" class="btn" id="tourPrev">上一步</button>' : '') + '<button type="button" class="btn yes" id="tourGotIt">知道了</button>'
+      : (i > 0 ? '<button type="button" class="btn" id="tourPrev">上一步</button>' : '') + `<button type="button" class="btn primary" id="tourNext">${i === 0 && mode === 'full' ? '開始' : '下一步'}</button>`;
     place(); setTimeout(place, 400);
   }
+  function close() { root.hidden = true; document.body.classList.remove('touring'); target = null; try { localStorage.setItem(SEEN, LATEST); } catch (e) {} }
   function finish(keep) {
-    root.hidden = true; document.body.classList.remove('touring'); target = null;
+    close();
+    if (mode === 'new') return;   // the what's-new walk-through has no samples
     try { localStorage.setItem(DONE, '1'); } catch (e) {}
     if (keep) { keepSamples(); toast('已留下範例方塊和任務'); } else { clearSamples(); toast('範例已清掉，開始排你自己的一週吧'); }
   }
   root.addEventListener('click', e => {
     const id = e.target.id;
-    if (id === 'tourNext' || (id === 'tourHi' && !STEPS[i].last)) { if (i === 0 && !sample.block) addSamples(); show(i + 1); }   // tapping the lit spot also moves on
-    else if (id === 'tourPrev') { let k = i - 1; while (k > 0 && STEPS[k].el && !STEPS[k].el()) k--; show(k); }
+    const atEnd = steps[i].last || (mode === 'new' && i === steps.length - 1);
+    if (id === 'tourNext' || (id === 'tourHi' && !atEnd)) { show(i + 1); }   // tapping the lit spot also moves on
+    else if (id === 'tourHi' || id === 'tourGotIt') { if (mode === 'new') close(); }
+    else if (id === 'tourPrev') { let k = i - 1; while (k > 0 && !avail(steps[k])) k--; show(k); }
     else if (id === 'tourSkip') finish(false);
     else if (id === 'tourKeep') finish(true);
     else if (id === 'tourClear') finish(false);
@@ -102,14 +124,26 @@
     if (!state.ready || !state.config) return;
     if (typeof setWidget === 'function' && document.body.classList.contains('w')) setWidget(false);
     if (document.body.classList.contains('r')) $('toGrid')?.click();
+    steps = STEPS; mode = 'full';
+    if (!sample.block) addSamples();   // up front, so the step count is right from step 1
     document.body.classList.add('touring'); root.hidden = false; show(0);
   };
+  function whatsNew(since) {
+    const list = WHATS_NEW.filter(w => w.v > since).flatMap(w => w.steps);
+    if (!list.length || !state.ready) return;
+    steps = list; mode = 'new';
+    document.body.classList.add('touring'); root.hidden = false; show(0);
+  }
 
   /* ---------- first open: after the "who are you" question is answered ---------- */
   let tries = 0;
   (function wait() {
-    let done = false; try { done = localStorage.getItem(DONE) === '1'; } catch (e) {}
-    if (done) return;
+    let done = false, seen = ''; try { done = localStorage.getItem(DONE) === '1'; seen = localStorage.getItem(SEEN) || ''; } catch (e) {}
+    if (done) {   // already took the tour: after an update, show only what's new
+      if (seen >= LATEST) return;
+      if (!state.ready || !state.config) { if (++tries < 600) setTimeout(wait, 500); return; }
+      setTimeout(() => whatsNew(seen), 800); return;
+    }
     const persona = $('personaDlg');
     let picked = false; try { picked = !!localStorage.getItem('pace-persona'); } catch (e) {}
     if (!state.ready || !state.config || !picked || persona?.open) { if (++tries < 600) setTimeout(wait, 500); return; }

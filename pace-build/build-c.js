@@ -59,6 +59,8 @@ h1, h2, .dtitle, .brandname { font-family: "LXGW WenKai TC", var(--f-body); }
 #tour .tour-dots i.on { background: var(--accent); width: 16px; border-radius: 3px; }
 #tour .tour-acts { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 #tourAgain { margin-top: 6px; }
+.apk-update { position: sticky; top: 0; z-index: 40; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; background: var(--accent-soft); color: var(--fg); font-size: .88rem; }
+.apk-update span { flex: 1 1 200px; }
 /* yes / no pairs: green to go ahead, red to say no */
 .btn.yes { background: #2f7a5b; border-color: #2f7a5b; color: #fff; }
 .btn.no { background: #c2372c; border-color: #c2372c; color: #fff; }
@@ -285,6 +287,9 @@ rep('</body>', `<script>
 
 /* ---------- install button and backup import ---------- */
 rep('<button class="btn" type="button" id="skinBtn">設定</button>', '<button class="btn" type="button" id="skinBtn">設定</button><button class="btn primary" type="button" id="installBtn">安裝 App</button>');
+{ const g = 'D:/KIBO&/pace-apk/app/build.gradle';   // newest Android app version, for the update prompt in c-install.js
+  const apk = fs.existsSync(g) ? Number((/versionCode (\d+)/.exec(fs.readFileSync(g, 'utf8')) || [])[1]) || 0 : 0;
+  rep('</body>', '<script>window.PACE_APK_VERSION = ' + apk + ';</script>\n</body>'); }
 rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-install.js'), 'utf8') + '</script>\n</body>');
 rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-persona.js'), 'utf8') + '</script>\n</body>');   // who are you → starter blocks
 rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-tour.js'), 'utf8') + '</script>\n</body>');   // first-run guided tour

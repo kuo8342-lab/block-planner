@@ -88,4 +88,20 @@
       showAlarm('已經 ' + days + ' 天沒有備份了。到「設定 → 資料與隱私」按「下載備份檔」存一份，換電腦或清除瀏覽器資料時才救得回來。（登入同步的話就不用）', '備份提醒');
     } catch (e) {}
   }, 8000);
+
+  /* ---------- Android app out of date: the app opens the site with ?apk=<versionCode>; older ones send nothing ---------- */
+  (() => {
+    const latest = window.PACE_APK_VERSION || 0, ls = localStorage;
+    const q = new URLSearchParams(location.search).get('apk');
+    try { if (q) ls.setItem('pace-apk-version', q); } catch (e) {}
+    let have = 0; try { have = Number(ls.getItem('pace-apk-version')) || 0; } catch (e) {}
+    const inApp = !!q || have > 0 || document.referrer.startsWith('android-app://app.pace.planner');
+    if (!latest || !inApp || have >= latest) return;
+    try { if (ls.getItem('pace-apk-nag') === ymd(new Date())) return; ls.setItem('pace-apk-nag', ymd(new Date())); } catch (e) {}
+    const bar = document.createElement('div');
+    bar.className = 'apk-update'; bar.setAttribute('role', 'status');
+    bar.innerHTML = '<span>Android App 有新版本。下載後直接安裝蓋過去，資料不會不見。</span><a class="btn yes" href="pace.apk" download>下載更新</a><button type="button" class="btn plain" aria-label="關閉">✕</button>';
+    bar.querySelector('button').addEventListener('click', () => bar.remove());
+    document.body.prepend(bar);
+  })();
 })();

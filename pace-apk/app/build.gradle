@@ -23,7 +23,7 @@ plugins {
 def twaManifest = [
     applicationId: 'app.pace.planner',
     hostName: 'block-planner-beta.vercel.app', // The domain being opened in the TWA.
-    launchUrl: '/', // The start path for the TWA. Must be relative to the domain.
+    launchUrl: '/?apk=5', // The start path for the TWA; ?apk= tells the site which app version is installed (update prompt)
     name: '步調 Pace', // The application name.
     launcherName: '步調', // The name shown on the Android Launcher.
     themeColor: '#2F7A5B', // The color used for the status bar.
@@ -57,8 +57,8 @@ android {
         applicationId "app.pace.planner"
         minSdkVersion 24
         targetSdkVersion 36
-        versionCode 4
-        versionName "1.2.1"
+        versionCode 5
+        versionName "1.3.0"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
