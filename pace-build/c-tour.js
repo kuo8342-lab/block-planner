@@ -36,6 +36,12 @@
       { title: '新功能：共筆群組', text: '跟朋友、同學組一個群組，誰完成了方塊或任務，大家都會看到「搞定！」，還能按 👏 互相拍拍。只會分享完成的事，時間表別人看不到。' },
       { el: () => $('skinBtn'), title: '設定 → 共筆群組', text: '先在「同步」登入帳號，再建立群組，按「邀請朋友」把連結傳出去；或輸入朋友給你的邀請碼加入。' },
       { el: () => { const c = $('grpCard'); return c && !c.hidden ? c : null; }, title: '群組動態', text: '大家完成的事會出現在這裡，按 👏 幫他拍拍。' }
+    ] },
+    { v: '2026-10-28c', steps: [
+      { title: '新介面上線了！', text: '步調換了新的樣子，電腦和手機都更好用。你的方塊、任務和所有資料都還在，功能也都跟原本一樣，只是換了位置。' },
+      { el: () => [...document.querySelectorAll('.mobile-nav, .workspace-nav')].find(n => n.getClientRects().length) || null, title: '新的選單', text: '電腦在左邊、手機在最下面：時間表、任務、方塊、專注都有自己的頁面。目標、願望清單、共筆群組、報表和 AI 教練放在「更多」或工作台裡。' },
+      { title: '時間表：單日或整週', text: '時間表可以切換只看一天或看整週，上方的日期列點一下就跳到那天。按「新增」可以快速排方塊。' },
+      { title: '專注可以暫停了', text: '番茄鐘多了「暫停」按鈕，臨時被打斷時按一下，暫停的時間不會算進專注時間，按「繼續」接著計時。' }
     ] }
   ];
   const LATEST = WHATS_NEW[WHATS_NEW.length - 1].v;
@@ -117,10 +123,13 @@
     const hi = $('tourHi');
     const none = !target || !document.body.contains(target);
     root.classList.toggle('nohi', none);   // nothing to point at: dim the whole page instead
-    if (none) { hi.hidden = true; return; }
+    if (none) { hi.hidden = true; root.classList.remove('card-top'); return; }
     const r = target.getBoundingClientRect(), pad = 6;
     let left = r.left - pad, top = r.top - pad, right = r.right + pad, bottom = r.bottom + pad;
-    if (window.paceUI?.isMobile?.()) {
+    // something pinned to the bottom (the phone's tab bar): move the card up so it doesn't cover it
+    const up = r.top > innerHeight * .6;
+    root.classList.toggle('card-top', up);
+    if (window.paceUI?.isMobile?.() && !up) {
       const area = targetScroller()?.getBoundingClientRect();
       left = Math.max(0, left, area?.left || 0); right = Math.min(innerWidth, right, area?.right || innerWidth);
       top = Math.max(0, top, area?.top || 0);

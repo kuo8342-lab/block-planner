@@ -51,6 +51,7 @@ h1, h2, .dtitle, .brandname { font-family: "LXGW WenKai TC", var(--f-body); }
 #tour.nohi .tour-block { background: rgba(10, 14, 12, .55); }
 #tour .tour-hi { position: fixed; z-index: 71; border-radius: 14px; box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(10, 14, 12, .55); cursor: pointer; transition: left .25s, top .25s, width .25s, height .25s; }
 #tour .tour-card { position: fixed; z-index: 72; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: min(440px, calc(100vw - 32px)); box-sizing: border-box; background: var(--panel); color: var(--fg); border-radius: 18px; padding: 14px 16px 16px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+#tour.card-top .tour-card { bottom: auto; top: calc(12px + env(safe-area-inset-top, 0px)); }
 #tour .tour-top { display: flex; justify-content: space-between; align-items: center; }
 #tour .tour-step { font-family: var(--f-mono); font-size: .75rem; color: var(--muted); }
 #tour .tour-title { font-family: "LXGW WenKai TC", var(--f-body); font-size: 1.15rem; font-weight: 700; margin: 4px 0 6px; color: var(--accent); }
