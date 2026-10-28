@@ -9,10 +9,10 @@
   const $ = id => document.getElementById(id);
 
   /* ---------- settings section ---------- */
-  const aiHead = [...document.querySelectorAll('#skinDlg .set-h')].find(h => h.textContent.startsWith('AI'));
+  const privacyHead = [...document.querySelectorAll('#skinDlg .set-h')].find(h => h.textContent.startsWith('資料與隱私'));
   const box = document.createElement('div');
   box.innerHTML = '<h3 class="set-h">同步（登入帳號）</h3>' +
-    '<p class="hint" style="margin:0">登入後，手機、電腦和 App 會自動同步同一份資料。不登入也能用，資料只存在這台裝置。AI 金鑰和這台裝置的提醒設定不會上傳。</p>' +
+    '<p class="hint" style="margin:0">登入後，手機、電腦和 App 會自動同步同一份資料。不登入也能用，資料只存在這台裝置。這台裝置的提醒設定不會上傳。</p>' +
     '<div id="syncOut">' +
       '<button class="btn primary" type="button" id="syncGoogle">用 Google 帳號登入</button>' +
       '<details class="sync-mail"><summary>用 Email 登入</summary><div class="sync-form">' +
@@ -26,7 +26,7 @@
       '<div id="widgetLinkBox" hidden><button class="btn" type="button" id="widgetLink">連結 Android 桌面小工具</button>' +
       '<p class="hint" style="margin:0">按一下，桌面的「步調・今天」小工具就會顯示你今天的方塊（大約每 30 分鐘更新）。只會連結這支手機。</p></div></div>' +
     '<p class="hint" id="syncMsg" aria-live="polite" style="margin:0"></p>';
-  aiHead.before(...box.childNodes);
+  privacyHead.before(...box.childNodes);
   const msg = t => { $('syncMsg').textContent = t; };
   const status = $('status');
 

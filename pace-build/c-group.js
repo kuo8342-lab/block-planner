@@ -12,8 +12,8 @@
   const cleanCode = s => { const m = /join=([A-Za-z0-9]+)/.exec(s); return (m ? m[1] : s).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8); };
   const link = code => location.origin + location.pathname + '?join=' + code;
 
-  /* ---------- settings section, right after 同步 ---------- */
-  const aiHead = [...document.querySelectorAll('#skinDlg .set-h')].find(h => h.textContent.startsWith('AI'));
+  /* ---------- settings section, right after 同步 (both sit just above 資料與隱私) ---------- */
+  const privacyHead = [...document.querySelectorAll('#skinDlg .set-h')].find(h => h.textContent.startsWith('資料與隱私'));
   const box = document.createElement('div');
   box.innerHTML = '<h3 class="set-h">共筆群組</h3>' +
     '<p class="hint" style="margin:0">跟朋友、同學組一個群組：誰完成了方塊或任務，大家都會看到「搞定！」，還可以按 👏 幫他拍拍。只會分享完成的事，你的時間表別人看不到。</p>' +
@@ -27,7 +27,7 @@
       '<label class="check"><input type="checkbox" id="grpHide"> 只說完成了幾分鐘，不說做了什麼</label>' +
     '</div>' +
     '<p class="hint" id="grpMsg" aria-live="polite" style="margin:0"></p>';
-  aiHead.before(...box.childNodes);
+  privacyHead.before(...box.childNodes);
   const msg = t => { $('grpMsg').textContent = t; };
   $('grpShare').checked = ls.get('pace-group-share') !== '0';
   $('grpHide').checked = ls.get('pace-group-hide') === '1';

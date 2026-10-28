@@ -815,4 +815,17 @@
 "時間表：單日或整週":"Timetable: one day or the whole week",
 "時間表可以切換只看一天或看整週，上方的日期列點一下就跳到那天。按「新增」可以快速排方塊。":"Switch the timetable between one day and the whole week; tap a date at the top to jump to that day. Press \"Add\" to schedule a block quickly.",
 "專注可以暫停了":"Focus can be paused",
-"番茄鐘多了「暫停」按鈕，臨時被打斷時按一下，暫停的時間不會算進專注時間，按「繼續」接著計時。":"The focus timer now has a \"Pause\" button. If you get interrupted, tap it — paused time does not count as focus time. Tap \"Resume\" to carry on."}
+"番茄鐘多了「暫停」按鈕，臨時被打斷時按一下，暫停的時間不會算進專注時間，按「繼續」接著計時。":"The focus timer now has a \"Pause\" button. If you get interrupted, tap it — paused time does not count as focus time. Tap \"Resume\" to carry on.",
+"自動拆成每週步驟":"Split into weekly steps",
+"至少寫一個步驟（一行一個），或按「自動拆成每週步驟」。":"Write at least one step (one per line), or press \"Split into weekly steps\".",
+"已依期限和每週時間平均分好。可以把每一行改成具體內容（例如課本哪一節），再按「建立目標」。":"Split evenly by deadline and weekly time. Change each line into something concrete (e.g. which textbook section), then press \"Create goal\".",
+"登入後，手機、電腦和 App 會自動同步同一份資料。不登入也能用，資料只存在這台裝置。這台裝置的提醒設定不會上傳。":"Once signed in, your phone, computer and the app sync the same data automatically. You can use Pace without signing in; then data stays on this device. This device's reminder settings are not uploaded.",
+"作息（時間表從幾點到幾點、睡覺時間）、語言、同步登入、共筆群組和備份都在這裡。":"Daily hours (when the timetable starts and ends, bedtime), language, sync sign-in, groups and backups are all here.",
+"電腦在左邊、手機在最下面：時間表、任務、方塊、專注都有自己的頁面。目標、願望清單、共筆群組和報表放在「更多」或工作台裡。":"On a computer it is on the left, on a phone at the bottom: Timetable, Tasks, Blocks and Focus each have their own page. Goals, Wishlist, Groups and Reports are under \"More\" or in the workspace.",
+"不需要 AI 金鑰了":"No AI key needed",
+"步調拿掉了 AI 設定和教練卡片，所有功能都不用 API 金鑰就能用。之前存的金鑰已經從這台裝置刪除。":"Pace no longer has AI settings or the coach card, so every feature works without an API key. Any key saved before has been deleted from this device.",
+"目標自動拆步驟":"Goals split themselves into steps",
+"新增目標時按「自動拆成每週步驟」，會照期限和每週時間平均分好，最後一週排總複習。每一行都可以再改成具體內容。":"When adding a goal, press \"Split into weekly steps\": the work is spread evenly up to the deadline, with a review in the last week. You can edit every line.",
+"{0}：第 {1} 段（共 {2} 段）":"{0}: part {1} of {2}",
+"{0}：總複習":"{0}: full review",
+"{0}：檢查弱點、補不熟的地方":"{0}: check weak spots"}

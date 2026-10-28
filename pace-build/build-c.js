@@ -1,6 +1,6 @@
 /* Build 「步調 Pace」(version C, for other people) from the private claude.ai app (version A).
    usage: node build-c.js <planner.html> <out-dir>
-   C stores data in the browser (localStorage), uses the visitor's own AI key (Claude, Gemini, OpenAI or DeepSeek),
+   C stores data in the browser (localStorage), has no AI (goal steps are split by rule, no coach),
    drops everything personal to A's owner, and has its own name and colours. */
 const fs = require('fs'), path = require('path');
 const src = process.argv[2] || path.join(__dirname, 'planner.html');
@@ -12,7 +12,6 @@ const rep = (a, b, all) => {
   if (all ? n < 1 : n !== 1) throw new Error(`expected ${all ? '>=1' : 'exactly 1'} match, got ${n}: ${a.slice(0, 80)}`);
   s = all ? s.split(a).join(b) : s.replace(a, () => b);
 };
-const SDK = 'https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.132.1/+esm';
 
 /* ---------- head: name, install files, look ---------- */
 rep('<title>方塊週排程</title>', '');
@@ -26,7 +25,7 @@ rep('</head>', `<title>步調 Pace</title>
 <meta name="apple-mobile-web-app-title" content="步調">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<script>${fs.readFileSync(path.join(__dirname, 'c-shim.js'), 'utf8').replace('__SDK__', SDK)}</script>
+<script>${fs.readFileSync(path.join(__dirname, 'c-shim.js'), 'utf8')}</script>
 </head>`);
 const PACE_CSS = `<style>
 /* 步調 Pace: warm paper + forest green, hand-written headings */
@@ -156,24 +155,10 @@ body.touring { padding-bottom: 340px; }   /* room to scroll the last things on t
 </style>`;
 rep('    <div class="brand">\n', '    <div class="brand">\n      <span class="brandname"><img src="icon.svg" alt="">步調</span>\n');
 
-/* ---------- settings: AI key section, drop the A-only parts ---------- */
+/* ---------- settings: drop the A-only parts (C has no AI: most people have no API key) ---------- */
 rep('placeholder="例如：石碇區"', 'placeholder="例如：大安區"');
 rep('方塊週排程', '步調', true);   // backup file name, notification title, heading placeholder
 { const blk = /<h3 class="set-h">放假與地區<\/h3>\n    <div class="pref-grid">\n[\s\S]*?\n    <\/div>\n/.exec(s)[0]; rep(blk, '<div hidden>' + blk + '</div>\n'); }   // A's daily sync looks up typhoon days; C has no one to do that
-rep('    <h3 class="set-h">資料與隱私</h3>', `    <h3 class="set-h">AI（用你自己的金鑰）</h3>
-    <p class="hint" style="margin:0">目標拆解和教練要用 AI。選一家 AI 服務，貼上你在那家建立的 API 金鑰就會出現。費用由你自己的 API 帳戶支付，建議在那家的後台設定每月花費上限。Google Gemini 的 Flash 系列目前有免費額度（以 Google 官方公告為準；免費額度的內容 Google 可能拿去改進產品）。金鑰只存在這台裝置，不會傳給這個網站，只會直接送到你選的 AI 服務。</p>
-    <div class="ai-key">
-      <label>AI 服務<select id="aiProvider"><option value="anthropic">Anthropic Claude</option><option value="gemini">Google Gemini</option><option value="openai">OpenAI</option><option value="deepseek">DeepSeek</option></select></label>
-      <a class="btn" id="aiKeyLink" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">取得金鑰</a>
-      <label>API 金鑰<input id="aiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-..."></label>
-      <button class="btn" type="button" id="aiKeySave">儲存</button>
-      <label>模型<select id="aiModel"></select></label>
-      <button class="btn danger" type="button" id="aiKeyDel">移除金鑰</button>
-      <label id="aiCustomWrap" hidden>自訂模型名稱<input id="aiModelCustom" autocomplete="off" spellcheck="false" placeholder="照官方文件的模型 ID 填"></label>
-    </div>
-    <p class="hint" id="aiKeyUrl" style="margin:0;overflow-wrap:anywhere"></p>
-    <p class="hint" id="aiKeyMsg" aria-live="polite" style="margin:0"></p>
-    <h3 class="set-h">資料與隱私</h3>`);
 rep('資料存在 claude.ai 上，只有你自己的帳號看得到，不會公開。可以隨時匯出備份或全部刪除。',
   '資料只存在這台裝置的瀏覽器裡，不會上傳到任何伺服器。換裝置或清除瀏覽器資料就會不見，記得定期匯出備份。');
 rep('範本和 Claude 回饋，無法復原', '範本和目標，無法復原');
@@ -203,9 +188,6 @@ rep('使用者重視休息、23:30 前睡；', '使用者重視休息和睡眠�
 rep('請 Claude 幫你放入學校課表，或直接開始拖', '到「設定 → 固定行程」加入你的課表，或直接開始拖');
 rep("'這個檢視無法匯出，請在 claude.ai 開啟這一頁'", "'這個瀏覽器無法下載檔案'");
 rep("'這個畫面不能下載檔案，請在 claude.ai 打開 App 再匯出。'", "'這個瀏覽器無法下載檔案。'");
-rep("not_granted: '你沒有允許這個頁面使用 Claude，AI 功能先關閉。',",
-  "not_granted: '還沒有 API 金鑰，到「設定 → AI」貼上就能用。', bad_key: 'API 金鑰不對或已失效，到「設定 → AI」重新貼上。', unreachable: '連不上 AI 服務。最常見的原因是金鑰不對、已失效或額度用完（有些服務出錯時不會告訴瀏覽器原因），請到「設定 → AI」確認；也可能是網路不穩。', billing: 'API 帳戶額度不足或還沒開通付費，請到那家 AI 服務的後台確認。',");
-rep("refused: 'Claude 沒有回答這個問題，換個說法試試。'", "refused: 'AI 沒有回答這個問題，換個說法試試。'");
 rep("'無法連到資料庫，請在 claude.ai 開啟這一頁'", "'這個瀏覽器不能存資料（可能是無痕模式）'");
 const PERSONAL = /石碇|心理師|高二理組|Kibo|kibo|德文|自主學習|claude\.ai 開啟/g;
 const left = [...s.matchAll(PERSONAL)].map(m => s.slice(Math.max(0, m.index - 60), m.index + 40).replace(/\s+/g, ' '));
@@ -256,9 +238,33 @@ rep('    <h3 class="set-h">提醒與聲音</h3>', `    <h3 class="set-h">作息<
     });</script>
     <h3 class="set-h">提醒與聲音</h3>`);
 
-/* ---------- coach off by default (tick it in Settings → 外觀); backup wording for people without Claude ---------- */
-rep("const COACH_DEFAULT = '1';", "const COACH_DEFAULT = '0';   // most people don't need the coach");
-rep('顯示「教練」卡片（每日回饋和 AI 讀書建議）', '顯示「教練」卡片（AI 讀書建議，要先在下面設定 AI 金鑰）');
+/* ---------- no coach in C (it needs an AI key, which most people don't have); backup wording for people without Claude ---------- */
+rep("const COACH_DEFAULT = '1';", "const COACH_DEFAULT = '0';");
+rep('<section class="card" id="coachCard">', '<section class="card" id="coachCard" hidden style="display:none !important">');   // A's own code still looks the card up, so it stays in the page, never shown
+rep('<label class="check"><input type="checkbox" id="prefCoach"> 顯示「教練」卡片（每日回饋和 AI 讀書建議）</label>', '<span hidden><input type="checkbox" id="prefCoach"></span>');
+
+/* ---------- goals: split into weekly steps by rule instead of AI ---------- */
+rep('<button class="btn" type="button" id="goalAiBtn" data-ai hidden>AI 幫我拆成每週步驟</button>', '<button class="btn" type="button" id="goalAiBtn">自動拆成每週步驟</button>');
+rep("  document.getElementById('goalAiBtn').hidden = !aiOk();\n", '');
+rep('至少寫一個步驟（一行一個），或按「AI 幫我拆」。', '至少寫一個步驟（一行一個），或按「自動拆成每週步驟」。');
+{ const a = s.indexOf("document.getElementById('goalAiBtn').addEventListener('click', async () => {"), b = s.indexOf('  finally { btn.disabled = false; }\n});\n', a);
+  if (a < 0 || b < 0) throw new Error('goal AI handler not found');
+  rep(s.slice(a, b + '  finally { btn.disabled = false; }\n});\n'.length), `document.getElementById('goalAiBtn').addEventListener('click', () => {
+  // spread the goal evenly over the weeks up to its deadline; the last week is for review
+  const title = document.getElementById('goalTitle').value.trim(), due = document.getElementById('goalDue').value;
+  const per = Math.max(15, Number(document.getElementById('goalWeekly').value) || 120);
+  const msg = document.getElementById('goalMsg');
+  if (!title) { msg.textContent = '先寫目標名稱。'; return; }
+  const weeks = due ? weeksUntil(due) : 4, work = weeks > 1 ? weeks - 1 : 1;
+  const n = Math.min(4, Math.max(1, Math.round(per / 45))), each = Math.max(15, Math.round(per / n / 5) * 5), parts = work * n;
+  const lines = [];
+  // minutes go first: the step parser takes the first 「N分」, and a goal like 「數學 80 分」 has one in its name
+  for (let w = 1, k = 1; w <= work; w++) for (let i = 0; i < n; i++, k++) lines.push(\`週\${w}｜\${each}分 \${title}：第 \${k} 段（共 \${parts} 段）\`);
+  if (weeks > 1) { lines.push(\`週\${weeks}｜\${Math.min(each, 60)}分 \${title}：總複習\`); if (n > 1) lines.push(\`週\${weeks}｜\${Math.min(each, 60)}分 \${title}：檢查弱點、補不熟的地方\`); }
+  document.getElementById('goalSteps').value = lines.join('\\n');
+  msg.textContent = '已依期限和每週時間平均分好。可以把每一行改成具體內容（例如課本哪一節），再按「建立目標」。';
+});
+`); }
 rep('「下載備份檔」會把你所有的方塊、任務、目標和設定存成一個 .json 檔，放到這台裝置裡，萬一資料不見可以用來還原。這不是提醒功能。',
   '「下載備份檔」會把你所有的方塊、任務、目標和設定存成一個 .json 檔，放到這台裝置裡（手機會跳出分享畫面，選「儲存到檔案」或傳給自己）。換裝置或清除瀏覽器資料前先下載一份，到新裝置按「匯入備份」就能還原。這不是提醒功能。');
 
@@ -310,40 +316,10 @@ rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-install.js')
 rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-persona.js'), 'utf8') + '</script>\n</body>');   // who are you → starter blocks
 rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-tour.js'), 'utf8') + '</script>\n</body>');   // first-run guided tour
 
-/* ---------- AI settings wiring (after the app's own boot hooks) ---------- */
+/* ---------- offline support (after the app's own boot hooks) ---------- */
 rep('</body>', PACE_CSS + `
 <script>
-(() => {
-  const $ = id => document.getElementById(id);
-  const prov = $('aiProvider'), key = $('aiKey'), model = $('aiModel'), custom = $('aiModelCustom'), msg = $('aiKeyMsg');
-  const P = () => paceAi.providers[prov.value];
-  const refreshAi = async () => { try { sampleFn = await window.claude.use('sample'); } catch (e) { sampleFn = null; } renderAiAvailability(); };
-  const sync = () => {
-    prov.value = paceAi.provider();
-    const p = P(), k = paceAi.key(), m = paceAi.model(), known = p.models.some(([id]) => id === m);
-    key.value = ''; key.placeholder = k ? '已儲存（' + k.slice(0, 6) + '…）' : p.keyHint;
-    $('aiKeyLink').href = p.keyUrl; $('aiKeyUrl').textContent = p.name + ' 的金鑰在這裡建立：' + p.keyUrl.replace('https://', '');
-    model.innerHTML = p.models.map(([id, label]) => '<option value="' + id + '">' + label + '</option>').join('') + '<option value="__custom">自訂模型名稱…</option>';
-    model.value = known ? m : '__custom'; custom.value = known ? '' : m; $('aiCustomWrap').hidden = known;
-    $('aiKeyDel').hidden = !k;
-  };
-  $('skinBtn').addEventListener('click', () => { sync(); msg.textContent = ''; });
-  prov.addEventListener('change', async () => { paceAi.setProvider(prov.value); sync(); msg.textContent = '已改用 ' + P().name + (paceAi.key() ? '。' : '，貼上這家的金鑰就能用。'); await refreshAi(); });
-  model.addEventListener('change', () => {
-    if (model.value === '__custom') { $('aiCustomWrap').hidden = false; custom.focus(); return; }
-    $('aiCustomWrap').hidden = true; paceAi.setModel(model.value); msg.textContent = '已改用 ' + model.selectedOptions[0].textContent;
-  });
-  custom.addEventListener('change', () => { const v = custom.value.trim(); if (!/^[A-Za-z0-9_.:/-]{2,80}$/.test(v)) { msg.textContent = '模型名稱只能有英文、數字和 - . _ / :'; return; } paceAi.setModel(v); msg.textContent = '已改用自訂模型 ' + v; });
-  $('aiKeySave').addEventListener('click', async () => {
-    const v = key.value.trim();
-    if (prov.value === 'anthropic' && !/^sk-ant-/.test(v)) { msg.textContent = '金鑰應該是 sk-ant- 開頭的一長串文字。'; return; }
-    if (v.length < 20 || v.includes(' ')) { msg.textContent = '金鑰看起來不完整，請整串複製貼上（中間不能有空白）。'; return; }
-    paceAi.setKey(v); sync(); msg.textContent = '已儲存。';
-    await refreshAi();
-  });
-  $('aiKeyDel').addEventListener('click', async () => { paceAi.setKey(''); sync(); msg.textContent = '已移除 ' + P().name + ' 的金鑰。'; await refreshAi(); });
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
-})();
+if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>`);
 

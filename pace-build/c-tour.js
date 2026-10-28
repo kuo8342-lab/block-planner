@@ -19,7 +19,7 @@
     { el: () => $('weekMenu'), title: '本週工具', text: '沒做完的方塊一鍵重排到後面的空檔，也可以把排好的一週存成範本、複製上週。' },
     { el: () => $('toReport'), title: '報表', text: '看這週完成多少、各科花了多少時間，還有每週回顧。' },
     { el: () => $('toWidget'), title: '便利貼', text: '把畫面縮成一張小卡，只看現在和接下來要做的事。連點 5 下回到完整畫面。' },
-    { el: () => $('skinBtn'), title: '設定', text: '作息（時間表從幾點到幾點、睡覺時間）、語言、同步登入、共筆群組、AI、教練卡片和備份都在這裡。' },
+    { el: () => $('skinBtn'), title: '設定', text: '作息（時間表從幾點到幾點、睡覺時間）、語言、同步登入、共筆群組和備份都在這裡。' },
     { el: () => { const b = $('installBtn'); return b && !b.hidden ? b : null; }, title: '安裝 App', text: '裝到手機或電腦桌面，用起來像一般 App。Android 還有桌面小工具。' },
     { title: '教學結束！', text: '剛剛的範例方塊和範例任務要留下來嗎？之後也可以在「設定 → 外觀」重新看一次教學。', last: true }
   ];
@@ -39,9 +39,13 @@
     ] },
     { v: '2026-10-28c', steps: [
       { title: '新介面上線了！', text: '步調換了新的樣子，電腦和手機都更好用。你的方塊、任務和所有資料都還在，功能也都跟原本一樣，只是換了位置。' },
-      { el: () => [...document.querySelectorAll('.mobile-nav, .workspace-nav')].find(n => n.getClientRects().length) || null, title: '新的選單', text: '電腦在左邊、手機在最下面：時間表、任務、方塊、專注都有自己的頁面。目標、願望清單、共筆群組、報表和 AI 教練放在「更多」或工作台裡。' },
+      { el: () => [...document.querySelectorAll('.mobile-nav, .workspace-nav')].find(n => n.getClientRects().length) || null, title: '新的選單', text: '電腦在左邊、手機在最下面：時間表、任務、方塊、專注都有自己的頁面。目標、願望清單、共筆群組和報表放在「更多」或工作台裡。' },
       { title: '時間表：單日或整週', text: '時間表可以切換只看一天或看整週，上方的日期列點一下就跳到那天。按「新增」可以快速排方塊。' },
       { title: '專注可以暫停了', text: '番茄鐘多了「暫停」按鈕，臨時被打斷時按一下，暫停的時間不會算進專注時間，按「繼續」接著計時。' }
+    ] },
+    { v: '2026-10-28d', steps: [
+      { title: '不需要 AI 金鑰了', text: '步調拿掉了 AI 設定和教練卡片，所有功能都不用 API 金鑰就能用。之前存的金鑰已經從這台裝置刪除。' },
+      { el: () => $('newGoalBtn'), title: '目標自動拆步驟', text: '新增目標時按「自動拆成每週步驟」，會照期限和每週時間平均分好，最後一週排總複習。每一行都可以再改成具體內容。' }
     ] }
   ];
   const LATEST = WHATS_NEW[WHATS_NEW.length - 1].v;
