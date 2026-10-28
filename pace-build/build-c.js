@@ -79,6 +79,19 @@ body.touring { padding-bottom: 340px; }   /* room to scroll the last things on t
 .sync-form { display: flex; flex-direction: column; gap: 8px; padding: 6px 0; }
 .sync-form input { width: 100%; min-width: 0; box-sizing: border-box; }
 .sync-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.sync-acts input { flex: 1 1 180px; min-width: 0; }
+/* 共筆群組 (c-group.js) */
+.grp-list { display: flex; flex-direction: column; gap: 8px; }
+.grp-list:empty { display: none; }
+.grp-item { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.grp-item code { font-family: var(--f-mono); letter-spacing: .08em; }
+.grp-feed { display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow-y: auto; }
+.grp-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .86rem; }
+.grp-txt { min-width: 0; overflow-wrap: anywhere; }
+.grp-what { font-weight: 600; }
+.grp-cheer { flex: none; padding: 2px 10px; border-radius: 999px; }
+.grp-cheer.on { background: var(--accent-soft); color: var(--accent); }
+.grp-cheer:disabled { opacity: .6; cursor: default; }
 #syncOut { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 #syncOut[hidden] { display: none; }
 #syncOut details { align-self: stretch; }
@@ -258,6 +271,7 @@ rep("休 ${rest} 分${restLow ? ' ⚠' : ''}</span>` : ''}</div>`;", "休 ${rest
 { const cfgFile = process.env.PACE_FIREBASE_CONFIG || path.join(__dirname, 'firebase-config.json');
   const cfg = fs.existsSync(cfgFile) ? JSON.parse(fs.readFileSync(cfgFile, 'utf8')) : null;
   if (cfg) rep('</body>', '<script>window.PACE_FIREBASE = ' + JSON.stringify(cfg) + ';\n' + fs.readFileSync(path.join(__dirname, 'c-sync.js'), 'utf8') + '</script>\n</body>');
+  if (cfg) rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-group.js'), 'utf8') + '</script>\n</body>');   // 共筆群組, needs sign-in
   console.log(cfg ? 'sync: on (' + cfg.projectId + ')' : 'sync: off (no firebase-config.json)'); }
 
 /* ---------- interface language: Chinese or English, chosen in Settings → Appearance ---------- */

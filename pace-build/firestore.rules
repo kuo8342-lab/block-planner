@@ -5,5 +5,54 @@ service cloud.firestore {
     match /users/{uid}/docs/{doc} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+
+    // 共筆群組：知道邀請碼（= 文件 id）的人可以看群組名字並加入自己；只能動自己的那一份
+    function signedIn() { return request.auth != null; }
+    function me() { return request.auth.uid; }
+    function okMembers(m) { return m.size() <= 30 && m.size() == m.toSet().size(); }
+    function okName(n) { return n is string && n.size() > 0 && n.size() <= 30; }
+
+    match /groups/{gid} {
+      allow get: if signedIn();
+      allow list: if signedIn() && me() in resource.data.members;
+      allow create: if signedIn() && gid.matches('[A-Z2-9]{8}')
+        && request.resource.data.keys().hasOnly(['name', 'owner', 'members', 'names', 'createdAt'])
+        && okName(request.resource.data.name)
+        && request.resource.data.owner == me()
+        && request.resource.data.members == [me()]
+        && request.resource.data.names.keys().hasOnly([me()])
+        && request.resource.data.createdAt == request.time;
+      // join, rename yourself, or leave: only members and your own name change
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'names'])
+        && request.resource.data.names.diff(resource.data.names).affectedKeys().hasOnly([me()])
+        && okMembers(request.resource.data.members)
+        && (
+          (request.resource.data.members.toSet() == resource.data.members.toSet().union([me()].toSet())
+            && okName(request.resource.data.names[me()]))
+          || (request.resource.data.members.toSet() == resource.data.members.toSet().difference([me()].toSet())
+            && !(me() in request.resource.data.names))
+        );
+      allow delete: if signedIn() && resource.data.owner == me();
+
+      function member() { return signedIn() && me() in get(/databases/$(database)/documents/groups/$(gid)).data.members; }
+
+      // 「搞定！」：只有完成的事，id 以自己的 uid 開頭；別人只能加或收回自己的 👏
+      match /feed/{eid} {
+        allow read: if member();
+        allow create: if member() && eid.matches(me() + '_.+')
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'title', 'minutes', 'at', 'cheers'])
+          && request.resource.data.uid == me()
+          && request.resource.data.name is string && request.resource.data.name.size() <= 30
+          && request.resource.data.title is string && request.resource.data.title.size() <= 60
+          && request.resource.data.minutes is int && request.resource.data.minutes >= 0 && request.resource.data.minutes <= 1440
+          && request.resource.data.at == request.time
+          && request.resource.data.cheers.size() == 0;
+        allow update: if member()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cheers'])
+          && request.resource.data.cheers.diff(resource.data.cheers).affectedKeys().hasOnly([me()]);
+        allow delete: if signedIn() && resource.data.uid == me();
+      }
+    }
   }
 }

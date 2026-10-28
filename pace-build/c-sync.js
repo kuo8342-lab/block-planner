@@ -50,9 +50,11 @@
 
   /* ---------- sync ---------- */
   let unsub = null, unhook = null, user = null;
+  const userHooks = [];   // c-group.js listens for sign-in and sign-out
+  window.paceSync = { load: () => load(), fb: () => fb, user: () => user, onUser: f => { userHooks.push(f); if (user) f(user); } };
   const idOf = p => p.split('/').join('~');
   function start(u) {
-    user = u; remember(true);
+    user = u; remember(true); userHooks.forEach(f => f(u));
     $('syncOut').hidden = true; $('syncInBox').hidden = false; $('syncWho').textContent = u.email || u.displayName || '已登入';
     const { fs, db } = fb, col = fs.collection(db, 'users', u.uid, 'docs');
     const push = (p, d, t) => fs.setDoc(fs.doc(col, idOf(p)), { p, t, d: d ?? null, del: d == null }).catch(() => msg('有些變更還沒上傳，連上網路後會自動補傳。'));
@@ -77,7 +79,7 @@
     }, () => msg('同步中斷了，請重新登入。'));
   }
   function stop() {
-    unsub?.(); unhook?.(); unsub = unhook = null; user = null;
+    unsub?.(); unhook?.(); unsub = unhook = null; user = null; userHooks.forEach(f => f(null));
     $('syncOut').hidden = false; $('syncInBox').hidden = true;
   }
 
