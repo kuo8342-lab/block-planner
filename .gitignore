@@ -10,3 +10,7 @@ export/
 *.keystore
 signing-info.txt
 local.properties
+
+# Local synthetic test fixtures, evidence and installed tooling
+test-artifacts/
+node_modules/

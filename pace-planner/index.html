@@ -272,6 +272,36 @@
   window.alert = wrap(window.alert.bind(window)); window.confirm = wrap(window.confirm.bind(window));
 })();
 </script>
+<script>/* C-only pause clock. Keep the original planner-focus document unchanged. */
+(() => {
+  'use strict';
+  const key = 'pace-ui-focus-pause-v1';
+  const read = f => {
+    if (!f || !Number.isFinite(f.start)) return null;
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || 'null');
+      return value && value.start === f.start && Number.isFinite(value.at) && value.at >= f.start
+        ? { start: value.start, at: value.at } : null;
+    } catch (_) { return null; }
+  };
+  const pause = f => {
+    if (!f || !Number.isFinite(f.start)) return false;
+    if (read(f)) return true;
+    const value = { start: f.start, at: Date.now() };
+    if (value.at < value.start) return false;
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return read(f)?.at === value.at;
+    } catch (_) { return false; }
+  };
+  const clear = f => {
+    if (!read(f)) return;
+    try { localStorage.removeItem(key); } catch (_) { /* A stale signature is harmless. */ }
+  };
+  window.paceFocusNow = f => read(f)?.at ?? Date.now();
+  window.paceFocusClock = Object.freeze({ key, read, pause, clear });
+})();
+</script>
 </head><body>
 
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -2534,14 +2564,14 @@ function focusEta(f) {   // 預計全部結束的時間
   while (left > 0) { const w = Math.min(f.mode === 'single' ? f.total : f.work, left); t += f.brk + w; left -= w; }
   return t;
 }
-function focusWorkMs(f, now = Date.now()) { return f.doneMs + (f.phase === 'work' ? Math.max(0, Math.min(now, f.segEnd) - f.segStart) : 0); }
+function focusWorkMs(f, now = paceFocusNow(f)) { return f.doneMs + (f.phase === 'work' ? Math.max(0, Math.min(now, f.segEnd) - f.segStart) : 0); }
 function focusNotice(msg) {
   if (document.body.classList.contains('w')) { showRemind(msg); playAlarmSound(false); }
   else showAlarm(msg, '番茄鐘');
 }
 /* 時間到了就換段；回答「休息結束」等提醒只在剛剛發生時跳（重新整理後補算的不吵人） */
 function advanceFocus() {
-  const now = Date.now(); let note = '', changed = false;
+  const now = paceFocusNow(focus); let note = '', changed = false;
   while (focus && now >= focus.segEnd) {
     changed = true;
     if (focus.phase === 'work') {
@@ -2585,7 +2615,7 @@ function renderFocus() {
   const box = document.getElementById('wFocus'), pill = document.getElementById('focusPill');
   if (!focus) { box.hidden = true; pill.hidden = true; return; }
   if (advanceFocus() === 'finish') { finishFocus(true); return; }
-  const now = Date.now(), left = Math.max(0, focus.segEnd - now), seg = Math.max(1, focus.segEnd - focus.segStart);
+  const now = paceFocusNow(focus), left = Math.max(0, focus.segEnd - now), seg = Math.max(1, focus.segEnd - focus.segStart);
   const mmss = `${pad(Math.floor(left / 60000))}:${pad(Math.floor(left / 1000) % 60)}`;
   const brk = focus.phase === 'break', split = focus.mode !== 'single';
   const rounds = split ? Math.ceil(focus.total / focus.work) : 1;
@@ -4009,6 +4039,42 @@ renderFixedTrash();
     '<div class="tour-acts" id="tourActs"></div></div>';
   document.body.appendChild(root);
   let i = 0, target = null;
+  let scrollInset = null;
+
+  function restoreScrollInset() {
+    if (!scrollInset) return;
+    scrollInset.el.style.paddingBottom = scrollInset.padding;
+    scrollInset = null;
+  }
+  function targetScroller() {
+    for (let el = target?.parentElement; el && el !== document.body; el = el.parentElement) {
+      if (el.clientHeight && /auto|scroll/.test(getComputedStyle(el).overflowY)) return el;
+    }
+    return null;
+  }
+  function revealSpotlight() {
+    restoreScrollInset();
+    if (!target) return;
+    if (!window.paceUI?.isMobile?.()) {
+      target.scrollIntoView({ block: 'center' });
+      const r = target.getBoundingClientRect();
+      if (r.bottom > innerHeight - 240) scrollBy(0, r.bottom - (innerHeight - 260));
+      return;
+    }
+    const scroller = targetScroller();
+    if (!scroller) return; // Header controls already sit above the card.
+    const card = root.querySelector('.tour-card').getBoundingClientRect();
+    const area = scroller.getBoundingClientRect();
+    const bottom = Math.min(area.bottom, card.top - 16), top = Math.max(0, area.top) + 10;
+    // Extra scroll space lets even the final Settings / Install buttons clear the card.
+    const reserve = Math.max(0, area.bottom - bottom);
+    scrollInset = { el: scroller, padding: scroller.style.paddingBottom };
+    scroller.style.paddingBottom = (parseFloat(getComputedStyle(scroller).paddingBottom) + reserve) + 'px';
+    const r = target.getBoundingClientRect();
+    const room = Math.max(0, bottom - top);
+    const wantedTop = top + Math.max(0, (room - r.height) / 2);
+    scroller.scrollTo({ top: scroller.scrollTop + r.top - wantedTop, behavior: 'instant' });
+  }
 
   function place() {
     const hi = $('tourHi');
@@ -4016,7 +4082,14 @@ renderFixedTrash();
     root.classList.toggle('nohi', none);   // nothing to point at: dim the whole page instead
     if (none) { hi.hidden = true; return; }
     const r = target.getBoundingClientRect(), pad = 6;
-    Object.assign(hi.style, { left: (r.left - pad) + 'px', top: (r.top - pad) + 'px', width: (r.width + pad * 2) + 'px', height: (r.height + pad * 2) + 'px' });
+    let left = r.left - pad, top = r.top - pad, right = r.right + pad, bottom = r.bottom + pad;
+    if (window.paceUI?.isMobile?.()) {
+      const area = targetScroller()?.getBoundingClientRect();
+      left = Math.max(0, left, area?.left || 0); right = Math.min(innerWidth, right, area?.right || innerWidth);
+      top = Math.max(0, top, area?.top || 0);
+      bottom = Math.min(bottom, root.querySelector('.tour-card').getBoundingClientRect().top - 10, area?.bottom || innerHeight);
+    }
+    Object.assign(hi.style, { left: left + 'px', top: top + 'px', width: Math.max(0, right - left) + 'px', height: Math.max(0, bottom - top) + 'px' });
     hi.hidden = false;
   }
   function show(n) {
@@ -4024,8 +4097,8 @@ renderFixedTrash();
     i = n; const s = steps[i];
     target = s.el ? s.el() : null;
     if (s.el && !target) { show(n + 1); return; }   // e.g. 「現在做這件」 has nothing to show right now (上一步 skips these itself)
-    // instant, not smooth: on phones a smooth scroll inside the timetable stops the page itself from scrolling there
-    if (target) { target.scrollIntoView({ block: 'center' }); const r = target.getBoundingClientRect(); if (r.bottom > innerHeight - 240) scrollBy(0, r.bottom - (innerHeight - 260)); }
+    // The C-only workspace reveals the existing target synchronously before measuring its spotlight.
+    if (target) window.paceUI?.reveal?.(target);
     // count only the steps that will really be shown this time (skipped ones like an empty 「現在做這件」 don't count)
     const shown = steps.filter(avail), pos = shown.indexOf(s), endNew = mode === 'new' && i === steps.length - 1;
     $('tourStep').textContent = (pos + 1) + ' / ' + shown.length;
@@ -4036,9 +4109,9 @@ renderFixedTrash();
       ? '<button type="button" class="btn no" id="tourClear">不要，清掉範例</button><button type="button" class="btn yes" id="tourKeep">留下來</button>'
       : endNew ? (i > 0 ? '<button type="button" class="btn" id="tourPrev">上一步</button>' : '') + '<button type="button" class="btn yes" id="tourGotIt">知道了</button>'
       : (i > 0 ? '<button type="button" class="btn" id="tourPrev">上一步</button>' : '') + `<button type="button" class="btn primary" id="tourNext">${i === 0 && mode === 'full' ? '開始' : '下一步'}</button>`;
-    place(); setTimeout(place, 400);
+    revealSpotlight(); place(); setTimeout(place, 400);
   }
-  function close() { root.hidden = true; document.body.classList.remove('touring'); target = null; try { localStorage.setItem(SEEN, LATEST); } catch (e) {} }
+  function close() { restoreScrollInset(); root.hidden = true; document.body.classList.remove('touring'); target = null; try { localStorage.setItem(SEEN, LATEST); } catch (e) {} }
   function finish(keep) {
     close();
     if (mode === 'new') return;   // the what's-new walk-through has no samples
@@ -4055,7 +4128,7 @@ renderFixedTrash();
     else if (id === 'tourKeep') finish(true);
     else if (id === 'tourClear') finish(false);
   });
-  addEventListener('resize', place); addEventListener('scroll', place, true);
+  addEventListener('resize', () => { if (!root.hidden) { revealSpotlight(); place(); } }); addEventListener('scroll', place, true);
   document.addEventListener('keydown', e => { if (!root.hidden && e.key === 'Escape') finish(false); });
 
   window.paceTour = () => {
@@ -4253,6 +4326,1350 @@ body.touring { padding-bottom: 340px; }   /* room to scroll the last things on t
   });
   $('aiKeyDel').addEventListener('click', async () => { paceAi.setKey(''); sync(); msg.textContent = '已移除 ' + P().name + ' 的金鑰。'; await refreshAi(); });
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+<style data-pace-ui="notion-ui.css">/* Block Planner workspace. Calendar's 1px/minute geometry is intentionally unchanged. */
+:root:root {
+  color-scheme: light;
+  --bg:#ffffff; --panel:#ffffff; --panel-2:#f7f7f5; --fg:#242424;
+  --muted:#6f6e6b; --line:#e9e9e7; --line-soft:#f0f0ed;
+  --accent:#43866b; --accent-ink:#32664f; --accent-on:#ffffff; --accent-soft:#edf6f0;
+  --danger:#b13b37; --shadow:none;
+  --f-body:Inter,"Noto Sans TC",-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;
+  --f-mono:Inter,"Noto Sans TC",ui-monospace,Consolas,monospace;
+  --rail-width:288px;
+}
+body[data-skin="default"] {
+  --c-school:#f0efed; --c-school-fg:#5c5b57;
+  --c-study:#e9eff7; --c-study-fg:#375778; --c-study-dot:#537ba4;
+  --c-preview:#e9f2ed; --c-preview-fg:#34694e; --c-preview-dot:#56856b;
+  --c-code:#efebf6; --c-code-fg:#685185; --c-code-dot:#8b75aa;
+  --c-lang:#f8eee4; --c-lang-fg:#835d35; --c-lang-dot:#a87a45;
+  --c-exam:#f8e9e8; --c-exam-fg:#944a44; --c-exam-dot:#b26660;
+  --c-class:#f2ede5; --c-class-fg:#786044; --c-class-dot:#a18b6b;
+  --c-swim:#e8f0f3; --c-swim-fg:#3b687c; --c-swim-dot:#5e8d9c;
+  --c-rest:#eaf2e7; --c-rest-fg:#4b6940; --c-rest-dot:#648257;
+  --c-buffer:#f7f1de; --c-buffer-fg:#786324; --c-buffer-dot:#a08c46;
+  --c-care:#f6eaf0; --c-care-fg:#88536d; --c-care-dot:#a7718e;
+  --c-life:#efefed; --c-life-fg:#62635f; --c-life-dot:#858781;
+}
+body[data-skin="night"],body[data-skin="neon"] { --accent-ink:var(--accent); --accent-on:var(--bg); }
+html { font-size:16px; }
+body { padding:0; margin:0; font-size:14px; line-height:1.6; }
+body[data-skin="default"] { background-image:none; }
+body[data-skin="default"] #fxBg { opacity:.04; }
+h1,h2,.dtitle,.brandname { font-family:var(--f-body); }
+button,input,select,textarea { font-family:var(--f-body); }
+button { -webkit-tap-highlight-color:transparent; }
+button:disabled { opacity:.5; cursor:not-allowed; }
+.btn,.icon-btn,.seg button { min-height:40px; border-radius:7px; font-size:13px; font-weight:500; }
+.btn { padding:7px 12px; }
+.icon-btn { width:40px; height:40px; }
+.btn:hover,.icon-btn:hover { background:var(--panel-2); border-color:color-mix(in srgb,var(--fg) 23%,var(--line)); }
+.btn.primary { background:var(--accent-ink); border-color:var(--accent-ink); color:var(--accent-on); font-weight:600; }
+.btn.primary:hover { filter:brightness(.95); }
+.btn[aria-pressed="true"] { color:var(--accent-ink); }
+input::placeholder,textarea::placeholder { color:var(--muted); opacity:1; }
+:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+.planner { max-width:none; margin:0 0 0 var(--rail-width); z-index:auto; }
+.top { position:relative; display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:66px 32px 24px; margin:0; background:var(--bg); border:0; border-radius:0; box-shadow:none; }
+.workspace-crumb { position:absolute; top:20px; left:32px; right:32px; display:flex; gap:10px; align-items:center; font-size:12px; color:var(--muted); }
+.workspace-crumb .crumb-divider { color:var(--line); }
+.workspace-crumb strong { color:var(--fg); font-weight:500; }
+.workspace-crumb .status { margin-left:auto; font-size:12px; }
+.brand { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.brand .eyebrow { font-size:12px; letter-spacing:.03em; font-weight:500; align-self:flex-start; }
+.brand h1 { font-size:25px; line-height:1.3; font-weight:650; letter-spacing:-.7px; }
+.weeknav { margin-left:auto; gap:4px; padding:0; }
+.weeknav .btn { margin-inline:4px; }
+.top > .spacer { display:none; }
+.actions-top { display:flex; gap:6px; }
+.actions-top .btn { min-height:40px; }
+.actions-top #installBtn { border-color:var(--line); color:var(--accent-ink); background:var(--panel); }
+.workspace-toggle { display:none; }
+.layout { display:block; padding:0 32px 24px; }
+.layout > .workspace-main { position:static !important; min-width:0; }
+.rail { position:fixed; top:0; bottom:0; left:0; z-index:15; width:var(--rail-width); gap:0; padding:0 16px 24px; overflow-y:auto; overscroll-behavior:contain; background:var(--panel-2); border-right:1px solid var(--line); scrollbar-width:thin; }
+.rail-header { position:sticky; top:0; z-index:3; display:flex; align-items:center; justify-content:space-between; min-height:72px; padding:14px 4px 12px; background:var(--panel-2); }
+.rail-header .brandname { display:flex; flex-direction:row; gap:10px; padding:0; border:0; font-size:17px; font-weight:650; letter-spacing:0; color:var(--fg); }
+.brandname img { width:28px; height:28px; border-radius:7px; }
+.brand-subtitle { display:block; font-size:10px; font-weight:500; letter-spacing:.08em; color:var(--muted); line-height:1.4; }
+.rail-close { border:0; background:transparent; color:var(--muted); }
+.workspace-nav { padding:0 0 16px; margin-bottom:8px; border-bottom:1px solid var(--line); }
+.workspace-nav .viewtabs { display:flex; flex-direction:column; gap:3px; padding:0; border:0; background:transparent; border-radius:0; }
+.workspace-nav button { width:100%; min-height:40px; display:flex; align-items:center; gap:10px; padding:9px 12px; border:0; border-radius:6px; text-align:left; background:transparent; color:var(--muted); font-size:14px; line-height:1.4; }
+.workspace-nav button:hover { background:color-mix(in srgb,var(--fg) 5%,transparent); color:var(--fg); }
+.workspace-nav .viewtabs button[aria-pressed="true"] { color:var(--accent-ink); background:var(--accent-soft); box-shadow:none; font-weight:600; }
+.nav-icon { display:inline-flex; align-items:center; flex:none; color:currentColor; }
+.nav-icon svg { width:17px; height:17px; }
+.nav-key { margin-left:auto; font-size:11px; opacity:.7; }
+.nav-section-label { color:var(--muted); padding:18px 12px 6px; font-size:11px; letter-spacing:.05em; }
+.rail .card { background:transparent; border:0; border-bottom:1px solid var(--line); border-radius:0; box-shadow:none; padding:18px 4px; gap:12px; scroll-margin-top:80px; }
+.rail .card h2 { font-size:14px; font-weight:650; letter-spacing:0; }
+.rail .card h2 .btn { min-height:32px; padding:3px 6px; background:transparent; border-color:transparent; color:var(--muted); font-size:12px; }
+.rail .card h2 .btn:hover { color:var(--accent-ink); background:var(--accent-soft); }
+.rail .card h2 .count { border-radius:5px; font-size:11px; padding:2px 6px; }
+.rail .hint { font-size:12px; line-height:1.65; }
+.rail .nowpick { margin-top:6px; padding:14px 12px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+.np-title { font-size:15px; }
+.np-why { font-size:12px; }
+.np-acts { gap:6px; }
+.np-acts .btn { padding:6px 9px; }
+.palette { display:flex; flex-wrap:wrap; gap:6px; }
+.pal-group { gap:8px; }
+.pal-group .lbl { font-size:11px; letter-spacing:.04em; }
+.chip { min-height:36px; border:1px solid transparent; border-radius:6px; padding:7px 8px; gap:6px; font-size:12px; line-height:1.5; }
+.chip .m { font-size:11px; opacity:1; }
+.chip:hover { transform:none; box-shadow:none; border-color:currentColor; }
+.task { background:var(--panel); border:1px solid var(--line); padding:10px; font-size:14px; }
+.task .title,.wish .title { overflow-wrap:anywhere; }
+.task .meta { font-size:12px; }
+.task .tfocus,.task .sugg button { min-height:32px; font-size:12px; border-radius:6px; color:var(--accent-ink); }
+.qa input { min-height:40px; border:1px solid var(--line); border-radius:7px; padding:9px 10px; background:var(--panel); font-size:14px; }
+.qa input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.help-details { border:0; }
+.help-details > summary { font-size:12px; min-height:32px; padding:6px 0; }
+.help-details > .hint { padding:4px 0 8px; }
+.calendar-topbar { min-height:60px; display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; padding:0 0 16px; }
+.calendar-heading { display:flex; align-items:center; gap:9px; font-size:15px; font-weight:600; margin:0; }
+.calendar-summary { display:flex; align-items:center; gap:8px; margin-left:4px; font-size:12px; color:var(--muted); }
+.calendar-summary b { color:var(--fg); font-weight:500; }
+.calendar-view-label { display:flex; align-items:center; gap:6px; margin-left:auto; padding:5px 9px; font-size:12px; color:var(--muted); background:var(--panel-2); border:1px solid var(--line); border-radius:6px; }
+.calendar-hint { color:var(--muted); font-size:12px; padding:12px 0 0; display:flex; align-items:center; gap:6px; }
+.calendar-hint .nav-icon svg { width:14px; height:14px; }
+body.r .calendar-hint { display:none; }
+.grid-scroll,body:not(.r) .grid-scroll,body:not(.r) .warnbar:not([hidden]) + .grid-scroll { max-height:calc(100dvh - 238px); min-height:280px; border:1px solid var(--line); border-radius:10px; box-shadow:none; scrollbar-width:thin; scrollbar-color:color-mix(in srgb,var(--fg) 20%,transparent) transparent; }
+.grid { grid-template-columns:54px repeat(7,minmax(116px,1fr)); min-width:880px; }
+.head { min-height:99px; gap:2px; padding:12px 4px 10px; background-color:var(--panel); background-image:none; }
+.head .wd { font-size:12px; font-weight:500; letter-spacing:0; }
+.head .dn { width:30px; height:30px; font-size:19px; border-radius:7px; font-weight:600; }
+.head.today { background:var(--accent-soft); }
+.head.today .dn { background:var(--accent-ink); color:var(--accent-on); }
+.head.today .wd { color:var(--accent-ink); }
+.head .stats { font-size:11px; min-height:18px; }
+.col.today { background-color:var(--accent-soft); }
+.col.drop { background-color:color-mix(in srgb,var(--accent) 14%,var(--panel)); }
+.axis { position:sticky; left:0; z-index:3; background:var(--panel); }
+.head:first-child { left:0; z-index:6; }
+.axis div { font-size:11px; right:8px; }
+.blk { border-radius:5px; font-size:12px; padding:3px 7px; box-shadow:inset 2px 0 currentColor; }
+.blk .t { font-size:10px; opacity:1; }
+.blk:hover { transform:none; box-shadow:inset 2px 0 currentColor,0 2px 7px #24242412; }
+.blk.clash,.blk.clash:hover { box-shadow:inset 2px 0 currentColor,0 0 0 2px var(--danger); }
+.blk.missed,.blk.missed:hover { box-shadow:inset 3px 0 var(--danger); }
+.blk.clash.missed,.blk.clash.missed:hover { box-shadow:inset 3px 0 var(--danger),0 0 0 2px var(--danger); }
+.blk.resizing,.blk.resizing:hover { box-shadow:inset 2px 0 currentColor,0 0 0 2px var(--accent); }
+.blk.fixed { border-radius:4px; }
+.blk.done { opacity:1; background-color:color-mix(in srgb,var(--panel) 48%,var(--c-rest)); color:var(--c-rest-fg); }
+.blk.done .n { text-decoration:line-through; }
+.blk .ck,.blk .fl { opacity:0; }
+.blk:hover .ck,.blk:hover .fl,.blk:focus-within .ck,.blk:focus-within .fl { opacity:1; }
+@media(hover:none) { .blk .ck,.blk .fl { opacity:.85; } }
+.nowline { background:var(--accent-ink); }
+.nowline::before { background:var(--accent-ink); }
+.rail-backdrop,.mobile-nav,.mobile-brand { display:none; }
+.skip-link { position:fixed; left:12px; top:-100px; z-index:100; background:var(--panel); color:var(--fg); padding:12px; border:1px solid var(--line); border-radius:8px; }
+.skip-link:focus { top:12px; }
+body.rail-collapsed:not(.w) .planner { margin-left:0; }
+body.rail-collapsed .rail { visibility:hidden; transform:translateX(-100%); }
+body.rail-collapsed .workspace-toggle { display:inline-grid; }
+body.w { padding:24px 16px; }
+body.w .mobile-nav,body.w .rail-backdrop { display:none; }
+@media(min-width:1200px) and (max-width:1399px) { .top { padding-inline:24px; gap:12px; } .layout { padding-inline:24px; } .workspace-crumb { left:24px; right:24px; } .actions-top { width:100%; justify-content:flex-end; } .brand h1 { font-size:23px; } .grid-scroll,body:not(.r) .grid-scroll { max-height:calc(100dvh - 286px); } }
+@media(max-width:1199px) {
+  .planner,body.rail-collapsed:not(.w) .planner { margin-left:0; }
+  .rail { width:320px; max-width:calc(100vw - 36px); visibility:hidden; transform:translateX(-100%); z-index:42; padding-bottom:32px; }
+  body.rail-open .rail { visibility:visible; transform:none; }
+  body.rail-open .rail-backdrop { display:block; position:fixed; inset:0; background:#24242436; z-index:41; border:0; padding:0; }
+  .workspace-toggle { display:inline-grid; }
+  .rail-header { min-height:64px; }
+  .top { padding:64px 24px 20px; gap:12px; }
+  .workspace-crumb { left:24px; right:24px; }
+  .layout { padding:0 24px 20px; }
+  .brand h1 { font-size:23px; }
+  .actions-top { margin-left:auto; }
+  .grid-scroll,body:not(.r) .grid-scroll { max-height:calc(100dvh - 242px); }
+}
+@media(max-width:767px) {
+  .top { padding:16px 16px 12px; gap:12px 8px; }
+  .workspace-crumb { position:static; flex-basis:100%; order:-3; padding-bottom:8px; border-bottom:1px solid var(--line); font-size:12px; }
+  .workspace-crumb .crumb-label,.workspace-crumb .crumb-divider,.workspace-crumb > strong { display:none; }
+  .mobile-brand { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; color:var(--fg); }
+  .mobile-brand img { width:23px; height:23px; border-radius:6px; }
+  .workspace-crumb .status { font-size:11px; }
+  .workspace-toggle { display:none !important; }
+  .brand { gap:2px; flex:1 1 100%; }
+  .brand .eyebrow { font-size:11px; }
+  .brand h1 { font-size:23px; line-height:1.4; }
+  .weeknav { margin:0; gap:2px; }
+  .weeknav .btn { padding-inline:9px; font-size:12px; margin:0 2px; }
+  .weeknav .icon-btn { width:36px; min-height:40px; }
+  .actions-top { margin-left:auto; gap:4px; }
+  .actions-top > #toWidget,.actions-top > #skinBtn,.actions-top > #installBtn { display:none; }
+  .actions-top .menu > summary { font-size:12px; padding-inline:9px; }
+  .actions-top .focus-pill { max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .layout { padding:0 12px calc(80px + env(safe-area-inset-bottom,0px)); }
+  .calendar-topbar { padding:8px 4px 12px; gap:8px; min-height:52px; }
+  .calendar-heading { font-size:14px; }
+  .calendar-summary { font-size:11px; margin-left:auto; gap:6px; }
+  .calendar-view-label { display:none; }
+  .warnbar { max-height:88px; overflow-y:auto; padding:10px; gap:6px; border:1px solid var(--line); border-radius:8px; background:var(--panel-2); font-size:12px; scrollbar-width:thin; }
+  .grid-scroll,body:not(.r) .grid-scroll,body:not(.r) .warnbar:not([hidden]) + .grid-scroll { max-height:calc(100dvh - 315px); min-height:300px; border-radius:8px; }
+  body:not(.r) .warnbar:not([hidden]) + .grid-scroll { max-height:calc(100dvh - 415px); min-height:280px; }
+  .grid { min-width:880px; }
+  .head { min-height:90px; padding-top:9px; padding-bottom:8px; }
+  .calendar-hint { font-size:11px; padding:10px 4px 0; }
+  .mobile-nav { display:flex; position:fixed; bottom:0; left:0; right:0; z-index:30; justify-content:space-around; background:var(--panel); padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--line); }
+  .mobile-nav button { min-width:56px; min-height:50px; border:0; padding:4px 8px; border-radius:7px; background:transparent; color:var(--muted); display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center; font-size:10px; }
+  .mobile-nav button[aria-pressed="true"] { color:var(--accent-ink); background:var(--accent-soft); }
+  .mobile-nav .nav-icon svg { width:20px; height:20px; }
+  .mobile-nav button:hover { background:var(--panel-2); }
+  .rail .chip { min-height:40px; }
+  .rail .card h2 .btn { min-height:40px; }
+  .rail .task .tfocus,.rail .task .sugg button { min-height:40px; }
+  body.w { padding:16px; }
+}
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important; } }
+</style>
+<style data-pace-ui="notion-components.css">/* Block Planner 2.0: auxiliary surfaces. Shared tokens live in notion-ui.css.
+   Native dialog semantics, hidden states, IDs and event handlers stay intact. */
+
+/* Forms and dialogs */
+dialog {
+  box-sizing: border-box;
+  width: min(440px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 48px);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--fg);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 12%);
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+dialog::backdrop { background: rgb(25 25 24 / 28%); }
+dialog form { min-width: 0; gap: 16px; font-size: 14px; line-height: 1.55; }
+dialog .dtitle { font-family: var(--f-body); font-size: 20px; line-height: 1.4; font-weight: 650; letter-spacing: -.02em; }
+dialog label { min-width: 0; gap: 6px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+dialog :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--fg);
+  font-family: var(--f-body);
+  font-size: 14px;
+  line-height: 1.45;
+  transition: border-color .15s, box-shadow .15s;
+}
+dialog textarea { min-height: 104px; resize: vertical; }
+dialog input::placeholder, dialog textarea::placeholder { color: var(--muted); opacity: 1; }
+dialog :is(input, select, textarea):hover:not(:disabled) { border-color: color-mix(in srgb, var(--muted) 45%, var(--line)); }
+dialog :is(input, select, textarea):focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 2px; }
+dialog :is(input, select, textarea):disabled { opacity: .6; cursor: not-allowed; background: var(--panel-2); }
+dialog :is(input, select, textarea)[aria-invalid="true"], dialog :is(input, textarea):user-invalid { border-color: var(--danger); }
+dialog :is(input[type="checkbox"], input[type="radio"]) { flex: 0 0 auto; width: 18px; height: 18px; min-height: 18px; margin: 0; accent-color: var(--accent); }
+dialog .check { min-height: 44px; gap: 10px; color: var(--fg); font-size: 14px; cursor: pointer; }
+dialog .row2 { gap: 12px; }
+dialog .actions { gap: 8px; padding-top: 16px; border-top: 1px solid var(--line); margin-top: 4px; }
+dialog .actions .btn { min-height: 44px; white-space: normal; }
+dialog .hint { font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+dialog .np-acts { flex-wrap: wrap; }
+dialog .np-acts .btn { min-width: 0; white-space: normal; }
+dialog .mini { gap: 12px; }
+dialog summary { min-height: 40px; padding-block: 10px; color: var(--fg); font-size: 14px; cursor: pointer; }
+dialog :is(button, summary, a):focus-visible,
+.menu-list button:focus-visible,
+.widget :is(button, input):focus-visible,
+.report button:focus-visible,
+.toast button:focus-visible,
+.alarm-ok:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+dialog :is(button, a)[aria-busy="true"] { cursor: progress; opacity: .7; }
+.settings form, #installDlg form { max-height: none; overflow: visible; }
+.set-h { margin-top: 8px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--fg); font-size: 15px; font-weight: 650; }
+.set-h .btn { font-size: 13px; }
+.pref-grid { gap: 16px 12px; }
+.ai-key { gap: 12px; }
+.ai-key a.btn { min-height: 40px; display: inline-flex; align-items: center; }
+.sync-form { gap: 12px; }
+.sync-acts { gap: 8px; }
+#skinDlg :is(#privacyMsg, #syncMsg, #aiKeyMsg):not(:empty) { padding: 10px 12px; border-radius: 8px; background: var(--panel-2); }
+#nfErr:not([hidden]) { padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--line)); border-radius: 8px; background: color-mix(in srgb, var(--danger) 5%, var(--panel)); }
+.refl-choice { gap: 8px; }
+.refl-choice label { min-height: 48px; padding: 10px; border-width: 1px; border-radius: 8px; font-size: 14px !important; }
+.refl-choice label:has(input:checked) { color: var(--accent-ink, var(--accent)) !important; }
+.skins { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.skin-card { position: relative; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: var(--panel); gap: 8px; }
+.skin-card:hover { background: var(--panel-2); }
+.skin-card[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.skin-card[aria-pressed="true"] b::after { content: " ✓"; color: var(--accent-ink, var(--accent)); }
+.skin-card .sw { height: 24px; border-radius: 5px; }
+.skin-card b { font-size: 14px; font-weight: 600; }
+.skin-card small { font-size: 12px; line-height: 1.5; }
+.inst { border-radius: 10px; padding-inline: 14px; }
+.inst > summary { flex-wrap: wrap; gap: 6px; font-size: 14px; }
+.inst-body { font-size: 14px; line-height: 1.65; }
+.inst-body a.btn { white-space: normal; }
+.tpl { min-width: 0; padding: 12px; gap: 8px; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; font-size: 14px; }
+.tpl > :first-child { min-width: 0; overflow-wrap: anywhere; }
+.tpl .meta { margin-top: 4px; font-size: 12px; }
+#pickList { max-height: min(52dvh, 480px); padding: 2px; overscroll-behavior: contain; }
+#pickList .chip { min-height: 44px; align-items: center; }
+
+/* Menus retain their native details / summary interaction. */
+.menu-list { min-width: 212px; max-width: calc(100vw - 32px); max-height: min(70dvh, 480px); overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; padding: 6px; background: var(--panel); box-shadow: 0 6px 24px rgb(0 0 0 / 9%); }
+.menu-list button { min-height: 44px; padding: 10px 12px; border-radius: 6px; font-size: 14px; }
+.menu-list button:hover { background: var(--panel-2); color: var(--fg); }
+.menu-list button.danger:hover { background: color-mix(in srgb, var(--danger) 7%, var(--panel)); color: var(--danger); }
+
+/* Reports: only their tables scroll horizontally. */
+.report { min-width: 0; max-width: 100%; gap: 20px; }
+.rp-head { gap: 12px; }
+.rp-title { font-size: 18px; line-height: 1.45; font-weight: 650; }
+.report .seg { border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; box-shadow: none; padding: 3px; }
+.report .seg button { min-height: 36px; min-width: 40px; padding: 6px 14px; border-radius: 5px; font-size: 14px; }
+.report .seg button[aria-pressed="true"] { color: var(--fg); background: var(--panel); box-shadow: 0 1px 3px rgb(0 0 0 / 7%); }
+.kpis { gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.kpi, .rp-card { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: none; padding: 20px; }
+.kpi { min-width: 0; gap: 8px; }
+.kpi .k { font-size: 13px; font-weight: 500; letter-spacing: 0; }
+.kpi .v { font-size: 28px; font-weight: 600; letter-spacing: -.03em; line-height: 1.2; }
+.kpi .s { font-size: 12px; line-height: 1.5; }
+.report .ring { flex: 0 0 56px; width: 56px; height: 56px; }
+.report .ring span { width: 42px; height: 42px; }
+.rp-card { gap: 14px; }
+.rp-card h3 { font-family: var(--f-body); font-size: 15px; font-weight: 650; }
+.rp-card .hint { font-size: 13px; line-height: 1.65; }
+.tbl-wrap { width: 100%; max-width: 100%; min-width: 0; overscroll-behavior-x: contain; border: 1px solid var(--line); border-radius: 8px; }
+.tbl { min-width: 560px; font-size: 14px; }
+.tbl th { padding: 12px; font-size: 12px; font-weight: 600; letter-spacing: 0; background: var(--panel-2); white-space: nowrap; }
+.tbl td { padding: 12px; font-size: 13px; border-bottom-color: var(--line); }
+.tbl td:first-child { font-size: 14px; }
+.tbl tbody tr:hover { background: var(--panel-2); }
+.tbl tr:last-child td { border-bottom: 0; }
+.tbl tr.sum td { background: var(--panel-2); }
+.rate { padding: 3px 8px; border-radius: 5px; font-size: 12px; }
+.daybars { gap: 14px; }
+.dbar { gap: 12px; font-size: 14px; }
+.dbar .v { font-size: 12px; }
+.dbar .track { height: 10px; border-radius: 4px; }
+.dbar .pl, .dbar .dn { border-radius: 4px; }
+.legend2 { flex-wrap: wrap; font-size: 12px; }
+.dlist .it { min-width: 0; padding: 12px; gap: 8px; font-size: 14px; }
+.dlist .it > * { min-width: 0; overflow-wrap: anywhere; }
+.dlist .it .stt { font-size: 12px; }
+.review-row, .refl-list li { font-size: 14px; }
+.refl-list li { padding: 12px; border-radius: 8px; }
+.sky-meta { font-size: 13px; }
+.glow-pill { border-radius: 6px; box-shadow: none; font-size: 12px; }
+.empty { padding: 32px 20px; color: var(--muted); font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+
+/* Compact today / focus view keeps every timer and action available. */
+.widget { width: min(440px, calc(100% - 32px)); max-width: 440px; max-height: calc(var(--pace-visual-height, 100dvh) - 112px); margin: 32px auto; padding: 24px; gap: 24px; border: 1px solid var(--line); border-radius: 12px; background-image: none; transform: none; box-shadow: none; overflow-y: auto; overscroll-behavior: contain; }
+.widget > :not(section) { flex-shrink: 0; }
+.widget > section { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 96px; overflow: hidden; }
+.widget > section > h2 { flex: none; }
+.widget > section > ul { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.widget > section > ul > li { flex-shrink: 0; }
+.widget::before, .widget::after { content: none; }
+body:is(:not([data-skin]), [data-skin="default"]) .widget { background: var(--panel); color: var(--fg); }
+body[data-skin="neon"] .widget { box-shadow: none; }
+.widget .clock, .widget .now .name, .widget h2 { font-family: var(--f-body); }
+.widget .clock { font-size: 32px; line-height: 1.2; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.widget .clock small { font-size: 13px; letter-spacing: 0; opacity: 1; }
+.widget .icon-btn { min-width: 44px; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; }
+.widget .now { padding: 20px; border-radius: 10px; box-shadow: none; }
+.widget .now .lbl { font-size: 12px; letter-spacing: .04em; opacity: 1; }
+.widget .now .name { margin-top: 8px; font-size: 22px; line-height: 1.45; font-weight: 650; overflow-wrap: anywhere; }
+.widget .now .left { margin-top: 8px; font-size: 13px; opacity: 1; }
+.widget .now.cat-life { background-color: var(--panel-2); color: var(--fg); }
+.widget h2 { color: var(--muted) !important; opacity: 1; font-size: 13px !important; letter-spacing: .02em !important; font-weight: 600; margin-bottom: 12px; }
+.widget ul { gap: 8px; }
+.widget li.slot, .widget li.tk { min-height: 44px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: color-mix(in srgb, var(--panel) 70%, transparent) !important; }
+.widget li.slot { grid-template-columns: 6px 100px minmax(0, 1fr); gap: 8px; }
+.widget li.slot > :last-child, .widget li.tk > :last-child { min-width: 0; overflow-wrap: anywhere; }
+.widget .round { flex: 0 0 20px; width: 20px; height: 20px; }
+.widget .muted { color: var(--muted); opacity: 1; }
+.widget .focus { gap: 12px; border-radius: 10px; padding: 24px; box-shadow: none; background: var(--accent-ink, var(--accent)); color: var(--accent-on, #fff); }
+.widget .focus.brk { background: var(--c-rest-fg); color: var(--c-rest); }
+.focus .lbl { font-size: 12px; letter-spacing: .04em; opacity: 1; }
+.focus .fname { font-size: 18px; overflow-wrap: anywhere; }
+.focus .ftime { font-size: 48px; letter-spacing: -.05em; }
+.focus .fround, .focus .fall { font-size: 13px; opacity: 1; }
+.focus .fbar { background: color-mix(in srgb, currentColor 28%, transparent); }
+.focus .fbar span { background: currentColor; }
+.now .acts, .focus .acts { flex-wrap: wrap; gap: 8px; }
+.now .acts button, .focus .acts button, .remind button { min-height: 44px; padding: 8px 12px; border-radius: 7px; font-size: 14px; font-weight: 500; }
+.note-foot { font-size: 12px; line-height: 1.6; opacity: 1; color: var(--muted); }
+.remind { padding: 14px; gap: 12px; border-radius: 10px; box-shadow: none; font-size: 14px; }
+
+/* Non-blocking feedback and reminders. */
+.toast { padding: 12px 12px 12px 16px; gap: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--fg); color: var(--bg); box-shadow: 0 4px 16px rgb(0 0 0 / 12%); font-size: 14px; line-height: 1.5; }
+.toast > span { min-width: 0; overflow-wrap: anywhere; }
+.toast button { min-height: 44px; padding: 7px 12px; border-radius: 6px; font-size: 14px; font-weight: 600; }
+.nightbar { padding: 12px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); color: var(--fg); box-shadow: none; font-size: 14px; }
+.nightbar button { min-height: 44px; padding: 8px 12px; border-radius: 7px; font-weight: 500; }
+.alarm { background: rgb(25 25 24 / 28%); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.alarm-card { border: 1px solid var(--line); border-radius: 12px; padding: 28px 24px; gap: 12px; box-shadow: 0 12px 48px rgb(0 0 0 / 12%); }
+.alarm-lbl { color: var(--accent-ink, var(--accent)); font-size: 13px; letter-spacing: .04em; }
+.alarm-msg { font-size: 18px; font-weight: 600; }
+.alarm-ok { width: 56px; height: 56px; border-radius: 10px; background: var(--accent-ink, var(--accent)); color: var(--accent-on, #fff); font-size: 24px; }
+.alarm-hint { font-size: 12px; }
+
+@media (max-width: 767px) {
+  dialog {
+    position: fixed;
+    inset: auto 0 var(--pace-keyboard-inset, 0px);
+    width: 100% !important;
+    max-width: 100%;
+    max-height: calc(var(--pace-visual-height, 100dvh) - max(16px, env(safe-area-inset-top, 0px)));
+    margin: 0;
+    padding: 12px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    border-radius: 20px 20px 0 0;
+    border-bottom: 0;
+    scrollbar-gutter: auto;
+  }
+  dialog::before { content: ""; display: block; width: 36px; height: 4px; margin: 0 auto 16px; border-radius: 4px; background: var(--line); }
+  dialog form { gap: 14px; }
+  dialog :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { font-size: 16px; min-height: 44px; }
+  dialog .actions .btn { flex: 1 1 auto; min-height: 44px; }
+  dialog .actions .left { margin-right: 0; }
+  .pref-grid { gap: 12px; }
+  .skins { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .skin-card { padding: 10px; }
+  .set-h { flex-wrap: wrap; }
+  .ai-key { grid-template-columns: minmax(0, 1fr); }
+  .ai-key a.btn { justify-self: start; }
+  .tpl { grid-template-columns: minmax(0, 1fr) auto; }
+  .tpl > :first-child { grid-column: 1 / -1; }
+  .rp-head { gap: 8px; }
+  .rp-head > .seg { width: 100%; justify-content: space-between; }
+  .rp-head > .seg button { flex: 1; }
+  .report :is(.seg button, .btn, .icon-btn) { min-height: 44px; }
+  .rp-title { font-size: 16px; }
+  .rp-head .spacer { display: none; }
+  .rp-head #backToGrid { margin-left: auto; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .kpi, .rp-card { padding: 16px; }
+  .kpi .v { font-size: 26px; }
+  .report .ring { flex-basis: 48px; width: 48px; height: 48px; }
+  .report .ring span { width: 36px; height: 36px; font-size: 12px; }
+  .report { gap: 16px; }
+  .dbar { grid-template-columns: 48px minmax(0, 1fr) 82px; gap: 8px; font-size: 13px; }
+  .dlist .it { grid-template-columns: 56px minmax(0, 1fr) !important; }
+  .dlist .it > :nth-child(3) { grid-column: 1 / -1; }
+  .widget { max-height: calc(var(--pace-visual-height, 100dvh) - 72px); margin-block: 20px; padding: 20px; gap: 20px; }
+  .widget .focus { padding: 20px; }
+  .widget li.slot { grid-template-columns: 6px 92px minmax(0, 1fr); font-size: 13px; }
+  .toast { width: max-content; max-width: calc(100vw - 24px); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  .nightbar { gap: 8px; align-items: flex-start; font-size: 13px; }
+}
+
+@media (max-width: 390px) {
+  dialog { padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
+  .pref-grid { grid-template-columns: minmax(0, 1fr); }
+  dialog .row2 { gap: 8px; }
+  .refl-choice { flex-direction: column; }
+  .rp-head #backToGrid { width: 100%; }
+  .remind { flex-wrap: wrap; }
+  .widget .clock { font-size: 28px; }
+  .widget .clock small { font-size: 12px; margin-left: 4px; }
+}
+
+/* Public C surfaces: identity, onboarding, groups and actual async messages. */
+.btn.yes { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--accent-on, #fff); }
+.btn.no { background: var(--panel); border-color: var(--line); color: var(--fg); }
+.persona-list { gap: 12px; margin-top: 4px; }
+.persona-list .btn { min-height: 52px; padding: 14px 16px; font-size: 15px; border-radius: 10px; white-space: normal; }
+#langDlg .lang-ask { font-size: 16px; line-height: 1.6; }
+#tour .tour-card { border: 1px solid var(--line); border-radius: 14px; padding: 20px; box-shadow: 0 8px 32px rgb(0 0 0 / 14%); max-height: min(54dvh, 460px); overflow-y: auto; overscroll-behavior: contain; }
+#tour .tour-title { color: var(--fg); font: 650 18px/1.5 var(--f-body); margin: 8px 0; }
+#tour .tour-text { font-size: 14px; line-height: 1.75; overflow-wrap: anywhere; }
+#tour .tour-step { font-size: 12px; }
+#tour .tour-dots { margin-block: 16px; }
+#tour .tour-acts { gap: 8px; }
+#tour .tour-acts .btn { min-height: 44px; }
+#tour .tour-hi { border-radius: 10px; box-shadow: 0 0 0 2px var(--accent), 0 0 0 9999px rgb(20 25 22 / 46%); }
+#tour.nohi .tour-block { background: rgb(20 25 22 / 46%); }
+.grp-list { gap: 12px; }
+.grp-item { padding: 16px; gap: 12px; border-radius: 10px; background: var(--panel); font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
+.grp-item code { display: inline-block; padding: 2px 6px; border-radius: 5px; background: var(--panel-2); color: var(--fg); font-size: 13px; }
+.grp-feed { gap: 0; max-height: none; }
+.grp-row { padding: 16px 0; border-bottom: 1px solid var(--line); gap: 12px; font-size: 14px; line-height: 1.65; }
+.grp-row:last-child { border-bottom: 0; }
+.grp-cheer { min-width: 44px; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.grp-cheer.on { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent); }
+#grpOn { gap: 16px; }
+#grpOn .sync-acts { align-items: stretch; }
+#grpOn .sync-acts input { font-size: 14px; min-height: 44px; }
+#grpOff { padding: 16px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; line-height: 1.7; }
+:is(.pace-panel, dialog) :is(#grpMsg, #syncMsg, #privacyMsg):not(:empty) { padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
+[data-pace-feedback="error"] { color: var(--danger) !important; border-color: color-mix(in srgb, var(--danger) 35%, var(--line)) !important; }
+[data-pace-feedback="pending"] { color: var(--muted); }
+#status { font-variant-numeric: tabular-nums; }
+#status[aria-busy="true"]::before { animation: pace-status-pulse 1s ease-in-out infinite; }
+.apk-update { border-bottom: 1px solid var(--line); font-size: 14px; padding: 12px 16px; gap: 12px; }
+.apk-update .btn { min-height: 44px; }
+
+/* The router can reuse these existing nodes outside the legacy widget wrapper. */
+#wFocus { min-width: 0; padding: 24px; gap: 12px; border-radius: 12px; background: var(--accent-ink); color: var(--accent-on, #fff); box-shadow: none; }
+#wFocus:not([hidden]) { display: flex; flex-direction: column; }
+#wFocus.brk { background: var(--c-rest-fg); color: var(--c-rest); }
+#wFocus .fname { font-size: 18px; line-height: 1.5; overflow-wrap: anywhere; }
+#wFocus .ftime { font-size: clamp(48px, 11vw, 64px); line-height: 1.15; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+#wFocus .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+#wFocus .acts button { min-height: 44px; border-radius: 8px; font-size: 14px; }
+#wFocus[data-paused="true"] { outline: 1px dashed currentColor; outline-offset: -8px; }
+#wFocus #fPause[aria-pressed="true"] { background: color-mix(in srgb, currentColor 14%, transparent); }
+#wFocus .fnote { margin-top: 4px; }
+#wFocus .fnote input { width: 100%; min-height: 44px; padding: 12px; margin-top: 0; border: 1px solid color-mix(in srgb, currentColor 48%, transparent); border-radius: 8px; background: color-mix(in srgb, currentColor 10%, transparent); color: inherit; font-size: 14px; }
+#wFocus .fnote input::placeholder { color: inherit; opacity: .9; }
+#wFocus .fnote input:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+#wNow { min-width: 0; padding: 20px; border-radius: 10px; box-shadow: none; }
+#wNow .name { font-size: 22px; font-weight: 650; line-height: 1.45; overflow-wrap: anywhere; }
+#wNow .lbl, #wNow .left { font-size: 13px; opacity: 1; }
+#wNow .left { margin-top: 8px; }
+.pace-panel :is(.coach-out, .split-out) { font-size: 14px; line-height: 1.7; }
+.pace-panel .coach-out:not(:empty) { padding: 16px; background: var(--panel-2); border-radius: 10px; overflow-wrap: anywhere; }
+
+@media (max-width: 767px) {
+  #tour .tour-card { bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: calc(100vw - 24px); max-height: min(46dvh, 400px); padding: 16px; border-radius: 14px; }
+  #tour .tour-acts .btn { flex: 1 1 auto; }
+  #tour .tour-title { font-size: 17px; }
+  #grpOn .sync-acts { flex-wrap: wrap; }
+  #grpOn .sync-acts input { flex-basis: 100%; font-size: 16px; }
+  #wFocus { padding: 20px; }
+  #wFocus .fnote input { font-size: 16px; }
+  .toast { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog *, .report *, .widget *, .menu-list *, .toast *, .alarm *, .nightbar { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .widget, .remind, .alarm, .alarm.closing { animation: none !important; transform: none; }
+}
+</style>
+<style data-pace-ui="notion-mobile.css">/* Mobile has one scrolling surface per page. Original time-to-pixel geometry stays intact. */
+.pace-page-heading,.pace-calendar-controls,#paceDayStrip,#pacePages,#paceWarnings { display:none; }
+.pace-icon { display:inline-flex;align-items:center;justify-content:center;flex:none;font-size:19px;line-height:1; }
+.pace-filtered { display:none !important; }
+[hidden] { display:none !important; }
+@media(max-width:767px) {
+  body:not(.w) { height:var(--pace-visual-height,100dvh);overflow:hidden;padding:0; }
+  body:not(.w) .planner { height:calc(var(--pace-visual-height,100dvh) - 64px - env(safe-area-inset-bottom,0px));margin:0;display:flex;flex-direction:column;overflow:hidden; }
+  .top { flex:none;padding:10px 16px 8px;gap:8px; }
+  .workspace-crumb { margin:0;padding:0 0 8px;min-height:30px; }
+  .workspace-crumb .status { max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+  .top>.brand { display:none; }
+  .pace-page-heading { display:flex;align-items:center;justify-content:space-between;gap:8px;flex:1 1 100%;min-width:0; }
+  #pacePageEyebrow { font-size:11px;color:var(--muted);margin:0 0 3px; }
+  #pacePageTitle { font-size:22px;font-weight:650;letter-spacing:-.5px;line-height:1.4;margin:0; }
+  #pacePageActions { flex:none;display:flex;gap:6px; }
+  .pace-add,.pace-back { display:flex;align-items:center;gap:5px;min-height:44px;padding:8px 11px; }
+  .pace-back .pace-icon { display:none; }
+  body:not([data-pace-view="calendar"]) .top :is(.weeknav,.actions-top) { display:none; }
+  .weeknav { gap:0; }
+  .weeknav .icon-btn { width:44px;height:44px; }
+  .weeknav .btn,.actions-top .menu>summary { min-height:44px; }
+  .actions-top { gap:4px; }
+  .actions-top .focus-pill { max-width:100px; }
+  .layout { flex:1;min-height:0;display:flex;align-items:stretch;padding:0 12px 8px; }
+  .layout>.workspace-main { flex:1;min-height:0;display:flex;flex-direction:column;width:100%; }
+  body:not([data-pace-view="calendar"]):not([data-pace-view="report"]) .layout { display:none; }
+  .rail,.rail-backdrop { display:none !important; }
+  .pace-calendar-controls { display:flex;flex:none;align-items:center;justify-content:space-between;gap:6px;padding:0 4px 6px; }
+  .pace-calendar-controls>.btn { min-height:44px;padding:6px 9px;font-size:12px; }
+  .pace-calendar-controls>.btn .pace-icon { display:none; }
+  .pace-calendar-modes { padding:3px;display:flex;gap:2px;background:var(--panel-2);border:1px solid var(--line);border-radius:8px; }
+  .pace-calendar-modes button { display:flex;align-items:center;justify-content:center;gap:4px;min-height:44px;min-width:54px;padding:4px 8px;border:0;background:transparent;color:var(--muted);font-size:12px; }
+  .pace-calendar-modes .pace-icon { display:none; }
+  .pace-calendar-modes button[aria-pressed="true"] { color:var(--fg);background:var(--panel);box-shadow:0 1px 3px #24242412;border-radius:5px; }
+  #paceDayStrip { display:grid;flex:none;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;padding:0 2px 6px; }
+  .pace-day { display:flex;align-items:center;justify-content:center;min-width:0;min-height:54px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted);padding:4px 0; }
+  .pace-day>.pace-icon { display:none; }
+  .pace-day>span { display:flex;flex-direction:column;align-items:center;gap:2px; }
+  .pace-day small { font-size:10px; }
+  .pace-day b { font-size:17px;font-weight:600; }
+  .pace-day[aria-current="date"] { border-color:var(--line);color:var(--accent-ink); }
+  .pace-day[aria-pressed="true"] { color:var(--accent-on);background:var(--accent-ink);border-color:var(--accent-ink); }
+  .calendar-topbar { flex:none;min-height:30px;padding:0 4px 6px;gap:4px; }
+  .calendar-heading { font-size:12px; }
+  .calendar-heading .nav-icon { display:none; }
+  .calendar-summary { font-size:11px; }
+  #paceWarnings { display:block;flex:none;margin:0 2px 6px;border-radius:6px;background:var(--panel-2);font-size:12px;color:var(--muted); }
+  #paceWarnings>summary { cursor:pointer;padding:6px 10px; }
+  #paceWarningCount { float:right;font-size:11px; }
+  #paceWarnings .warnbar { border:0;margin:0;max-height:82px;font-size:12px; }
+  body:not(.r) #gridScroll.grid-scroll { flex:1;min-height:0;max-height:none;height:auto;overscroll-behavior:contain;border-radius:8px; }
+  .grid.pace-day-grid { min-width:0;width:100%;grid-template-columns:54px minmax(0,1fr); }
+  .grid.pace-day-grid>[data-pace-active="false"] { display:none; }
+  .grid.pace-day-grid>.head { min-height:36px;padding:5px 8px;flex-direction:row;align-items:center;justify-content:center;gap:6px; }
+  .grid.pace-day-grid>.head .wd,.grid.pace-day-grid>.head .dn { display:none; }
+  .grid.pace-day-grid>.head .stats { font-size:11px; }
+  .grid.pace-day-grid .blk { font-size:14px; }
+  .grid.pace-day-grid .blk .t { font-size:11px; }
+  .grid.pace-day-grid .blk .ck,.grid.pace-day-grid .blk .fl { opacity:.85; }
+  .calendar-hint { display:none; }
+  body.r :is(.pace-calendar-controls,#paceDayStrip,#paceWarnings) { display:none; }
+  body.r .workspace-main { overflow-y:auto;overscroll-behavior:contain; }
+  body.r .calendar-topbar { padding:8px 4px; }
+  #pacePages:not([hidden]) { display:flex;flex:1;min-height:0;overflow:hidden; }
+  .pace-panel:not([hidden]) { display:flex;flex:1;min-width:0;flex-direction:column;gap:16px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:10px 16px 24px;scrollbar-width:thin; }
+  .pace-panel>.card { border:0;border-radius:0;background:transparent;box-shadow:none;padding:0;gap:16px;flex:none; }
+  .pace-panel .card h2 { font-size:16px;font-weight:650; }
+  .pace-panel .card h2 .btn { min-height:44px;padding:8px 10px;font-size:13px; }
+  .pace-panel .hint { font-size:13px;line-height:1.7; }
+  .pace-panel input:not([type="checkbox"]):not([type="radio"]),.pace-panel select,.pace-panel textarea { font-size:16px;min-height:44px; }
+  .pace-panel .btn { min-height:44px; }
+  .pace-filters { display:flex;flex:none;gap:6px;overflow-x:auto;padding-bottom:3px;scrollbar-width:none; }
+  .pace-filters .btn { flex:none;min-height:44px;border-color:var(--line);background:var(--panel);font-size:12px;display:flex;align-items:center;gap:5px; }
+  .pace-filters .pace-icon { display:none; }
+  .pace-filters .btn[aria-pressed="true"] { color:var(--accent-ink);border-color:var(--accent);background:var(--accent-soft); }
+  .pace-page-hint { font-size:12px;color:var(--muted);margin:-6px 0 0;line-height:1.7; }
+  .pace-panel .task { padding:16px;background:var(--panel);border-radius:10px;gap:8px;font-size:15px; }
+  .pace-panel .task .meta { font-size:12px; }
+  .pace-panel .task :is(.tfocus,.sugg button) { min-height:44px;padding:8px 10px;font-size:13px; }
+  .pace-panel .task .title { line-height:1.6; }
+  .pace-panel .palette { gap:8px; }
+  .pace-panel .pal-group { gap:10px; }
+  .pace-panel .pal-group+.pal-group { margin-top:14px; }
+  .pace-panel .pal-group .lbl { font-size:13px;font-weight:600; }
+  .pace-panel .chip { min-height:48px;font-size:14px;padding:10px 12px;border-radius:8px; }
+  .pace-panel .chip .m { font-size:12px; }
+  .pace-empty,.pace-info-card { padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);font-size:14px;line-height:1.75; }
+  .pace-info-card h2 { font-size:19px;line-height:1.5;margin:8px 0; }
+  .pace-info-card p { color:var(--muted);margin:0 0 18px; }
+  .pace-info-card .btn { display:inline-flex;gap:8px;align-items:center; }
+  .pace-kicker { color:var(--accent-ink);font-size:11px;letter-spacing:.08em; }
+  .pace-more-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px; }
+  .pace-more-card { display:flex;flex-direction:column;align-items:flex-start;gap:9px;text-align:left;min-height:142px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:18px;color:var(--fg);font-size:15px;font-weight:600; }
+  .pace-more-card>.pace-icon { width:32px;height:32px;border-radius:8px;background:var(--accent-soft);color:var(--accent-ink);font-size:21px; }
+  .pace-more-card small { font-size:12px;font-weight:400;line-height:1.6;color:var(--muted); }
+  .pace-more-commands { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;border-top:1px solid var(--line);padding-top:16px; }
+  .pace-more-commands>button { display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg); }
+  .pace-more-commands>.primary { background:var(--accent-ink);border-color:var(--accent-ink);color:var(--accent-on); }
+  .pace-focus-idle { display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 12px;gap:12px; }
+  .pace-focus-orbit { display:grid;place-items:center;width:88px;height:88px;border:1px solid var(--line);border-radius:50%;background:var(--panel-2);font-size:48px;color:var(--accent-ink);margin:0 0 8px; }
+  .pace-focus-idle h2 { font-size:22px;margin:0; }
+  .pace-focus-idle p { font-size:14px;line-height:1.75;color:var(--muted);margin:0 0 10px;max-width:280px; }
+  .pace-focus-idle>.btn { min-width:200px;display:flex;align-items:center;justify-content:center;gap:8px; }
+  .pace-focus-live>#nowPick { display:none; }
+  #paceFocusPanel>#nowPick { margin:0;border:1px solid var(--line);border-radius:12px;padding:20px; }
+  #paceFocusPanel>#wFocus { flex:none;min-height:310px;justify-content:center; }
+  .mobile-nav { height:calc(64px + env(safe-area-inset-bottom,0px));padding:5px 8px calc(5px + env(safe-area-inset-bottom,0px));box-sizing:border-box;bottom:var(--pace-keyboard-inset,0px);gap:4px; }
+  .mobile-nav button { flex:1;min-width:0;min-height:48px;font-size:11px;gap:5px;border-radius:8px; }
+  .mobile-nav .pace-icon { font-size:22px;height:22px; }
+  body.w { height:auto;min-height:var(--pace-visual-height,100dvh);overflow:auto; }
+  body.w #wFocus { min-height:0; }
+}
+</style>
+<style data-pace-ui="notion-motion.css">/* Presentation-only motion: no animation changes calendar coordinates or timing. */
+:root {
+  --pace-ease-out: cubic-bezier(.2, .7, .2, 1);
+  --pace-ease-release: cubic-bezier(.2, .9, .35, 1.2);
+}
+
+/* Native dialogs retain native close / cancel / submit semantics, including Esc.
+   allow-discrete keeps the top-layer painting alive only for the exit transition. */
+dialog {
+  opacity: 0;
+  transform: translateY(12px) scale(.985);
+  transition: opacity 180ms ease-out, transform 220ms var(--pace-ease-out),
+    display 220ms allow-discrete, overlay 220ms allow-discrete;
+}
+dialog[open] { opacity: 1; transform: none; }
+dialog:not([open]), dialog:not([open])::backdrop { pointer-events: none; }
+dialog::backdrop { opacity: 0; transition: opacity 180ms ease-out, display 220ms allow-discrete, overlay 220ms allow-discrete; }
+dialog[open]::backdrop { opacity: 1; }
+@starting-style {
+  dialog[open] { opacity: 0; transform: translateY(12px) scale(.985); }
+  dialog[open]::backdrop { opacity: 0; }
+}
+
+/* Draggable controls are deliberately excluded: rects are read on pointerdown. */
+:is(button, summary, a.btn, [role="button"]):not([data-drag]):not(.blk):not(.rz) {
+  -webkit-tap-highlight-color: transparent;
+  transition: scale 160ms var(--pace-ease-release), background-color 140ms ease,
+    border-color 140ms ease, box-shadow 140ms ease, color 140ms ease;
+}
+:is(button, summary, a.btn, [role="button"]):not([data-drag]):not(.blk):not(.rz):not(:disabled):not([aria-disabled="true"]):is(:active, .pace-pressed) {
+  scale: .97;
+  transition-duration: 120ms;
+  transition-timing-function: ease-out;
+}
+:is(button, summary, a.btn, [role="button"]):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+:is(button, input, select, textarea):disabled { cursor: not-allowed; }
+button:disabled, button[aria-disabled="true"] { opacity: .55; }
+button[data-pace-pending="true"] { position: relative; cursor: progress; opacity: .85; }
+button[data-pace-pending="true"]::after {
+  content: "";
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-inline-start: 8px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -2px;
+  animation: pace-spin 700ms linear infinite;
+}
+#coachForm[aria-busy="true"] { position: relative; }
+#coachForm[aria-busy="true"] input { padding-inline-end: 40px; }
+#coachForm[aria-busy="true"]::after { content: ""; position: absolute; right: 14px; top: calc(50% - 7px); width: 14px; height: 14px; border: 2px solid var(--accent); border-right-color: transparent; border-radius: 50%; animation: pace-spin 700ms linear infinite; pointer-events: none; }
+
+@media (hover: hover) {
+  :is(button, summary, a.btn):not(:disabled):not([aria-disabled="true"]):not([data-drag]):hover { box-shadow: inset 0 0 0 999px rgb(127 127 127 / 5%); }
+}
+/* The core only adds .lifting after the touch hold has captured the source rect. */
+.lifting { transform: scale(1.025); box-shadow: 0 0 0 2px var(--accent), 0 6px 18px rgb(0 0 0 / 14%) !important; transition: transform 160ms var(--pace-ease-out), box-shadow 160ms ease; }
+.ghost { transform: none; border: 1px solid color-mix(in srgb, currentColor 24%, transparent); box-shadow: 0 8px 24px rgb(0 0 0 / 18%); }
+.ghost .t { font-size: 12px; }
+.col.drop { outline: 2px solid var(--accent); outline-offset: -2px; transition: background-color 120ms; }
+.blk.pop { animation: pace-block-settle 180ms var(--pace-ease-out) both; }
+.round:checked { animation: pace-check 160ms var(--pace-ease-release); }
+body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
+.task.done .title { transition: opacity 160ms ease; }
+.pace-panel[data-active="true"], .pace-view[data-active="true"],
+.pace-panel.is-active, .pace-view.is-active, .pace-panel:not([hidden]) { animation: pace-view-in 200ms var(--pace-ease-out) both; }
+:is(.mobile-nav, .pace-bottom-nav, .pace-nav) button[aria-current="page"] .nav-icon { animation: pace-nav-select 180ms var(--pace-ease-out); }
+[data-pace-nav][aria-pressed="true"] .pace-icon { animation: pace-nav-select 180ms var(--pace-ease-out); }
+.toast:not([hidden]) { animation: pace-toast-in 180ms var(--pace-ease-out); }
+#tour .tour-card { transition: opacity 180ms ease; }
+
+@keyframes pace-spin { to { rotate: 360deg; } }
+@keyframes pace-status-pulse { 50% { opacity: .4; } }
+@keyframes pace-block-settle { from { opacity: .65; transform: scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes pace-check { 50% { scale: 1.12; } }
+@keyframes pace-view-in { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+@keyframes pace-nav-select { from { translate: 0 2px; opacity: .6; } to { translate: 0 0; opacity: 1; } }
+@keyframes pace-toast-in { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+
+@media (max-width: 767px) {
+  dialog { transform: translateY(100%); transition-duration: 200ms, 240ms, 240ms, 240ms; }
+  dialog[open] { transform: none; }
+  @starting-style { dialog[open] { opacity: 0; transform: translateY(100%); } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog, dialog::backdrop, dialog[open], dialog[open]::backdrop,
+  button, summary, a.btn, [role="button"], .lifting, .ghost, .round,
+  .blk.pop, .toast, .pace-panel, .pace-view, .col.drop, .task .title,
+  #tour .tour-hi, #tour .tour-card, button::after, #status::before, #coachForm::after,
+  .pace-icon, .nav-icon {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  :is(button, summary, a.btn, [role="button"]):is(:active, .pace-pressed), .lifting { scale: 1 !important; transform: none !important; }
+  dialog[open] { opacity: 1; transform: none; }
+}
+</style>
+<script data-pace-ui="notion-ui.js">/* Presentation-only enhancement. Existing app nodes/handlers and persisted data stay intact. */
+(() => {
+  const $ = id => document.getElementById(id);
+  const en = window.paceLang?.() === 'en';
+  const tr = (zh, english) => en ? english : zh;
+  const icons = {
+    calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h2M14 15h2"/>',
+    report:'<path d="M4 3v18h17M9 17v-5M14 17V7M19 17V4"/>',
+    goal:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".5"/>',
+    blocks:'<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',
+    tasks:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8 9 2 2 5-5M8 16h8"/>',
+    menu:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M13 9h4M13 13h4"/>',
+    close:'<path d="m9 7-5 5 5 5M16 5v14"/>',
+    settings:'<path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/>',
+    note:'<path d="M4 3h16v12l-6 6H4zM14 21v-6h6"/>',
+    help:'<circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 4 3c-1 .5-1 1-1 2M12 17h.01"/>',
+    download:'<path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/>'
+  };
+  const icon = name => `<span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${icons[name]}</svg></span>`;
+  const button = (label, name, action, cls='') => {
+    const b=document.createElement('button'); b.type='button'; b.className=cls;
+    b.innerHTML=icon(name)+`<span>${label}</span>`; b.addEventListener('click',action); return b;
+  };
+  const rail=document.querySelector('.rail'), top=document.querySelector('.top');
+  const main=document.querySelector('.layout > div:last-child'); main.classList.add('workspace-main');
+  rail.id='workspaceRail'; rail.setAttribute('aria-label',tr('工作台','Workspace'));
+  main.id='workspaceMain'; main.tabIndex=-1;
+  const skip=document.createElement('a'); skip.className='skip-link'; skip.href='#workspaceMain'; skip.textContent=tr('跳到時間表','Skip to planner'); document.body.prepend(skip);
+
+  const railHeader=document.createElement('div'); railHeader.className='rail-header';
+  const brand=document.querySelector('.brandname');
+  brand.innerHTML='<img src="icon.svg" alt=""><span>'+tr('步調','Pace')+'<small class="brand-subtitle">BLOCK PLANNER</small></span>';
+  railHeader.append(brand);
+  const close=button(tr('收合','Close'),'close',()=>setRail(false),'icon-btn rail-close');
+  close.querySelector('span:last-child').remove(); close.setAttribute('aria-label',tr('收合工作台','Close workspace')); railHeader.append(close);
+  const nav=document.createElement('nav'); nav.className='workspace-nav'; nav.setAttribute('aria-label',tr('主要導覽','Main navigation'));
+  const viewtabs=document.querySelector('.viewtabs');
+  $('toGrid').insertAdjacentHTML('afterbegin',icon('calendar'));
+  $('toReport').insertAdjacentHTML('afterbegin',icon('report'));
+  $('toGrid').insertAdjacentHTML('beforeend','<span class="nav-key" aria-hidden="true">T</span>');
+  $('toReport').insertAdjacentHTML('beforeend','<span class="nav-key" aria-hidden="true">R</span>');
+  nav.append(viewtabs);
+  const label=document.createElement('div'); label.className='nav-section-label'; label.textContent=tr('我的規劃','MY PLANNING'); nav.append(label);
+  const sections=[['goals','目標','Goals','goal'],['palette','方塊','Blocks','blocks'],['tasks','這週任務','Weekly tasks','tasks']];
+  sections.forEach(([id,zh,english,i])=>{
+    const section=$(id).closest('.card'); section.id='section-'+id;
+    nav.append(button(tr(zh,english),i,()=>{
+      window.paceUI?.reveal(section);
+      section.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+      const target=section.querySelector('button,input'); target?.focus({preventScroll:true});
+    }));
+  });
+  rail.prepend(railHeader,nav);
+  // Keep verbose instructions available without dominating the daily workspace.
+  const fold=(el,labelZh,labelEn)=>{
+    if(!el)return; const details=document.createElement('details'); details.className='help-details';
+    const summary=document.createElement('summary'); summary.textContent=tr(labelZh,labelEn); details.append(summary);
+    el.before(details); details.append(el);
+  };
+  fold($('palette').previousElementSibling,'操作說明與快捷鍵','How to plan & keyboard shortcuts');
+  fold(document.querySelector('#quickAdd .hint'),'快速輸入提示','Quick entry tips');
+
+  const crumb=document.createElement('div'); crumb.className='workspace-crumb';
+  crumb.innerHTML='<span class="mobile-brand"><img src="icon.svg" alt="">'+tr('步調','Pace')+'</span><span class="crumb-label">'+tr('我的工作台','My workspace')+'</span><span class="crumb-divider">/</span><strong>'+tr('本週計畫','Weekly plan')+'</strong>';
+  crumb.append($('status')); top.prepend(crumb);
+  const toggle=button(tr('工作台','Workspace'),'menu',()=>setRail(true),'icon-btn workspace-toggle');
+  toggle.querySelector('span:last-child').remove(); toggle.setAttribute('aria-label',tr('展開工作台','Open workspace')); toggle.setAttribute('aria-controls','workspaceRail');
+  top.insertBefore(toggle,document.querySelector('.brand'));
+
+  const bar=document.createElement('div'); bar.className='calendar-topbar';
+  bar.innerHTML='<h2 class="calendar-heading">'+icon('calendar')+'<span id="workspaceViewName">'+tr('時間表','Timetable')+'</span></h2><div class="calendar-summary" id="calendarSummary"></div><span class="calendar-view-label">'+icon('calendar')+tr('週視圖','Week view')+'</span>';
+  main.prepend(bar);
+  const hint=document.createElement('div'); hint.className='calendar-hint';
+  hint.innerHTML=icon('help')+'<span>'+tr('點空白處安排時間 · 拖曳方塊調整行程 · 左右滑動查看整週','Click an empty time to plan · Drag blocks to reschedule · Scroll sideways for the full week')+'</span>'; main.append(hint);
+  const grid=$('gridScroll'); grid.tabIndex=0; grid.setAttribute('role','region'); grid.setAttribute('aria-label',tr('七日時間表，可上下及左右捲動','Seven-day timetable, scroll vertically and horizontally'));
+  $('warnbar').tabIndex=0; $('warnbar').setAttribute('role','region'); $('warnbar').setAttribute('aria-label',tr('本週排程提醒，可捲動查看全部','Weekly planning reminders, scroll to see all'));
+  const backdrop=document.createElement('button'); backdrop.className='rail-backdrop'; backdrop.tabIndex=-1; backdrop.setAttribute('aria-label',tr('關閉工作台','Close workspace')); backdrop.addEventListener('click',()=>setRail(false)); document.body.append(backdrop);
+  const mobile=document.createElement('nav'); mobile.className='mobile-nav'; mobile.setAttribute('aria-label',tr('手機導覽','Mobile navigation'));
+  const mobileGrid=button(tr('時間表','Plan'),'calendar',()=>{ $('toGrid').click(); setRail(false,false); });
+  const mobileWork=button(tr('工作台','Workspace'),'blocks',()=>setRail(true)); mobileWork.setAttribute('aria-controls','workspaceRail');
+  const mobileReport=button(tr('報表','Reports'),'report',()=>{ if(!document.body.classList.contains('r'))$('toReport').click(); setRail(false,false); });
+  const mobileSettings=button(tr('設定','Settings'),'settings',()=>{ setRail(false,false); $('skinBtn').click(); });
+  mobile.append(mobileGrid,mobileWork,mobileReport,mobileSettings); document.body.append(mobile);
+  const utilLabel=document.createElement('div'); utilLabel.className='nav-section-label'; utilLabel.textContent=tr('工具','TOOLS');
+  const utilities=document.createElement('nav'); utilities.className='workspace-nav rail-utilities'; utilities.append(utilLabel);
+  [['toWidget','便利貼','Sticky note','note'],['skinBtn','設定','Settings','settings'],['installBtn','安裝 App','Install app','download']].forEach(([id,zh,english,i])=>{
+    const b=button(tr(zh,english),i,()=>{ setRail(false,false); $(id).click(); });
+    if(id==='installBtn') { const syncInstall=()=>{ b.hidden=$(id).hidden; }; new MutationObserver(syncInstall).observe($(id),{attributes:true,attributeFilter:['hidden']}); syncInstall(); }
+    utilities.append(b);
+  });
+  // Tools remain reachable near the top on touch screens and at the foot of the rail on desktop.
+  rail.append(utilities);
+  const narrow=matchMedia('(max-width:1199px)'); let returnFocus=null;
+  function setRail(open,restore=true) {
+    if(open) returnFocus=document.activeElement;
+    document.body.classList.toggle('rail-open',open && narrow.matches);
+    document.body.classList.toggle('rail-collapsed',!open && !narrow.matches);
+    toggle.setAttribute('aria-expanded',String(open)); mobileWork.setAttribute('aria-expanded',String(open));
+    const trap=open && narrow.matches;
+    top.inert=trap; main.inert=trap; mobile.inert=trap;
+    if(open && narrow.matches) close.focus({preventScroll:true});
+    if(!open && restore && returnFocus?.isConnected) returnFocus.focus({preventScroll:true});
+    if(!open && document.activeElement && rail.contains(document.activeElement)) (narrow.matches ? mobileWork : toggle).focus({preventScroll:true});
+  }
+  narrow.addEventListener('change',()=>{
+    document.body.classList.remove('rail-open','rail-collapsed'); top.inert=false; main.inert=false; mobile.inert=false;
+    toggle.setAttribute('aria-expanded',String(!narrow.matches)); mobileWork.setAttribute('aria-expanded','false');
+  });
+  toggle.setAttribute('aria-expanded',String(!narrow.matches)); mobileWork.setAttribute('aria-expanded','false');
+  // The drawer yields to the original drag engine when a drag starts, so the calendar remains a drop target.
+  document.addEventListener('pointermove',()=>{ if(narrow.matches && document.body.classList.contains('rail-open') && typeof drag!=='undefined' && drag?.moved) setRail(false,false); });
+  $('toGrid').addEventListener('click',()=>{ if(narrow.matches)setRail(false,false); });
+  $('toReport').addEventListener('click',()=>{ if(narrow.matches)setRail(false,false); });
+  document.addEventListener('keydown',e=>{
+    if(document.querySelector('dialog[open]'))return;
+    if(e.key==='Escape' && document.body.classList.contains('rail-open')) { e.preventDefault(); setRail(false); return; }
+    if(e.key==='Tab' && document.body.classList.contains('rail-open')) {
+      const items=[...rail.querySelectorAll('button,input,select,textarea,summary,[tabindex="0"],a[href]')].filter(el=>!el.disabled && el.getClientRects().length);
+      const first=items[0],last=items.at(-1);
+      if(e.shiftKey && document.activeElement===first) { e.preventDefault(); last?.focus(); }
+      else if(!e.shiftKey && document.activeElement===last) { e.preventDefault(); first?.focus(); }
+    }
+    if(e.key.toLowerCase()==='n' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest?.('input,textarea,select')) {
+      if(window.paceUI?.isMobile())window.paceUI.showView('tasks'); else setRail(true);
+      $('qa').scrollIntoView({block:'center'});
+    }
+    if(e.key==='Enter' || e.key===' ') {
+      const target=e.target.closest?.('.blk,[data-drag^="module:"],[data-toggle],[data-fail]');
+      if(!target || e.target.matches('input'))return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if(target.dataset.toggle)toggleDone(target.dataset.toggle);
+      else if(target.dataset.fail)toggleFail(target.dataset.fail);
+      else if(target.dataset.fixed)target.click();
+      else if(target.dataset.bid)openBlock(target.dataset.bid);
+      else if(target.dataset.drag?.startsWith('module:'))openModule(target.dataset.drag.slice(7));
+    }
+  },true);
+  const revealQuickAdd=event=>{ if((event?.newURL ? new URL(event.newURL).hash : location.hash)==='#add'){if(window.paceUI?.isMobile())window.paceUI.showView('tasks'); else setRail(true); $('qa').focus();} };
+  addEventListener('hashchange',revealQuickAdd); revealQuickAdd();
+  function enhance() {
+    document.querySelectorAll('.blk,[data-drag^="module:"],[data-toggle],[data-fail]').forEach(el=>{
+      if(!el.matches('button')) { el.tabIndex=0; el.setAttribute('role','button'); }
+      if(el.title)el.setAttribute('aria-label',el.title);
+    });
+    const blocks=typeof state!=='undefined' ? state.week?.blocks||[] : [];
+    const hours=(blocks.reduce((sum,b)=>sum+b.minutes,0)/60).toFixed(1),done=blocks.filter(b=>b.done).length;
+    $('calendarSummary').innerHTML=tr(`<span>已排 <b>${hours}h</b></span><span>·</span><span>完成 <b>${done}/${blocks.length}</b></span>`,`<span>Planned <b>${hours}h</b></span><span>·</span><span>Done <b>${done}/${blocks.length}</b></span>`);
+  }
+  new MutationObserver(enhance).observe($('grid'),{childList:true});
+  new MutationObserver(enhance).observe($('palette'),{childList:true}); enhance();
+  function syncView() {
+    const isReport=document.body.classList.contains('r');
+    $('workspaceViewName').textContent=isReport?tr('時間報表','Time reports'):tr('時間表','Timetable');
+    mobileGrid.setAttribute('aria-pressed',String(!isReport)); mobileReport.setAttribute('aria-pressed',String(isReport));
+    document.querySelector('.calendar-view-label').hidden=isReport;
+    if(document.body.classList.contains('w') && document.body.classList.contains('rail-open'))setRail(false,false);
+  }
+  new MutationObserver(syncView).observe(document.body,{attributes:true,attributeFilter:['class']}); syncView();
+  // Correct the default skin's display copy without writing any saved preference.
+  const defaultSkin=typeof SKINS!=='undefined' && SKINS.find(s=>s.id==='default');
+  if(defaultSkin) { defaultSkin.name=tr('極簡淺色','Minimal light'); defaultSkin.note=tr('純白工作台、柔和綠色，預設維持淺色','A white workspace with soft green accents'); defaultSkin.sw=['#ffffff','#f7f7f5','#43866b','#e9eff7','#eaf2e7']; }
+  document.querySelectorAll('dialog').forEach(dialog=>{
+    if(dialog.hasAttribute('aria-label')||dialog.hasAttribute('aria-labelledby'))return;
+    const title=dialog.querySelector('.dtitle'); if(title){ if(!title.id)title.id=dialog.id+'Heading'; dialog.setAttribute('aria-labelledby',title.id); }
+  });
+  $('toast').setAttribute('role','status'); $('status').setAttribute('role','status');
+})();
+</script>
+<script data-pace-ui="notion-mobile.js">/* C-only navigation: keep one copy of every original form, handler and data node. */
+(() => {
+  const $=id=>document.getElementById(id), mobile=matchMedia('(max-width:767px)');
+  const tr=(zh,en)=>window.paceLang?.()==='en'?en:zh;
+  const icon=name=>({calendar:'▦',tasks:'☑',blocks:'▥',focus:'◷',more:'•••',goals:'◎',wishes:'☆',groups:'♧',coach:'✦',hours:'◴',settings:'⚙',report:'▤'})[name]||'›';
+  const labels={calendar:['時間表','Timetable'],tasks:['任務','Tasks'],blocks:['方塊','Blocks'],focus:['專注','Focus'],more:['更多','More'],goals:['目標','Goals'],wishes:['願望清單','Wishlist'],groups:['共筆群組','Groups'],coach:['AI 與教練','AI & coach'],hours:['本週時數','Weekly hours'],report:['時間報表','Reports']};
+  const makeButton=(name,text,fn,cls='btn')=>{const b=document.createElement('button');b.type='button';b.className=cls;b.innerHTML=`<span class="pace-icon" aria-hidden="true">${icon(name)}</span><span>${text}</span>`;b.addEventListener('click',fn);return b;};
+  const planner=document.querySelector('.planner'),rail=$('workspaceRail'),main=$('workspaceMain'),top=document.querySelector('.top');
+  const baseWidget=setWidget,baseReport=setReport;
+  const pages=document.createElement('div');pages.id='pacePages';planner.append(pages);
+  const panels={}; Object.keys(labels).filter(k=>!['calendar','report'].includes(k)).forEach(k=>{const el=document.createElement('section');el.className='pace-panel';el.id='pace'+k[0].toUpperCase()+k.slice(1)+'Panel';el.hidden=true;el.setAttribute('aria-label',tr(...labels[k]));panels[k]=el;pages.append(el);});
+  const heading=document.createElement('div');heading.className='pace-page-heading';heading.innerHTML='<div><p id="pacePageEyebrow"></p><h1 id="pacePageTitle"></h1></div><div id="pacePageActions"></div>';document.querySelector('.workspace-crumb').after(heading);
+  const actions=$('pacePageActions');
+  const add=makeButton('blocks',tr('新增','Add'),()=>{ if(view==='tasks'){ $('qa').focus();return;} if(view==='blocks'){ $('newModule').click();return;} if(view==='goals'){ $('newGoalBtn').click();return;} const time=Math.max(START,Math.min(END-30,new Date().getHours()*60));scrollToTime(time);const col=$('grid').querySelector(`.col[data-day="${selectedDay}"]`);if(col){const r=col.getBoundingClientRect();col.dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:r.left+20,clientY:r.top+OFF+time-START+1}));} },'btn primary pace-add');actions.append(add);
+  const back=makeButton('more',tr('返回','Back'),()=>showView('more'),'btn pace-back');actions.append(back);
+  const dayControls=document.createElement('div');dayControls.className='pace-calendar-controls';
+  const todayButton=makeButton('focus',tr('今天','Today'),()=>{ $('thisW').click();selectedDay=(new Date().getDay()+6)%7;updateCalendar();requestAnimationFrame(()=>scrollToTime(new Date().getHours()*60+new Date().getMinutes())); },'btn');
+  todayButton.id='paceToday';dayControls.append(todayButton);
+  const modes=document.createElement('div');modes.className='seg pace-calendar-modes';modes.setAttribute('aria-label',tr('時間表檢視','Timetable view'));
+  ['day','week'].forEach(mode=>{const b=makeButton('calendar',mode==='day'?tr('單日','Day'):tr('整週','Week'),()=>setCalendarMode(mode),'');b.dataset.calendarMode=mode;modes.append(b);});dayControls.append(modes);
+  const dateOptions=makeButton('more',tr('日期選項','Day options'),()=>{const el=document.querySelectorAll('#grid > .head[data-date]')[selectedDay];el?.click();},'btn pace-date-options');dateOptions.title=tr('放假、請假或生病','Holiday, leave or sick day');dayControls.append(dateOptions);
+  const dayStrip=document.createElement('div');dayStrip.id='paceDayStrip';dayStrip.setAttribute('role','group');dayStrip.setAttribute('aria-label',tr('選擇日期','Choose day'));
+  main.prepend(dayControls,dayStrip);
+  const warnings=document.createElement('details');warnings.id='paceWarnings';warnings.innerHTML='<summary>'+tr('本週規劃提醒','Weekly reminders')+'<span id="paceWarningCount"></span></summary>';
+  const taskFilters=document.createElement('div');taskFilters.className='pace-filters';taskFilters.setAttribute('role','group');taskFilters.setAttribute('aria-label',tr('任務範圍','Task filter'));
+  let taskFilter='week',blockFilter=-1,view='calendar',mode='day',selectedDay=(new Date().getDay()+6)%7,mounted=false,explicitWidget=false;
+  [['today','今日到期／已安排','Due / scheduled today'],['week','本週全部','This week']].forEach(([key,zh,en])=>{const b=makeButton('tasks',tr(zh,en),()=>{taskFilter=key;filterTasks();},'btn');b.dataset.taskFilter=key;taskFilters.append(b);});panels.tasks.append(taskFilters);
+  const taskEmpty=document.createElement('div');taskEmpty.className='pace-empty';taskEmpty.hidden=true;taskEmpty.textContent=tr('今天沒有到期或已安排的任務。切到「本週全部」繼續規劃。','Nothing due or scheduled today. See This week to plan ahead.');
+  const categoryFilters=document.createElement('div');categoryFilters.className='pace-filters pace-category-filters';categoryFilters.setAttribute('role','group');categoryFilters.setAttribute('aria-label',tr('方塊分類','Block category'));
+  [[-1,tr('全部','All')],...GROUPS.map(([name],i)=>[i,window.paceTr?.(name)||name])].forEach(([i,label])=>{const b=makeButton('blocks',label,()=>{blockFilter=i;filterBlocks();},'btn');b.dataset.blockFilter=i;categoryFilters.append(b);});panels.blocks.append(categoryFilters);
+  const blockTip=document.createElement('p');blockTip.className='pace-page-hint';blockTip.textContent=tr('點選可編輯與排程；長按後拖動，會自動展開時間表。','Tap to edit or schedule. Hold and drag to reveal the timetable.');panels.blocks.append(blockTip);
+  const focusIdle=document.createElement('div');focusIdle.className='pace-focus-idle';focusIdle.innerHTML='<span class="pace-focus-orbit" aria-hidden="true">◷</span><h2>'+tr('一次，只做一件事','One thing at a time')+'</h2><p>'+tr('選一個任務，給自己一段不被打擾的時間。','Choose a task and make a little room to focus.')+'</p>';focusIdle.append(makeButton('tasks',tr('選擇任務','Choose a task'),()=>showView('tasks'),'btn primary'),makeButton('blocks',tr('選擇方塊','Choose a block'),()=>showView('blocks'),'btn'));panels.focus.append(focusIdle);
+  const moreGrid=document.createElement('div');moreGrid.className='pace-more-grid';panels.more.append(moreGrid);
+  const descriptions={goals:tr('把大目標拆成小步驟','Small steps toward a bigger goal'),wishes:tr('為想做的事留點空間','Make room for things you enjoy'),groups:tr('一起完成，互相鼓勵','Progress, shared with care'),report:tr('回顧時間花在哪裡','A little perspective on your time'),coach:tr('你的 AI 與讀書建議','Your AI and study suggestions'),hours:tr('本週各科時數與目標','Weekly hours and targets')};
+  ['goals','wishes','groups','report','coach','hours'].forEach(k=>{const b=makeButton(k,tr(...labels[k]),()=>showView(k),'pace-more-card');const d=document.createElement('small');d.textContent=descriptions[k];b.append(d);moreGrid.append(b);});
+  const commands=document.createElement('div');commands.id='paceMoreCommands';commands.className='pace-more-commands';panels.more.append(commands);
+  const backupButton=makeButton('tasks',tr('備份與還原','Backup & restore'),()=>openSettings('exportAll'),'btn');commands.append(backupButton);
+  const groupInfo=document.createElement('div');groupInfo.className='pace-info-card';groupInfo.innerHTML='<span class="pace-kicker">'+tr('一起前進','TOGETHER')+'</span><h2>'+tr('分享完成，不分享時間表','Share progress, keep your plan private')+'</h2><p>'+tr('可選擇分享完成項目、只分享分鐘數，或完全不分享。','Share completed items, minutes only, or keep all progress private.')+'</p>';groupInfo.append(makeButton('groups',tr('管理群組與隱私','Manage groups & privacy'),()=>openSettings('grpOff'),'btn primary'));panels.groups.append(groupInfo);
+  const coachInfo=document.createElement('div');coachInfo.className='pace-info-card';coachInfo.innerHTML='<h2>'+tr('用自己的 AI，照自己的步調','Your AI, at your pace')+'</h2><p>'+tr('在設定中選擇服務、管理金鑰及教練卡片。','Choose your provider, manage your key and enable coaching in Settings.')+'</p>';coachInfo.append(makeButton('coach',tr('AI 與教練設定','AI & coach settings'),()=>openSettings('aiProvider'),'btn'));panels.coach.append(coachInfo);
+  const saved=[];
+  const move=(el,to)=>{if(!el)return;const marker=document.createComment('pace-original-position');el.before(marker);saved.push({el,marker});to.append(el);};
+  const sections={tasks:$('tasks').closest('.card'),blocks:$('palette').closest('.card'),goals:$('goals').closest('.card'),wishes:$('wishes').closest('.card'),hours:$('targets').closest('.card'),coach:$('coachCard'),groups:$('grpCard'),focus:$('nowPick')};
+  function mount(){
+    if(mounted)return;mounted=true;
+    Object.entries(sections).forEach(([key,el])=>move(el,panels[key]));
+    move($('skipCard'),panels.hours);move($('wFocus'),panels.focus);
+    ['toReport','toWidget','skinBtn','installBtn'].forEach(id=>move($(id),commands));
+    move($('warnbar'),warnings);document.querySelector('.calendar-topbar').after(warnings);
+    $('tasks').after(taskEmpty);
+    document.body.classList.remove('rail-open','rail-collapsed');top.inert=false;main.inert=false;document.querySelector('.mobile-nav').inert=false;
+    const wasWidget=document.body.classList.contains('w');
+    showView(view,{silent:true});
+    if(wasWidget){explicitWidget=true;setWidget(true);explicitWidget=false;}
+  }
+  function unmount(){
+    if(!mounted)return;mounted=false;
+    for(const {el,marker}of saved.splice(0)){marker.replaceWith(el);}
+    warnings.remove();taskEmpty.remove();pages.hidden=true;
+    document.body.removeAttribute('data-pace-view');$('grid').classList.remove('pace-day-grid');
+    document.querySelectorAll('.pace-filtered').forEach(el=>el.classList.remove('pace-filtered'));
+    document.querySelectorAll('#grid [data-pace-active]').forEach(el=>el.removeAttribute('data-pace-active'));
+    if(view==='focus')baseWidget(true);else if(view==='report')baseReport(true);
+  }
+  function navigateAnimation(el){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;el.animate([{opacity:.4,translate:'0 5px'},{opacity:1,translate:'0 0'}],{duration:200,easing:'cubic-bezier(.2,.7,.2,1)'});}
+  function showView(name,options={}){
+    if(!labels[name])return;
+    if(!mobile.matches){
+      if(name==='focus')return baseWidget(true);
+      if(name==='report'||name==='calendar'){baseWidget(false);return baseReport(name==='report');}
+      const el=sections[name];if(name==='groups'&&el?.hidden)return openSettings('grpOff');
+      if(el){baseWidget(false);el.scrollIntoView({block:'start'});if(name==='coach'&&el.hidden)openSettings('aiProvider');}return;
+    }
+    if(!mounted)return;
+    const prev=view;view=name;document.body.dataset.paceView=name;pages.hidden=['calendar','report'].includes(name);
+    if(document.body.classList.contains('w'))baseWidget(false);
+    if($('wFocus').parentNode!==panels.focus)panels.focus.append($('wFocus'));
+    if(document.body.classList.contains('r')!==(name==='report'))baseReport(name==='report');
+    document.body.classList.remove('rail-open','rail-collapsed');top.inert=false;main.inert=false;document.querySelector('.mobile-nav').inert=false;
+    Object.entries(panels).forEach(([key,el])=>el.hidden=key!==name);
+    document.querySelectorAll('[data-pace-nav]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.paceNav===(['calendar','tasks','blocks','focus'].includes(name)?name:'more'))));
+    $('pacePageEyebrow').textContent=name==='calendar'?tr('把時間留給重要的事','Make time for what matters'):tr('我的工作台','MY WORKSPACE');
+    $('pacePageTitle').textContent=tr(...labels[name]);
+    add.hidden=!['calendar','tasks','blocks','goals'].includes(name);back.hidden=['calendar','tasks','blocks','focus','more'].includes(name);
+    if(name==='calendar')updateCalendar();if(name==='tasks')filterTasks();if(name==='blocks')filterBlocks();if(name==='focus')syncFocus();
+    if(!options.silent&&prev!==name&&!options.fromDrag)navigateAnimation(panels[name]||main);
+  }
+  function setCalendarMode(next){if(!['day','week'].includes(next))return;mode=next;updateCalendar();}
+  function setDay(day){selectedDay=Math.max(0,Math.min(6,Number(day)||0));updateCalendar();}
+  function scrollToTime(minutes){const g=$('gridScroll');g.scrollTop=Math.max(0,Math.min(SPAN,minutes-START)-90);}
+  let weekKey='';
+  function updateCalendar(){
+    if(!mobile.matches||!mounted)return;
+    const key=ymd(state.monday);if(weekKey&&key!==weekKey)selectedDay=isThisWeek()?(new Date().getDay()+6)%7:0;weekKey=key;
+    const g=$('grid');g.classList.toggle('pace-day-grid',mode==='day');
+    g.querySelectorAll('.col').forEach(el=>el.dataset.paceActive=String(Number(el.dataset.day)===selectedDay));
+    g.querySelectorAll('.head[data-date]').forEach((el,i)=>el.dataset.paceActive=String(i===selectedDay));
+    const focusedDay=dayStrip.contains(document.activeElement)?document.activeElement.closest('[data-pace-day]')?.dataset.paceDay:null;
+    dayStrip.replaceChildren();for(let i=0;i<7;i++){const d=addDays(state.monday,i);const b=makeButton('',`<small>${tr('週'+DAYN[i],['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i])}</small><b>${d.getDate()}</b>`,()=>setDay(i),'pace-day');b.dataset.paceDay=i;b.setAttribute('aria-pressed',String(i===selectedDay));b.setAttribute('aria-label',ymd(d));if(ymd(d)===ymd(new Date()))b.setAttribute('aria-current','date');dayStrip.append(b);}
+    if(focusedDay!==null)dayStrip.querySelector(`[data-pace-day="${focusedDay}"]`)?.focus({preventScroll:true});
+    $('gridScroll').setAttribute('aria-label',mode==='day'?tr('當日時間表，可上下捲動','Day timetable, scroll vertically'):tr('七日時間表，可上下及左右捲動','Week timetable, scroll vertically and horizontally'));
+    modes.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.calendarMode===mode)));
+    const selected=addDays(state.monday,selectedDay);if(view==='calendar')$('pacePageTitle').textContent=mode==='day'?tr(`${selected.getMonth()+1}月${selected.getDate()}日，週${DAYN[selectedDay]}`,selected.toLocaleDateString('en',{month:'short',day:'numeric',weekday:'short'})):tr('這一週的步調','Your week, at a glance');
+    const blocks=(state.week?.blocks||[]).filter(b=>mode==='week'||b.day===selectedDay);
+    if(view==='calendar')$('calendarSummary').textContent=tr(`已排 ${(blocks.reduce((a,b)=>a+b.minutes,0)/60).toFixed(1)}h · 完成 ${blocks.filter(b=>b.done).length}/${blocks.length}`,`${(blocks.reduce((a,b)=>a+b.minutes,0)/60).toFixed(1)}h planned · ${blocks.filter(b=>b.done).length}/${blocks.length} done`);
+    $('workspaceViewName').textContent=mode==='day'?tr('當日安排','Day plan'):tr('七日時間表','Week plan');
+  }
+  function filterTasks(){
+    const today=ymd(new Date()),todayDay=(new Date().getDay()+6)%7;let visible=0;
+    $('tasks').querySelectorAll('.task').forEach(el=>{const id=el.querySelector('[data-tdone]')?.dataset.tdone,t=state.tasks.find(t=>t.id===id);const scheduled=isThisWeek()&&state.week.blocks.some(b=>b.taskId===id&&b.day===todayDay);const keep=!mobile.matches||taskFilter==='week'||!!t&&((!!t.due&&t.due<=today)||scheduled);el.classList.toggle('pace-filtered',!keep);if(keep)visible++;});
+    taskFilters.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.taskFilter===taskFilter)));
+    taskEmpty.hidden=taskFilter!=='today'||visible>0;
+  }
+  function filterBlocks(){
+    const selected=blockFilter<0?null:GROUPS[blockFilter]?.[1];
+    $('palette').querySelectorAll('.pal-group').forEach(el=>{const chip=el.querySelector('[data-drag]');const model=state.config?.modules?.find(m=>'module:'+m.id===chip?.dataset.drag);el.classList.toggle('pace-filtered',!!selected&&!selected.includes(model?.cat));});
+    categoryFilters.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.blockFilter)===blockFilter)));
+  }
+  function syncFocus(){const active=typeof focus!=='undefined'&&!!focus;panels.focus.classList.toggle('pace-focus-live',active);focusIdle.hidden=active;}
+  function openSettings(target){$('skinBtn').click();requestAnimationFrame(()=>$(target==='grpOff'&&$('grpOff')?.hidden?'grpOn':target)?.scrollIntoView({block:'center'}));}
+  function reveal(target){
+    if(!target||!mobile.matches)return;
+    if(target.closest('#grid')){showView('calendar',{silent:true});const col=target.closest('.col');if(col)setDay(col.dataset.day);return;}
+    for(const [key,p]of Object.entries(panels))if(p.contains(target)){showView(key,{silent:true});return;}
+    if(target===$('weekMenu')||main.contains(target)){showView('calendar',{silent:true});return;}
+    if(target.closest('dialog'))return;
+    for(const [key,el]of Object.entries(sections))if(el===target||el?.contains(target)){showView(key,{silent:true});return;}
+  }
+  window.paceUI={showView,reveal,setDay,setCalendarMode,scrollToTime,isMobile:()=>mobile.matches,get view(){return view;},get mode(){return mode;},get day(){return selectedDay;}};
+  const navigation=document.querySelector('.mobile-nav');navigation.replaceChildren();
+  ['calendar','tasks','blocks','focus','more'].forEach(name=>{const b=makeButton(name,tr(...labels[name]),()=>showView(name),'');b.dataset.paceNav=name;navigation.append(b);});
+  // Desktop gets every new entry as well, using the same original surfaces.
+  const desktopNav=document.querySelector('.workspace-nav');
+  ['wishes','focus','groups'].forEach(name=>desktopNav.append(makeButton(name,tr(...labels[name]),()=>showView(name),'')));
+  document.addEventListener('click',e=>{if(e.target.closest('#toWidget')){explicitWidget=true;setTimeout(()=>explicitWidget=false,0);}},true);
+  document.addEventListener('keydown',e=>{if(e.key.toLowerCase()==='w'&&!e.target.closest('input,textarea,select')){explicitWidget=true;setTimeout(()=>explicitWidget=false,0);}},true);
+  setWidget=function(on){if(on&&mobile.matches&&mounted&&!explicitWidget&&typeof focus!=='undefined'&&focus){showView('focus');return;}if(on&&mounted){const record=saved.find(r=>r.el===$('wFocus'));if(record)record.marker.parentNode.insertBefore(record.el,record.marker.nextSibling);}else if(mounted&&$('wFocus').parentNode!==panels.focus)panels.focus.append($('wFocus'));baseWidget(on);};
+  setReport=function(on){baseReport(on);if(mobile.matches&&mounted)showView(on?'report':'calendar');};
+  let dragFrom=null,lastHoverDay=-1;
+  document.addEventListener('pointerdown',e=>{dragFrom=e.target.closest('[data-drag]')?view:null;},true);
+  document.addEventListener('pointermove',e=>{
+    if(!mobile.matches||!drag?.moved)return;
+    if(view!=='calendar')showView('calendar',{fromDrag:true});
+    const day=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-pace-day]');
+    if(day&&Number(day.dataset.paceDay)!==lastHoverDay){lastHoverDay=Number(day.dataset.paceDay);setDay(lastHoverDay);}
+  });
+  document.addEventListener('pointerup',()=>{lastHoverDay=-1;dragFrom=null;});
+  document.addEventListener('pointercancel',()=>{if(dragFrom&&mobile.matches)showView(dragFrom);dragFrom=null;});
+  new MutationObserver(()=>{updateCalendar();filterTasks();}).observe($('grid'),{childList:true});
+  new MutationObserver(filterTasks).observe($('tasks'),{childList:true});
+  new MutationObserver(filterBlocks).observe($('palette'),{childList:true});
+  new MutationObserver(syncFocus).observe($('wFocus'),{attributes:true,attributeFilter:['hidden']});
+  const syncWarnings=()=>{warnings.hidden=$('warnbar').hidden;warnings.querySelector('#paceWarningCount').textContent=String($('warnbar').querySelectorAll('.pill').length||'');};
+  new MutationObserver(syncWarnings).observe($('warnbar'),{childList:true,attributes:true,attributeFilter:['hidden']});syncWarnings();
+  mobile.addEventListener('change',()=>{mobile.matches?mount():unmount();updateCalendar();});
+  if(mobile.matches)mount();else pages.hidden=true;
+  if(location.hash==='#add'&&mobile.matches){showView('tasks');$('qa').focus();}
+  // Existing completed/failed controls are also keyboard-accessible in single-day mode.
+})();
+</script>
+<script data-pace-ui="notion-focus.js">/* C-only controls around the existing focus timer; no new fields in planner-focus. */
+(() => {
+  'use strict';
+  const clock = window.paceFocusClock;
+  const box = document.getElementById('wFocus');
+  const actions = box?.querySelector('.acts');
+  if (!clock || !actions || document.getElementById('fPause')) return;
+  const button = document.createElement('button');
+  button.id = 'fPause'; button.type = 'button'; button.className = 'btn';
+  actions.prepend(button);
+  const en = () => window.paceLang?.() === 'en';
+  const el = id => document.getElementById(id);
+  const originalRender = renderFocus;
+  let lastSession = null, remoteRender = 0;
+
+  function updateControl() {
+    if (!focus) {
+      button.hidden = true;
+      delete box.dataset.paused;
+      // finishFocus computes actual minutes before it renders the empty timer.
+      // Another tab must not clear the record while the originating tab computes.
+      if (!remoteRender && lastSession) clock.clear(lastSession);
+      return;
+    }
+    lastSession = { start: focus.start };
+    const paused = !!clock.read(focus);
+    button.hidden = false;
+    button.textContent = paused ? (en() ? 'Resume' : '繼續') : (en() ? 'Pause' : '暫停');
+    button.setAttribute('aria-pressed', String(paused));
+    button.setAttribute('aria-label', paused ? (en() ? 'Resume timer' : '繼續計時') : (en() ? 'Pause timer' : '暫停計時'));
+    button.title = paused ? (en() ? 'Paused time does not count toward focus time' : '暫停時間不計入實際專注時間') : (en() ? 'Pause the current work or break timer' : '暫停目前的專注或休息計時');
+    box.dataset.paused = String(paused);
+    // The original skip handler uses wall time. Resume before using it.
+    const skip = el('fSkip');
+    if (skip) { skip.disabled = paused; skip.title = paused ? (en() ? 'Resume before skipping the break' : '請先繼續計時，再略過休息') : ''; }
+    if (!paused) return;
+    const brk = focus.phase === 'break', split = focus.mode !== 'single';
+    const rounds = split ? Math.ceil(focus.total / focus.work) : 1;
+    const workMs = focusWorkMs(focus), doneMin = Math.floor(workMs / 60000), totalMin = Math.round(focus.total / 60000);
+    el('fLbl').textContent = en() ? (brk ? 'Break paused' : 'Focus paused') : (brk ? '休息已暫停' : '專注已暫停');
+    el('fRound').textContent = en()
+      ? (split ? `Round ${focus.round} / ${rounds} · Paused` : 'Single session · Paused')
+      : (split ? `第 ${focus.round} / ${rounds} 輪・已暫停` : '不分割・已暫停');
+    el('fAll').textContent = en()
+      ? `Overall ${doneMin} / ${totalMin} min (${Math.min(100, Math.round(workMs / focus.total * 100))}%) · Paused time is excluded`
+      : `整體進度 ${doneMin} / ${totalMin} 分鐘（${Math.min(100, Math.round(workMs / focus.total * 100))}%）・暫停時間不計入`;
+    el('focusPill').textContent = `${en() ? 'Paused' : '已暫停'} ${el('fTime').textContent}`;
+  }
+
+  renderFocus = function (...args) {
+    if (focus) lastSession = { start: focus.start };
+    const result = originalRender.apply(this, args);
+    updateControl();
+    return result;
+  };
+
+  function savedTimerMatches(f) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(FOCUS_KEY) || 'null');
+      return saved && saved.start === f.start && saved.segStart === f.segStart && saved.segEnd === f.segEnd && saved.end === f.end;
+    } catch (_) { return false; }
+  }
+
+  button.addEventListener('click', () => {
+    // Settle an elapsed segment before freezing it at the current instant.
+    renderFocus();
+    if (!focus) return;
+    const paused = clock.read(focus);
+    if (!paused) {
+      storeFocus();
+      if (!savedTimerMatches(focus) || !clock.pause(focus)) {
+        toast(en() ? 'Unable to save a pause. The timer is still running.' : '無法儲存暫停狀態，計時仍在進行。');
+        return;
+      }
+    } else {
+      const duration = Math.max(0, Date.now() - paused.at), previous = {};
+      for (const key of ['start', 'segStart', 'segEnd', 'end']) {
+        previous[key] = focus[key];
+        if (Number.isFinite(focus[key])) focus[key] += duration;
+      }
+      // Publish shifted deadlines before removing the old pause signature.
+      storeFocus();
+      if (!savedTimerMatches(focus)) {
+        Object.assign(focus, previous);
+        toast(en() ? 'Unable to save the timer. It is still paused.' : '無法儲存計時狀態，目前仍維持暫停。');
+        return;
+      }
+      clock.clear(paused);
+    }
+    renderFocus();
+  });
+
+  function sameSession(a, b) {
+    return a && b && ['id', 'taskId', 'week', 'name', 'mode', 'total'].every(key => a[key] === b[key]);
+  }
+  window.addEventListener('storage', event => {
+    if (event.key !== clock.key && event.key !== FOCUS_KEY) return;
+    if (event.key === FOCUS_KEY) {
+      try {
+        const before = JSON.parse(event.oldValue || 'null'), after = JSON.parse(event.newValue || 'null');
+        // Only synchronize a timer already open in this tab; do not import a new session.
+        if (!focus || !before || focus.start !== before.start || (after && !sameSession(focus, after))) return;
+        focus = after ? normFocus(after) : null;
+      } catch (_) { return; }
+    }
+    remoteRender++;
+    try { renderFocus(); } finally { remoteRender--; }
+  });
+  renderFocus();
+})();
+</script>
+<script data-pace-ui="notion-feedback.js">/* UI feedback only. Observes existing public UI state; never wraps persistence,
+   sync, AI, scheduling, or promises and never announces invented success. */
+(() => {
+  const $ = id => document.getElementById(id);
+  const pressTargets = 'button, summary, a.btn, [role="button"]';
+  const pressed = new Map();
+  const pressable = target => {
+    const el = target?.closest?.(pressTargets);
+    if (!el || el.disabled || el.getAttribute('aria-disabled') === 'true' ||
+      el.closest('[data-drag], .blk, .rz')) return null;
+    return el;
+  };
+  const release = id => {
+    const el = pressed.get(id);
+    if (el) el.classList.remove('pace-pressed');
+    pressed.delete(id);
+  };
+  const releaseAll = () => { [...pressed.keys()].forEach(release); };
+  document.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    const el = pressable(e.target);
+    if (el) { pressed.set(e.pointerId, el); el.classList.add('pace-pressed'); }
+  }, { passive: true });
+  document.addEventListener('pointerup', e => release(e.pointerId), { passive: true });
+  document.addEventListener('pointercancel', e => release(e.pointerId), { passive: true });
+  document.addEventListener('lostpointercapture', e => release(e.pointerId), { passive: true });
+  document.addEventListener('keydown', e => {
+    if (e.repeat || !['Enter', ' '].includes(e.key)) return;
+    const el = pressable(e.target);
+    if (el) { pressed.set('keyboard', el); el.classList.add('pace-pressed'); }
+  });
+  document.addEventListener('keyup', e => { if (['Enter', ' '].includes(e.key)) release('keyboard'); });
+  document.addEventListener('focusout', () => release('keyboard'));
+  window.addEventListener('blur', releaseAll);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
+
+  // Virtual-keyboard dimensions affect sheet layout only; no viewport scroll reset.
+  const updateViewport = () => {
+    const vv = window.visualViewport;
+    // Pinch zoom should magnify the workspace, not relayout it as a keyboard.
+    const usable = vv && Math.abs(vv.scale - 1) < .01;
+    document.documentElement.style.setProperty('--pace-visual-height', `${Math.round(usable ? vv.height : innerHeight)}px`);
+    const inset = usable ? Math.max(0, innerHeight - vv.height - vv.offsetTop) : 0;
+    document.documentElement.style.setProperty('--pace-keyboard-inset', `${Math.round(inset)}px`);
+  };
+  updateViewport();
+  window.addEventListener('resize', updateViewport, { passive: true });
+  window.visualViewport?.addEventListener('resize', updateViewport, { passive: true });
+  window.visualViewport?.addEventListener('scroll', updateViewport, { passive: true });
+
+  const pendingButtons = new WeakMap();
+  function pending(button, on, ownsDisabled = true, spinner = true) {
+    if (!button) return;
+    if (on) {
+      if (!pendingButtons.has(button)) pendingButtons.set(button, {
+        disabled: button.disabled,
+        busy: button.getAttribute('aria-busy'),
+        ownsDisabled
+      });
+      if (ownsDisabled && !button.disabled) button.disabled = true;
+      if (spinner) {
+        button.setAttribute('aria-busy', 'true');
+        button.dataset.pacePending = 'true';
+      }
+    } else {
+      const old = pendingButtons.get(button);
+      if (!old) return;
+      if (old.ownsDisabled) button.disabled = old.disabled;
+      if (old.busy === null) button.removeAttribute('aria-busy');
+      else button.setAttribute('aria-busy', old.busy);
+      delete button.dataset.pacePending;
+      pendingButtons.delete(button);
+    }
+  }
+  const translated = text => window.paceTr?.(text) || text;
+  function messageWatcher(id, buttonSelector, pendingTexts) {
+    const node = $(id);
+    if (!node) return;
+    node.setAttribute('aria-live', 'polite');
+    const running = new Set(pendingTexts.flatMap(t => [t, translated(t)]));
+    let lastButton = null;
+    const lockedButtons = new Set();
+    document.addEventListener('click', e => {
+      const b = e.target.closest?.(buttonSelector);
+      if (b && !b.disabled) lastButton = b;
+    }, true);
+    const reflect = () => {
+      const text = node.textContent.trim();
+      const processing = running.has(text);
+      if (processing && lastButton) {
+        document.querySelectorAll(buttonSelector).forEach(button => {
+          lockedButtons.add(button);
+          pending(button, true, true, button === lastButton);
+        });
+      } else if (!processing) {
+        lockedButtons.forEach(button => pending(button, false));
+        lockedButtons.clear();
+        lastButton = null;
+      }
+      node.setAttribute('aria-busy', String(processing));
+      const error = /失敗|無法|沒有權限|格式不對|連不上|找不到|過期|failed|failure|unable|invalid|not found|permission.denied|expired/i.test(text);
+      const next = processing ? 'pending' : error ? 'error' : '';
+      if (next) node.dataset.paceFeedback = next;
+      else delete node.dataset.paceFeedback;
+    };
+    new MutationObserver(reflect).observe(node, { subtree: true, childList: true, characterData: true });
+    reflect();
+  }
+  messageWatcher('syncMsg', '#syncGoogle, #syncIn, #syncUp, #syncReset, #syncOutBtn, #syncWipe', ['處理中…']);
+  messageWatcher('grpMsg', '#grpNew, #grpJoin, [data-ginvite], [data-gleave]', ['處理中…']);
+  messageWatcher('privacyMsg', '#exportAll, #wipeAll, #importAll, #shareBackup', ['整理資料中…', '刪除中…']);
+
+  // The goal splitter already disables its button through try/finally.
+  const goalAi = $('goalAiBtn');
+  if (goalAi) {
+    const reflectGoal = () => pending(goalAi, goalAi.disabled, false);
+    new MutationObserver(reflectGoal).observe(goalAi, { attributes: true, attributeFilter: ['disabled'] });
+    reflectGoal();
+  }
+  // Existing stop visibility spans the complete streamed response, not only its first token.
+  const coachStop = $('coachStop');
+  if (coachStop) {
+    let coachButton = null;
+    document.addEventListener('click', e => {
+      const b = e.target.closest?.('#coachChips [data-q]');
+      if (b && !b.disabled) { pending(coachButton, false); coachButton = b; }
+    }, true);
+    $('coachForm')?.addEventListener('submit', () => { pending(coachButton, false); coachButton = null; }, true);
+    const reflectCoach = () => {
+      const active = !coachStop.hidden;
+      const form = $('coachForm');
+      form?.setAttribute('aria-busy', String(active));
+      pending(form?.querySelector('button[type="submit"]'), active);
+      pending(coachButton, active);
+    };
+    new MutationObserver(reflectCoach).observe(coachStop, { attributes: true, attributeFilter: ['hidden'] });
+    reflectCoach();
+  }
+  const status = $('status');
+  if (status) {
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    const reflectStatus = () => status.setAttribute('aria-busy', String(/^(同步中|連線中|Syncing|Connecting)/i.test(status.textContent.trim())));
+    new MutationObserver(reflectStatus).observe(status, { subtree: true, childList: true, characterData: true });
+    reflectStatus();
+  }
+  const toast = $('toast');
+  toast?.setAttribute('role', 'status');
+  toast?.setAttribute('aria-live', 'polite');
+  ['wNext', 'wTasks'].forEach(id => {
+    const list = $(id);
+    if (!list) return;
+    list.tabIndex = 0;
+    list.setAttribute('aria-label', list.previousElementSibling?.textContent || id);
+  });
+  document.querySelectorAll('dialog').forEach(dialog => {
+    if (dialog.hasAttribute('aria-labelledby') || dialog.hasAttribute('aria-label')) return;
+    const title = dialog.querySelector('.dtitle');
+    if (!title) return;
+    if (!title.id) title.id = `pace-title-${dialog.id}`;
+    dialog.setAttribute('aria-labelledby', title.id);
+  });
 })();
 </script>
 </body></html>

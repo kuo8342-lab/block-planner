@@ -1,0 +1,19 @@
+{
+  "name": "block-planner-local-preview",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Local preview and isolated UI regression checks for Block Planner",
+  "scripts": {
+    "dev": "node scripts/serve.cjs",
+    "preview": "node scripts/serve.cjs",
+    "build": "node pace-build/build-c.js a-source/planner.html pace-planner",
+    "test:prepare": "node scripts/prepare-tests.cjs",
+    "test:ui": "node scripts/run-tests.cjs",
+    "test:app": "node scripts/app-tests.cjs",
+    "test:pwa": "node scripts/pwa-check.cjs",
+    "test:onboarding": "node scripts/onboarding-tests.cjs",
+    "test:group": "node scripts/group-tests.cjs",
+    "test:focus": "node scripts/focus-pause-tests.cjs"
+  },
+  "devDependencies": { "playwright": "1.62.1" }
+}

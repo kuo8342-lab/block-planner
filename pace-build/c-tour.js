@@ -76,6 +76,42 @@
     '<div class="tour-acts" id="tourActs"></div></div>';
   document.body.appendChild(root);
   let i = 0, target = null;
+  let scrollInset = null;
+
+  function restoreScrollInset() {
+    if (!scrollInset) return;
+    scrollInset.el.style.paddingBottom = scrollInset.padding;
+    scrollInset = null;
+  }
+  function targetScroller() {
+    for (let el = target?.parentElement; el && el !== document.body; el = el.parentElement) {
+      if (el.clientHeight && /auto|scroll/.test(getComputedStyle(el).overflowY)) return el;
+    }
+    return null;
+  }
+  function revealSpotlight() {
+    restoreScrollInset();
+    if (!target) return;
+    if (!window.paceUI?.isMobile?.()) {
+      target.scrollIntoView({ block: 'center' });
+      const r = target.getBoundingClientRect();
+      if (r.bottom > innerHeight - 240) scrollBy(0, r.bottom - (innerHeight - 260));
+      return;
+    }
+    const scroller = targetScroller();
+    if (!scroller) return; // Header controls already sit above the card.
+    const card = root.querySelector('.tour-card').getBoundingClientRect();
+    const area = scroller.getBoundingClientRect();
+    const bottom = Math.min(area.bottom, card.top - 16), top = Math.max(0, area.top) + 10;
+    // Extra scroll space lets even the final Settings / Install buttons clear the card.
+    const reserve = Math.max(0, area.bottom - bottom);
+    scrollInset = { el: scroller, padding: scroller.style.paddingBottom };
+    scroller.style.paddingBottom = (parseFloat(getComputedStyle(scroller).paddingBottom) + reserve) + 'px';
+    const r = target.getBoundingClientRect();
+    const room = Math.max(0, bottom - top);
+    const wantedTop = top + Math.max(0, (room - r.height) / 2);
+    scroller.scrollTo({ top: scroller.scrollTop + r.top - wantedTop, behavior: 'instant' });
+  }
 
   function place() {
     const hi = $('tourHi');
@@ -83,7 +119,14 @@
     root.classList.toggle('nohi', none);   // nothing to point at: dim the whole page instead
     if (none) { hi.hidden = true; return; }
     const r = target.getBoundingClientRect(), pad = 6;
-    Object.assign(hi.style, { left: (r.left - pad) + 'px', top: (r.top - pad) + 'px', width: (r.width + pad * 2) + 'px', height: (r.height + pad * 2) + 'px' });
+    let left = r.left - pad, top = r.top - pad, right = r.right + pad, bottom = r.bottom + pad;
+    if (window.paceUI?.isMobile?.()) {
+      const area = targetScroller()?.getBoundingClientRect();
+      left = Math.max(0, left, area?.left || 0); right = Math.min(innerWidth, right, area?.right || innerWidth);
+      top = Math.max(0, top, area?.top || 0);
+      bottom = Math.min(bottom, root.querySelector('.tour-card').getBoundingClientRect().top - 10, area?.bottom || innerHeight);
+    }
+    Object.assign(hi.style, { left: left + 'px', top: top + 'px', width: Math.max(0, right - left) + 'px', height: Math.max(0, bottom - top) + 'px' });
     hi.hidden = false;
   }
   function show(n) {
@@ -91,8 +134,8 @@
     i = n; const s = steps[i];
     target = s.el ? s.el() : null;
     if (s.el && !target) { show(n + 1); return; }   // e.g. 「現在做這件」 has nothing to show right now (上一步 skips these itself)
-    // instant, not smooth: on phones a smooth scroll inside the timetable stops the page itself from scrolling there
-    if (target) { target.scrollIntoView({ block: 'center' }); const r = target.getBoundingClientRect(); if (r.bottom > innerHeight - 240) scrollBy(0, r.bottom - (innerHeight - 260)); }
+    // The C-only workspace reveals the existing target synchronously before measuring its spotlight.
+    if (target) window.paceUI?.reveal?.(target);
     // count only the steps that will really be shown this time (skipped ones like an empty 「現在做這件」 don't count)
     const shown = steps.filter(avail), pos = shown.indexOf(s), endNew = mode === 'new' && i === steps.length - 1;
     $('tourStep').textContent = (pos + 1) + ' / ' + shown.length;
@@ -103,9 +146,9 @@
       ? '<button type="button" class="btn no" id="tourClear">不要，清掉範例</button><button type="button" class="btn yes" id="tourKeep">留下來</button>'
       : endNew ? (i > 0 ? '<button type="button" class="btn" id="tourPrev">上一步</button>' : '') + '<button type="button" class="btn yes" id="tourGotIt">知道了</button>'
       : (i > 0 ? '<button type="button" class="btn" id="tourPrev">上一步</button>' : '') + `<button type="button" class="btn primary" id="tourNext">${i === 0 && mode === 'full' ? '開始' : '下一步'}</button>`;
-    place(); setTimeout(place, 400);
+    revealSpotlight(); place(); setTimeout(place, 400);
   }
-  function close() { root.hidden = true; document.body.classList.remove('touring'); target = null; try { localStorage.setItem(SEEN, LATEST); } catch (e) {} }
+  function close() { restoreScrollInset(); root.hidden = true; document.body.classList.remove('touring'); target = null; try { localStorage.setItem(SEEN, LATEST); } catch (e) {} }
   function finish(keep) {
     close();
     if (mode === 'new') return;   // the what's-new walk-through has no samples
@@ -122,7 +165,7 @@
     else if (id === 'tourKeep') finish(true);
     else if (id === 'tourClear') finish(false);
   });
-  addEventListener('resize', place); addEventListener('scroll', place, true);
+  addEventListener('resize', () => { if (!root.hidden) { revealSpotlight(); place(); } }); addEventListener('scroll', place, true);
   document.addEventListener('keydown', e => { if (!root.hidden && e.key === 'Escape') finish(false); });
 
   window.paceTour = () => {

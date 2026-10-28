@@ -5,7 +5,8 @@
 const fs = require('fs'), path = require('path');
 const src = process.argv[2] || path.join(__dirname, 'planner.html');
 const out = process.argv[3] || path.join(__dirname, 'pace-out');
-let s = fs.readFileSync(src, 'utf8');
+// Git for Windows may check out CRLF; exact C transforms use LF consistently.
+let s = fs.readFileSync(src, 'utf8').replace(/\r\n/g, '\n');
 const rep = (a, b, all) => {
   const n = s.split(a).length - 1;
   if (all ? n < 1 : n !== 1) throw new Error(`expected ${all ? '>=1' : 'exactly 1'} match, got ${n}: ${a.slice(0, 80)}`);
@@ -301,7 +302,7 @@ rep('</body>', `<script>
 
 /* ---------- install button and backup import ---------- */
 rep('<button class="btn" type="button" id="skinBtn">設定</button>', '<button class="btn" type="button" id="skinBtn">設定</button><button class="btn primary" type="button" id="installBtn">安裝 App</button>');
-{ const g = 'D:/KIBO&/pace-apk/app/build.gradle';   // newest Android app version, for the update prompt in c-install.js
+{ const g = path.join(__dirname, '../pace-apk/app/build.gradle');   // read the existing Android version from this checkout
   const apk = fs.existsSync(g) ? Number((/versionCode (\d+)/.exec(fs.readFileSync(g, 'utf8')) || [])[1]) || 0 : 0;
   rep('</body>', '<script>window.PACE_APK_VERSION = ' + apk + ';</script>\n</body>'); }
 rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-install.js'), 'utf8') + '</script>\n</body>');
@@ -345,6 +346,17 @@ rep('</body>', PACE_CSS + `
 </script>
 </body>`);
 
+/* C-only presentation and pause clock: A source, schedule geometry and records stay unchanged. */
+rep('function focusWorkMs(f, now = Date.now())', 'function focusWorkMs(f, now = paceFocusNow(f))');
+rep("const now = Date.now(); let note = '', changed = false;", "const now = paceFocusNow(focus); let note = '', changed = false;");
+rep('const now = Date.now(), left = Math.max(0, focus.segEnd - now)', 'const now = paceFocusNow(focus), left = Math.max(0, focus.segEnd - now)');
+rep('</head>', '<script>' + fs.readFileSync(path.join(__dirname, 'notion-focus-clock.js'), 'utf8') + '</script>\n</head>');
+for (const file of ['notion-ui.css', 'notion-components.css', 'notion-mobile.css', 'notion-motion.css']) {
+  rep('</body>', '<style data-pace-ui="' + file + '">' + fs.readFileSync(path.join(__dirname, file), 'utf8') + '</style>\n</body>');
+}
+for (const file of ['notion-ui.js', 'notion-mobile.js', 'notion-focus.js', 'notion-feedback.js']) {
+  rep('</body>', '<script data-pace-ui="' + file + '">' + fs.readFileSync(path.join(__dirname, file), 'utf8') + '</script>\n</body>');
+}
 fs.mkdirSync(out, { recursive: true });
-fs.writeFileSync(path.join(out, 'index.html'), s);
+fs.writeFileSync(path.join(out, 'index.html'), s.replace(/\r\n/g, '\n'));
 console.log('built', path.join(out, 'index.html'), (s.length / 1024).toFixed(0) + ' KB');
