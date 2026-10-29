@@ -12,9 +12,10 @@
 
 ## 手機設定（ntfy）
 1. 在 Google Play / App Store 安裝 **ntfy**。
-2. 先跑一次（安裝排程後等 5 分鐘，或手動 `node tick.js`），這個資料夾會出現 `config.json`。
+2. 在這個資料夾開 PowerShell，執行 `node tick.js --test`：會產生 `config.json`，並真的送一則測試通知。
 3. 打開 `config.json`，複製 `topic` 的值（`fangkuai-` 開頭）。
 4. ntfy App → 右下角「＋」→ 貼上主題名稱、伺服器用預設的 ntfy.sh → 訂閱。
+5. 再執行一次 `node tick.js --test`，手機跳出「方塊週排程測試」就成功了。
 
 主題名稱等於密碼：知道的人都能看到推播，不要分享。
 
