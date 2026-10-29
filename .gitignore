@@ -14,3 +14,10 @@ local.properties
 # Local synthetic test fixtures, evidence and installed tooling
 test-artifacts/
 node_modules/
+
+# 本機提醒程式：ntfy 主題名稱等於密碼，狀態與紀錄只屬於這台電腦
+automation/config.json
+automation/state.json
+automation/typhoon.json
+automation/log.txt
+automation/*.tmp

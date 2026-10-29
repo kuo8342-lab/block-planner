@@ -686,7 +686,7 @@ body.nofx[data-skin="neon"]::after { display: none; }
       <section class="card" id="coachCard">
         <h2>教練</h2>
         <div id="coachBody">
-        <div class="note" id="claudeNote"><span class="muted">每天早上同步一次後，這裡會出現 Claude 的回饋。</span></div>
+        <div class="note" id="claudeNote"><span class="muted">載入資料後，這裡會依你的排程自動整理今天的提醒（不用 AI）。</span></div>
         <div class="coach-ask" data-ai hidden>
         <p class="hint">想問更多：教練會讀你這週真的排了什麼、做了多少再回答。每次提問會用到你的 Claude 用量。</p>
         <div class="chips" id="coachChips">
@@ -1003,19 +1003,29 @@ function setStatus(t, bad) { const el = document.getElementById('status'); el.te
 function isThisWeek() { return ymd(mondayOf(new Date())) === ymd(state.monday); }
 
 /* ---------- data ---------- */
+/* 行政院人事行政總處公告的放假日（內建，不用再請 AI 查）；落在週末的紀念日只顯示名字，不影響行程 */
+const TW_HOLIDAYS = {
+  '2026-12-25': '行憲紀念日', '2027-01-01': '元旦', '2027-02-04': '小年夜', '2027-02-05': '除夕', '2027-02-06': '春節', '2027-02-07': '春節', '2027-02-08': '春節',
+  '2027-02-09': '春節補假', '2027-02-10': '春節補假', '2027-02-28': '和平紀念日', '2027-03-01': '和平紀念日補假', '2027-04-04': '兒童節', '2027-04-05': '清明節', '2027-04-06': '兒童節補假',
+  '2027-04-30': '勞動節補假', '2027-05-01': '勞動節', '2027-06-09': '端午節', '2027-09-15': '中秋節', '2027-09-28': '教師節', '2027-10-10': '國慶日', '2027-10-11': '國慶日補假',
+  '2027-10-25': '光復節', '2027-12-24': '行憲紀念日補假', '2027-12-25': '行憲紀念日', '2027-12-31': '元旦補假'
+};
 function holidayOf(date) {
   const h = (state.config?.holidays || []).find(x => x.date === date);
   if (h) return h;                                              // 國定假日／自己設的颱風假、請假
   if ((state.config?.notOff || []).includes(date)) return null;   // 自己按了「恢復上課」
+  if (TW_HOLIDAYS[date]) { const wd = new Date(date + 'T00:00:00').getDay(); return { date, name: TW_HOLIDAYS[date], builtin: true, weekend: wd === 0 || wd === 6 }; }
   return closureFor(date);                                      // 自動偵測到的颱風停課
 }
+/* a real day off (weekend-dated named days don't change the schedule) */
+function dayOff(date) { const h = holidayOf(date); return h && !h.weekend ? h : null; }
 function fixedFor(dayIdx) {
   const cfg = state.config; if (!cfg) return [];
   const date = ymd(addDays(state.monday, dayIdx));
   const specials = (cfg.special || []).filter(s => s.date === date);
   const replaced = new Set(specials.flatMap(s => s.replaces || []));
   const skips = new Set(state.week.skipFixed || []);
-  const hol = holidayOf(date);
+  const hol = dayOff(date);
   const offOnHoliday = f => f.cat === 'school' || f.cat === 'care' || (f.cat === 'life' && toMin(f.start) < 18 * 60);
   const base = (cfg.fixed || []).filter(f => f.day === dayIdx && !replaced.has(f.id) && !skips.has(f.id) && !(hol && offOnHoliday(f)));
   return [...base, ...specials.filter(x => !skips.has(x.id))].map(f => ({ ...f, s: toMin(f.start), e: toMin(f.end), fixed: true }));
@@ -1073,7 +1083,7 @@ function freeSlotAfter(day, minutes) {
   for (let d = day + 1; d < 7; d++) {
     const date = ymd(addDays(state.monday, d));
     const busy = [...fixedFor(d), ...blocksFor(d)].map(x => [x.s, x.e]).sort((a, b) => a[0] - b[0]);
-    for (const [ws, we] of (holidayOf(date) ? SUGGEST_WINDOWS[6] : SUGGEST_WINDOWS[d])) {
+    for (const [ws, we] of (dayOff(date) ? SUGGEST_WINDOWS[6] : SUGGEST_WINDOWS[d])) {
       let t = ws;
       for (const [bs, be] of [...busy, [we, we]]) {
         if (be <= t) continue;
@@ -1145,7 +1155,7 @@ function suggest(minutes, dueStr) {
     const date = ymd(addDays(state.monday, d));
     if (dueStr && date > dueStr) break;
     const busy = [...fixedFor(d), ...blocksFor(d)].map(b => [b.s, b.e]).sort((a, b) => a[0] - b[0]);
-    for (const [ws, we] of (holidayOf(date) ? SUGGEST_WINDOWS[6] : SUGGEST_WINDOWS[d])) {
+    for (const [ws, we] of (dayOff(date) ? SUGGEST_WINDOWS[6] : SUGGEST_WINDOWS[d])) {
       let t = ws;
       if (tw && d === todayIdx) t = Math.max(t, Math.ceil((nowMin + 10) / 5) * 5);
       for (const [bs, be] of [...busy, [we, we]]) {
@@ -1173,8 +1183,8 @@ function render() {
 
 /* ---------- subject targets ---------- */
 let lastTargetsHtml = '', lastWarnHtml = '', lastDevKey = '';
-function plannedBySubject() {
-  const m = {}; state.week.blocks.forEach(b => { const s = subjectOf(b); if (s) m[s] = (m[s] || 0) + b.minutes; }); return m;
+function plannedBySubject(bl = state.week.blocks) {
+  const m = {}; bl.forEach(b => { const s = subjectOf(b); if (s) m[s] = (m[s] || 0) + b.minutes; }); return m;
 }
 function deviation(planned, target) {
   const tol = Math.max(15, Math.round(target * 0.2));
@@ -1317,10 +1327,67 @@ function renderStats() {
   document.getElementById('total').innerHTML = `<b>${(total / 60).toFixed(1)}</b>小時讀書類`;
   document.getElementById('stats').innerHTML = keys.length ? keys.map(k => `<div class="bar"><span>${CATS[k] || k}</span><span class="track"><span class="fill dot-${k}" style="width:${(mins[k] / max * 100).toFixed(0)}%;display:block"></span></span><span class="v">${(mins[k] / 60).toFixed(1)}h</span></div>`).join('') : '<p class="hint">還沒排任何方塊。</p>';
 }
-function renderNote() {
-  const el = document.getElementById('claudeNote');
-  if (state.note?.text) el.innerHTML = `${esc(state.note.text)}<div class="stamp">${esc(state.note.updatedAt || '')}</div>`;
+/* ---------- 每日回饋：用規則依資料整理（取代每天早上排程的 Claude 筆記） ---------- */
+const sumMin = l => l.reduce((a, b) => a + b.minutes, 0);
+/* 完成率：只算讀書類、沒取消的；分母是時間已過（或已打勾／記為沒做完）的方塊 */
+function doneRate(list, now) {
+  const bl = list.filter(b => counts(b) && !b.skipped), due = bl.filter(b => b.done || b.failed || blockEnd(b.date, b) <= now);
+  const dm = sumMin(bl.filter(b => b.done)), dum = sumMin(due);
+  return { dm, dum, miss: due.filter(b => !b.done).length, r: dum ? Math.round(dm / dum * 100) : null };
 }
+/* pure: now + this week's / last week's blocks (by real date, not the week on screen) → up to 6 short lines */
+function localFeedback(now, ctx = {}) {
+  if (!state.config) return [];
+  const mon = mondayOf(now), d = (now.getDay() + 6) % 7, today = ymd(now);
+  const dated = (bl, m) => (bl || []).map(b => ({ ...b, date: ymd(addDays(m, b.day)) }));
+  const wk = dated(ctx.week, mon), pw = dated(ctx.prev, addDays(mon, -7)), own = wk.filter(b => !b.skipped);
+  const out = [], tips = [];
+  // (a) 放假
+  const hT = dayOff(today), hM = dayOff(ymd(addDays(now, 1)));
+  if (hT || hM) {
+    const wish = (state.wishes || []).filter(w => !w.done).sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''))[0];
+    const pick = wish ? `，可以從想做清單挑一件來做，例如「${wish.title}」` : '，可以從想做清單挑一件想做的事';
+    out.push((hT && hM ? (hT.name === hM.name ? `今天和明天都是${hT.name}，放假` : `今天是${hT.name}、明天是${hM.name}，連著放假`) : hT ? `今天是${hT.name}，放假` : `明天是${hM.name}，放假`) + pick + '。');
+  }
+  // (b) 昨天（週一看上週日）
+  const y = doneRate(d === 0 ? pw.filter(b => b.day === 6) : wk.filter(b => b.day === d - 1), now);
+  if (y.r !== null) out.push(`昨天完成 ${y.r}%（${y.dm}/${y.dum} 分）` + (y.miss ? `，有 ${y.miss} 個沒做完：可以按「重排沒做完的」補上，或打開方塊選「這次取消」。` : '，排的都做完了，很穩！'));
+  if (d === 0) { const p = doneRate(pw, now); if (p.r !== null) out.push(`上週整週完成 ${p.r}%（做了 ${(p.dm / 60).toFixed(1)} 小時）${p.r >= 70 ? '，有 70% 就是很好的一週。' : '，這週先挑最重要的幾個做就好。'}`); }
+  // (c) 今天
+  const tl = own.filter(b => b.day === d).sort((a, b) => toMin(a.start) - toMin(b.start));
+  if (tl.length) out.push('今天：' + tl.slice(0, 5).map(b => `${b.start} ${b.name}`).join('、') + (tl.length > 5 ? ` 等 ${tl.length} 個` : '') + '。');
+  else out.push(own.length ? '今天還沒排方塊，想讀書的話從左邊拖一個進來就好。' : '這週還沒排方塊，花 10 分鐘排一下吧；以後週日先把下一週排好，整週會順很多。');
+  // (d) 快截止的任務、快到期的目標
+  const sched = new Set(wk.filter(b => b.taskId).map(b => b.taskId)), soon = ymd(addDays(now, 3));
+  const tk = (state.tasks || []).filter(t => !t.done && t.due && t.due <= soon && !sched.has(t.id)).sort((a, b) => a.due.localeCompare(b.due));
+  if (tk.length) out.push(tk.slice(0, 2).map(t => `「${t.title}」${t.due < today ? `已過截止（${md(t.due)}）` : t.due === today ? '今天截止' : md(t.due) + ' 截止'}`).join('、') + (tk.length > 2 ? ` 等 ${tk.length} 個任務` : '') + '，還沒排進這週。');
+  const dayDiff = s => Math.round((new Date(s + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000);
+  const gl = (state.goals || []).map(g => ({ g, days: g.due ? dayDiff(g.due) : -1, ts: goalTasks(g) })).filter(x => x.days >= 0 && x.days <= 7 && x.ts.length && x.ts.filter(t => t.done).length * 2 < x.ts.length).sort((a, b) => a.days - b.days);
+  if (gl.length) { const { g, days, ts } = gl[0]; out.push(`目標「${g.title}」${days ? `還有 ${days} 天` : '今天到期'}，步驟完成 ${ts.filter(t => t.done).length}/${ts.length}，先做下一步就好。`); }
+  // (e) 各科對目標（同警示列：差距超過目標的 20% 且超過 15 分才提）
+  const targets = state.config.targets || {}, planned = plannedBySubject(ctx.week || []);
+  const devs = SUBJECTS.filter(s => targets[s] > 0).map(s => ({ s, p: planned[s] || 0, t: targets[s], st: deviation(planned[s] || 0, targets[s]) })).filter(x => x.st !== 'good')
+    .sort((a, b) => (a.st === 'under' ? 0 : 1) - (b.st === 'under' ? 0 : 1) || Math.abs(b.t - b.p) - Math.abs(a.t - a.p));
+  if (devs.length) out.push('這週對目標：' + devs.slice(0, 3).map(x => `${x.s}${x.st === 'under' ? '還差' : '多排'} ${Math.abs(x.t - x.p)} 分`).join('、') + (devs.length > 3 ? ` 等 ${devs.length} 科` : '') + '。');
+  // (f) 小建議：自主學習每週至少 60 分、休息
+  if (d >= 4) { const got = sumMin(own.filter(b => subjectOf(b) === '自主學習' && (b.done || (!b.failed && blockEnd(b.date, b) > now)))); if (got < 60) tips.push(got ? `自主學習（Kotlin）這週做完加上還沒到的共 ${got} 分，週末前湊到 60 分吧。` : '自主學習（Kotlin）這週還沒做，週末前排 60 分吧。'); }
+  const need = restMinPerDay();
+  if (need) { const low = []; for (let i = d; i < 7; i++) { const day = (ctx.week || []).filter(b => b.day === i); if (sumMin(day.filter(b => STUDY_CATS.includes(b.cat))) && sumMin(day.filter(b => b.cat === 'rest')) < need) low.push(i); }
+    if (low.length) tips.push(`${low.map(i => i === d ? '今天' : '週' + DAYN[i]).join('、')}有讀書，但休息排不到 ${need} 分，記得留一段時間休息。`); }
+  if (!tips.length) tips.push(y.r !== null && y.r < 50 ? '今天先挑一個最短的方塊開始，做完就打勾。' : tl.length ? '做完一個就打勾，看得到進度會更有動力。' : '記得 23:30 前睡，明天會更有精神。');
+  return [...out, ...tips].slice(0, 6);
+}
+let fbTimer = null, fbHtml = '';
+function renderNote() { clearTimeout(fbTimer); fbTimer = setTimeout(refreshFeedback, 300); }
+async function refreshFeedback() {
+  if (!state.config) return;
+  const now = new Date(), mon = mondayOf(now);
+  const week = await loadWeek(mon), prev = await loadWeek(addDays(mon, -7));
+  const lines = localFeedback(now, { week, prev }); if (!lines.length) return;
+  const html = `${esc(lines.join('\n'))}<div class="stamp">依你的資料自動整理 · ${hm(now.getHours() * 60 + now.getMinutes())}</div>`;
+  if (html !== fbHtml) { document.getElementById('claudeNote').innerHTML = html; fbHtml = html; }
+}
+setInterval(refreshFeedback, 600000);   // 每 10 分鐘（也會跟著換日）重算一次
 
 function renderWidget() {
   const now = new Date(); const n = now.getHours() * 60 + now.getMinutes();
@@ -1665,20 +1732,21 @@ function openDayOff(date) {
   const d = new Date(date + 'T00:00:00'), h = holidayOf(date);
   document.getElementById('dayOffTitle').textContent = `${d.getMonth() + 1}/${d.getDate()}（週${DAYN[(d.getDay() + 6) % 7]}）放假嗎？`;
   document.getElementById('dayOffMsg').textContent = h
-    ? `目前：${h.name}${h.auto ? `（自動偵測：${myArea().county}${h.note ? '，' + h.note : ''}）` : ''}。按「恢復上課」可以改回來。`
+    ? `目前：${h.name}${h.auto ? `（自動偵測：${myArea().county}${h.note ? '，' + h.note : ''}）` : h.builtin ? '（國定假日）' : ''}。按「恢復上課」可以改回來。`
     : '設成放假後，這天的學校、心理師和傍晚前的生活固定行程會空出來，已排的方塊不受影響。';
-  document.getElementById('doClear').hidden = !h || !(h.kind || h.auto);
+  document.getElementById('doClear').hidden = !h || !(h.kind || h.auto || (h.builtin && !h.weekend));
   dayOffDlg.showModal();
 }
 function setDayOff(kind) {
   const date = dayOffDate; dayOffDlg.close(); if (!date) return;
   if (!state.config) state.config = { modules: [], fixed: [], special: [] };
   const before = JSON.parse(JSON.stringify({ h: state.config.holidays || [], n: state.config.notOff || [] }));
+  const hadKind = (state.config.holidays || []).some(x => x.date === date && x.kind);
   const hs = (state.config.holidays || []).filter(x => !(x.date === date && x.kind));
   const notOff = (state.config.notOff || []).filter(x => x !== date);
   if (kind === 'typhoon') hs.push({ date, name: '颱風假', kind });
   else if (kind === 'leave') hs.push({ date, name: '請假', kind });
-  else if (kind === 'clear' && closureFor(date)) notOff.push(date);
+  else if (kind === 'clear' && (closureFor(date) || (TW_HOLIDAYS[date] && !hadKind))) notOff.push(date);   // 內建假日：只有沒自己設颱風假／請假時，才是要「恢復上課」
   state.config.holidays = hs; state.config.notOff = notOff;
   saveConfig(); render();
   toast(kind === 'clear' ? '已恢復這天的固定行程' : `已把這天設成${kind === 'typhoon' ? '颱風假' : '請假'}`, () => { state.config.holidays = before.h; state.config.notOff = before.n; saveConfig(); render(); });
@@ -2978,8 +3046,8 @@ render();
   db.collection('tasks').onSnapshot(s => { state.tasks = s.docs.map(d => ({ id: d.id, ...JSON.parse(JSON.stringify(d.data())) })); state.tasksLoaded = true; render(); }, e => setStatus('連線中斷：' + e.code, true));
   db.collection('templates').onSnapshot(s => { state.templates = s.docs.map(d => ({ id: d.id, ...JSON.parse(JSON.stringify(d.data())) })); if (tplDlg.open) renderTemplates(); maybeAutofill(); });
   setTimeout(computeStreak, 2500); renderFocus();
-  db.collection('goals').onSnapshot(s => { state.goals = s.docs.map(d => ({ id: d.id, ...JSON.parse(JSON.stringify(d.data())) })); renderGoals(); });
-  db.collection('wishes').onSnapshot(s => { state.wishes = s.docs.map(d => ({ id: d.id, ...JSON.parse(JSON.stringify(d.data())) })); renderWishes(); });
+  db.collection('goals').onSnapshot(s => { state.goals = s.docs.map(d => ({ id: d.id, ...JSON.parse(JSON.stringify(d.data())) })); renderGoals(); renderNote(); });
+  db.collection('wishes').onSnapshot(s => { state.wishes = s.docs.map(d => ({ id: d.id, ...JSON.parse(JSON.stringify(d.data())) })); renderWishes(); renderNote(); });
   nightCheck();
   db.doc('notes/claude').onSnapshot(s => { state.note = s.exists ? s.data() : null; renderNote(); });
   db.collection('closures').onSnapshot(s => { state.closures = {}; s.docs.forEach(d => { state.closures[d.id] = JSON.parse(JSON.stringify(d.data())); }); render(); });

@@ -166,7 +166,14 @@ rep('（這個頁面開著時；電腦另外有 Windows 通知）', '（這個�
 
 /* ---------- texts that belong to A's owner ---------- */
 rep('placeholder="例如：Kibo 上傳網頁模擬器"', 'placeholder="例如：交英文作文"');
-rep('<div class="note" id="claudeNote"><span class="muted">每天早上同步一次後，這裡會出現 Claude 的回饋。</span></div>',
+/* A works out its own daily feedback and has Taiwan's 2026–2027 days off built in (for its owner's school, 自主學習 / Kotlin included); C has no coach card and keeps its holiday list empty */
+{ const a = s.indexOf('/* ---------- 每日回饋'), b = s.indexOf('setInterval(refreshFeedback, 600000);');
+  if (a < 0 || b < a) throw new Error('A 的每日回饋區塊找不到');
+  rep(s.slice(a, s.indexOf('\n', b) + 1), 'function renderNote() {}   // C 沒有教練卡片\n');
+  const h = s.indexOf('const TW_HOLIDAYS = {'), e = s.indexOf('};\n', h);
+  if (h < 0 || e < h) throw new Error('A 的內建假日表找不到');
+  rep(s.slice(h, e + 3), 'const TW_HOLIDAYS = {};   // C 的使用者各自設定假日\n'); }
+rep('<div class="note" id="claudeNote"><span class="muted">載入資料後，這裡會依你的排程自動整理今天的提醒（不用 AI）。</span></div>',
   '<div class="note" id="claudeNote"><span class="muted">每週日花 10 分鐘排下週，比每天臨時想要做什麼輕鬆很多。</span></div>');
 rep('每次提問會用到你的 Claude 用量。', '每次提問會用到你自己 API 金鑰的額度。');
 rep('placeholder="例如：二段數學考 80 分、12/27 前交出 Kibo"', 'placeholder="例如：段考數學考 80 分、月底前讀完一本書"');
