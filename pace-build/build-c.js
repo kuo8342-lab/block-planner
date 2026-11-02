@@ -7,6 +7,8 @@ const src = process.argv[2] || path.join(__dirname, 'planner.html');
 const out = process.argv[3] || path.join(__dirname, 'pace-out');
 // Git for Windows may check out CRLF; exact C transforms use LF consistently.
 let s = fs.readFileSync(src, 'utf8').replace(/\r\n/g, '\n');
+// A may carry the themes script itself (build-a.js); C injects its own copy below, so take A's out first
+s = s.replace(/<script data-pace="c-skins\.js">[\s\S]*?<\/script>\n/, '').replace('<!-- A-next: themes from Pace (2026-11-02) -->\n', '');
 const rep = (a, b, all) => {
   const n = s.split(a).length - 1;
   if (all ? n < 1 : n !== 1) throw new Error(`expected ${all ? '>=1' : 'exactly 1'} match, got ${n}: ${a.slice(0, 80)}`);
