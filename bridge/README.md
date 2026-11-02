@@ -8,7 +8,10 @@ A（claude.ai 上的「方塊週排程」）不能連到網路，所以群組裡
 - 只寫你自己的資料，不會動別人的、也不會改群組。
 - 同步後，Pace App 不會再用自己的（空的）資料蓋掉 A 的數字；在 Pace 改公開範圍仍然有效。
 
-## 設定（一次）
+## 設定（一次）：最簡單的方法
+在 `C:Userskuo83BlockPlanner` 執行 `node bridge/setup.js`，照畫面回答。它會幫你：寄密碼設定信（如果需要）、讓你輸入密碼（輸入時不顯示）、確認能登入、寫好 `config.json`、試跑一次、問要不要啟用排程。
+
+## 手動設定（一次）
 1. **你的 Pace 帳號要有密碼。** 平常用 Email 登入就已經有。用 Google 登入的話：到 Pace → 設定 → 同步，用 Email 輸入同一個 Gmail，按「忘記密碼」，
    收信後照連結設一組密碼（Google 登入仍然可以用）。
 2. 複製 `config.example.json` 為 `config.json`，填入 Pace 帳號的 Email 和密碼。這個檔案只在你的電腦上，已設為不進 GitHub。
