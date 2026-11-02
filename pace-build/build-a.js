@@ -27,8 +27,8 @@ const from = layoutCss.indexOf('/* ---------- day headers');
 if (from < 0) throw new Error('layout part not found in PACE_CSS');
 const layoutOnly = layoutCss.slice(from);
 
-/* 1. head: a language stub (the interface here is Chinese only) and the pause-aware focus clock */
-rep('</head>', '<script data-pace="stub">window.paceLang = () => "zh"; window.PACE_HAS_COACH = true;</script>\n<script data-pace="focus-clock">' + read('notion-focus-clock.js') + '</script>\n</head>');
+/* 1. start of the page (the head stays exactly as the platform wrote it, or the publish would wrap the page a second time): a language stub (the interface here is Chinese only) and the pause-aware focus clock */
+rep('</head><body>\n', '</head><body>\n<script data-pace="stub">window.paceLang = () => "zh"; window.PACE_HAS_COACH = true;</script>\n<script data-pace="focus-clock">' + read('notion-focus-clock.js') + '</script>\n');
 rep('function focusWorkMs(f, now = Date.now())', 'function focusWorkMs(f, now = paceFocusNow(f))');
 rep("const now = Date.now(); let note = '', changed = false;", "const now = paceFocusNow(focus); let note = '', changed = false;");
 rep('const now = Date.now(), left = Math.max(0, focus.segEnd - now)', 'const now = paceFocusNow(focus), left = Math.max(0, focus.segEnd - now)');
@@ -52,7 +52,7 @@ rep('</body>', '<script data-pace="a-brand">' + `
 })();` + '</script>\n</body>');
 
 /* 4. the themes script reads A's skin globals, so it goes after A's own script */
-rep('</body>', '<script data-pace="c-skins.js">window.PACE_KEEP_ORIGINAL_WORDS = true;\n' + read('c-skins.js') + '</script>\n<!-- A-next: Pace layout and themes (2026-11-02) -->\n</body>');
+rep('</body>', '<script data-pace="c-skins.js">window.PACE_KEEP_ORIGINAL_WORDS = true;\n' + read('c-skins.js') + '</script>\n<script data-pace="c-scenes.js">' + read('c-scenes.js') + '</script>\n<!-- A-next: Pace layout and themes (2026-11-02) -->\n</body>');
 
 fs.writeFileSync(out, s);
 console.log('built', out, (s.length / 1024).toFixed(0) + ' KB');

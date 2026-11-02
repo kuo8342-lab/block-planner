@@ -343,7 +343,8 @@ for (const file of ['notion-ui.css', 'notion-components.css', 'notion-mobile.css
 for (const file of ['notion-ui.js', 'notion-mobile.js', 'notion-focus.js', 'notion-feedback.js']) {
   rep('</body>', '<script data-pace-ui="' + file + '">' + fs.readFileSync(path.join(__dirname, file), 'utf8') + '</script>\n</body>');
 }
-rep('</body>', '<script data-pace-ui="c-skins.js">' + fs.readFileSync(path.join(__dirname, 'c-skins.js'), 'utf8') + '</script>\n</body>');   // six more themes, after notion-ui.js has renamed the default one
+rep('</body>', '<script data-pace-ui="c-skins.js">' + fs.readFileSync(path.join(__dirname, 'c-skins.js'), 'utf8') + '</script>\n</body>');
+rep('</body>', '<script data-pace-ui="c-scenes.js">' + fs.readFileSync(path.join(__dirname, 'c-scenes.js'), 'utf8') + '</script>\n</body>');   // each theme's own scene in the weekly report   // six more themes, after notion-ui.js has renamed the default one
 /* contact address for reports and the privacy policy: pace-build/contact.txt (one line). Without it the report links stay hidden. */
 const contact = (fs.existsSync(path.join(__dirname, 'contact.txt')) ? fs.readFileSync(path.join(__dirname, 'contact.txt'), 'utf8').trim() : '') || process.env.PACE_CONTACT || '';
 if (contact && !/^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(contact)) throw new Error('contact.txt is not an email address');

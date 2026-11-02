@@ -24,11 +24,17 @@ fs.writeFileSync(file, base.replace(A, () => next));
     r.painted = {};
     for (const i of ids) { skin = i; applySkin(); await new Promise(x => setTimeout(x, 400)); const c = fx.bg, d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let k = 3; k < d.length; k += 200) if (d[k] > 8) n++; r.painted[i] = n > 0; r.attr = document.body.dataset.skin; }
     skin = 'forest'; applySkin(); r.unit = paceUnit().count(3);
+    // the report picture is each theme's own scene; A's default and night keep A's own sky
+    const cv = document.getElementById('rSky'), mon = mondayOf(new Date()), bl = [{ day: 0, start: '09:00', minutes: 50, done: true, cat: 'study' }, { day: 1, start: '10:00', minutes: 30, done: true, cat: 'lang' }];
+    document.getElementById('toReport').click(); await new Promise(x => setTimeout(x, 900));   // the picture is only drawn while the report is on screen
+    r.scene = {};
+    for (const k of ['forest', 'sakura', 'default', 'night']) { skin = k; applySkin(); drawSky(cv, bl, mon); await new Promise(x => setTimeout(x, 1500)); const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let n = 0; for (let q = 3; q < d.length; q += 400) if (d[q] > 8) n++; r.scene[k] = { painted: n > 50, title: document.querySelector('#rSkyCard h3').textContent }; }
+    skin = 'forest'; applySkin();
     skin = 'default'; applySkin();
     return r;
   });
   console.log('themes:', JSON.stringify(t));
   console.log('page errors:', errors.length ? errors : 'none');
   await browser.close();
-  if (bad.length || errors.length || !t.listed || Object.values(t.painted).some(v => !v)) process.exitCode = 1;
+  if (bad.length || errors.length || t.scene.forest.title !== '這週的森林' || t.scene.default.title !== '這週的夜空' || t.scene.night.title !== '這週的夜空' || !t.scene.forest.painted || !t.scene.sakura.painted || !t.listed || Object.values(t.painted).some(v => !v)) process.exitCode = 1;
 })().catch(e => { console.error('CRASH', e.message); process.exitCode = 1; });
