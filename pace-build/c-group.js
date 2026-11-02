@@ -332,7 +332,7 @@
           choiceAt: m.at || 0, source: 'a', at: fs.serverTimestamp() });
       }).then(() => fs.updateDoc(fs.doc(db, 'groups', gid, 'stats', user.uid), { share: m.access, at: fs.serverTimestamp() }).catch(() => {})).then(() => { lastSig.delete(gid); });   // the label next to my numbers follows the choice at once
     }
-    const stats = { uid: user.uid, name: myName(), week: snap.week, rate: snap.rate, stars: snap.stars, glow: snap.glow, share: m.access };
+    const stats = { uid: user.uid, name: myName(), week: snap.week, rate: snap.rate, stars: snap.stars, glow: snap.glow, share: m.access, skin: (typeof skin === 'string' && (window.PACE_SKIN_IDS || []).includes(skin)) ? skin : 'default' };   // my theme goes with my numbers: friends see me in it
     const members = groups.find(g => g.id === gid)?.members;   // a person who left is dropped from the list, so rejoining never re-opens my plan
     const plan = { uid: user.uid, week: snap.week, access: m.access, allow: m.access === 'some' ? m.allow.filter(u => !members || members.includes(u)).slice(0, 29) : [], blocks: m.access === 'none' ? [] : snap.blocks, choiceAt: m.at || 0 };
     const sig = JSON.stringify([stats, plan]);
@@ -472,6 +472,10 @@
     '.grp-members { display: flex; flex-direction: column; gap: 8px; }' +
     '.grp-mem { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }' +
     '.grp-mem .nm { font-weight: 600; overflow-wrap: anywhere; } .grp-mem .meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--muted); font-size: .8rem; }' +
+    '.grp-mem { border-left: 3px solid var(--pc, var(--line)); } .grp-pips { grid-column: 1 / -1; display: flex; gap: 3px; font-size: 17px; line-height: 1; color: var(--pc, var(--accent)); }' +
+    '.grp-pips .pip.off { filter: grayscale(1); opacity: .2; } .grp-pips .pip.part { filter: none; } .grp-pips .pip { display: inline-block; transition: opacity .3s ease; }' +
+    '.grp-mem.fresh .pip.on { animation: grp-pop .45s cubic-bezier(.2,1.4,.4,1) both; animation-delay: var(--d, 0ms); } @keyframes grp-pop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }' +
+    '@media (prefers-reduced-motion: reduce) { .grp-mem.fresh .pip.on { animation: none; } } body.nofx .grp-mem.fresh .pip.on { animation: none; }' +
     '.grp-bar { grid-column: 1 / -1; height: 8px; border-radius: 999px; background: var(--line-soft, rgba(128,128,128,.2)); overflow: hidden; } .grp-bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }' +
     '.grp-chat { display: flex; flex-direction: column; gap: 6px; height: min(260px, 38vh); overflow-y: auto; flex: none; border: 1px solid var(--line); border-radius: 10px; padding: 8px; }' +
     '.grp-msg { max-width: 88%; align-self: flex-start; background: var(--panel-2); border-radius: 12px; padding: 6px 10px; overflow-wrap: anywhere; } .grp-msg.me { align-self: flex-end; background: var(--accent-soft); }' +
@@ -482,6 +486,7 @@
     '.grp-pb { display: flex; gap: 8px; align-items: center; padding: 4px 8px; border-radius: 8px; margin-bottom: 3px; background: var(--c-study, var(--panel-2)); color: var(--c-study-fg, var(--fg)); overflow-wrap: anywhere; } .grp-pb .tm { font-family: var(--f-mono, monospace); font-size: .78rem; flex: none; }';
   document.head.appendChild(style);
 
+  let roomFresh = false;   // the marks pop in once when the room opens
   let roomUnsubs = [], roomStats = new Map(), roomChat = [], lastSent = 0;
   const roomMsg = t => { $('grpRoomMsg').textContent = t; };
   const shareText = s => s === 'all' ? '計畫：全部公開' : s === 'some' ? '計畫：部分公開' : '計畫：不公開';
@@ -489,6 +494,7 @@
   function closeRoom() { stopRoom(); roomGid = null; if ($('grpRoom').open) $('grpRoom').close(); }
   function openRoom(gid) {
     if (!user || !fb || !groups.some(g => g.id === gid)) return;
+    roomFresh = true; setTimeout(() => { roomFresh = false; }, 1800);
     stopRoom(); roomGid = gid; roomMsg('聊天室只有這個群組的人看得到。請友善，不要霸凌，也不要貼別人的個資。');
     const { fs, db } = fb;
     roomUnsubs.push(fs.onSnapshot(fs.collection(db, 'groups', gid, 'stats'), snap => {
@@ -505,16 +511,16 @@
     $('grpRoomSel').innerHTML = groups.map(x => '<option value="' + x.id + '"' + (x.id === roomGid ? ' selected' : '') + '>' + esc(x.name) + '（' + x.members.length + ' 人）</option>').join('');
     $('grpRoomNeed').hidden = mine[g.id] !== null;
     const week = ymdOf(mondayOfNow());
-    const unit = window.paceUnit?.() || { icon: '⭐', count: n => '亮起 ' + n + ' 顆星', measure: '亮度' };   // the viewer's theme decides the words (c-skins.js)
+    const info = id => window.paceSkinInfo?.(id) || { id: 'default', icon: '⭐', pip: '■', count: n => '亮起 ' + n + ' 顆星', measure: '亮度', color: '' };   // each person is drawn in THEIR theme (c-skins.js)
     const order =[...g.members].sort((a, b) => (a === user.uid ? -1 : b === user.uid ? 1 : String(g.names?.[a]).localeCompare(String(g.names?.[b]))));
     $('grpMembers').innerHTML = order.map(uid => {
       const s = roomStats.get(uid), me = uid === user.uid, fresh = s && s.week === week, nm = esc(g.names?.[uid] || s?.name || '?');
-      const rate = fresh && s.rate >= 0 ? s.rate : null;
+      const rate = fresh && s.rate >= 0 ? s.rate : null, unit = info(s?.skin);
       const act = !s ? '' : s.share === 'none' && !me ? '<span class="muted">不公開計畫</span>' : '<button class="btn" type="button" data-plan="' + esc(uid) + '">' + (me ? '看我公開的計畫' : '看計畫') + '</button>';
       const mod = me ? '' : (g.owner === user.uid ? '<button class="btn plain" type="button" data-kick="' + esc(uid) + '">移出群組</button>' : '') +
         (CONTACT ? '<a class="btn plain" href="' + esc(reportHref(g, g.names?.[uid] || '?', uid, '', new Date().toLocaleString())) + '">檢舉</a>' : '');
-      return '<div class="grp-mem"><span class="nm">' + nm + (me ? ' <span class="muted">（你）</span>' : '') + '</span><span>' + act + '</span>' +
-        '<div class="grp-bar" role="img" aria-label="達成率"><i style="width:' + (rate ?? 0) + '%"></i></div>' +
+      return '<div class="grp-mem th-' + esc(unit.id) + (roomFresh ? ' fresh' : '') + '" style="--pc:' + esc(unit.color) + '"><span class="nm">' + nm + (me ? ' <span class="muted">（你）</span>' : '') + '</span><span>' + act + '</span>' +
+        (window.paceBar ? window.paceBar(unit.id, rate) : '<div class="grp-bar" role="img" aria-label="達成率"><i style="width:' + (rate ?? 0) + '%"></i></div>') +
         '<div class="meta"><span>達成率 ' + (rate == null ? '—' : rate + '%') + '</span>' +
         (fresh ? '<span>' + unit.icon + ' <span>' + esc(unit.count(s.stars)) + '</span></span><span>' + esc(unit.measure) + ' ' + s.glow + '%</span>' : '<span>' + (s ? '這週還沒更新' : '還沒同意顯示') + '</span>') +
         (s ? '<span>' + shareText(s.share) + '</span>' : '') + (mod ? '<span class="grp-mod">' + mod + '</span>' : '') + '</div></div>';
@@ -616,5 +622,7 @@
   });
   $('gpClose').addEventListener('click', () => $('grpPlan').close());
   $('grpPlan').addEventListener('close', () => { planSeq++; });
-  window.paceGroupRefresh = () => { if (roomGid) renderRoom(); };   // theme changed: new words for the numbers
+  window.paceGroupRefresh = () => { if (roomGid) renderRoom(); };
+  /* changing my theme changes how friends see me: publish again soon */
+  { const apply0 = window.applySkin; if (typeof apply0 === 'function') window.applySkin = function () { const r = apply0.apply(this, arguments); try { schedulePublish(1500); } catch (e) {} return r; }; }   // theme changed: new words for the numbers
 })();

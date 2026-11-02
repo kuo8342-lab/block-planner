@@ -157,6 +157,17 @@
     sunset: ['🌅', '收集 {n} 道晚霞', '暖度'], forest: ['🌲', '種下 {n} 棵樹', '森林覆蓋'], lavender: ['💜', '採了 {n} 束薰衣草', '香氣'],
     aurora: ['🌌', '出現 {n} 道極光', '極光強度'], snow: ['❄️', '堆了 {n} 片雪花', '積雪'], coffee: ['☕', '沖了 {n} 杯咖啡', '能量']
   };
+  /* another person's theme (the group room draws each member in their own): words, colour and a scale of ten themed marks */
+  window.PACE_SKIN_IDS = ["default","night","sakura","ocean","matcha","neon","sunset","forest","lavender","aurora","snow","coffee"];
+  window.paceSkinInfo = id => {
+    const k = UNITS[id] ? id : 'default', u = UNITS[k], sw = (SKINS.find(s => s.id === k) || {}).sw;
+    return { id: k, icon: u[0], pip: k === 'default' ? '■' : u[0], count: n => u[1].replace('{n}', n), measure: u[2], color: sw ? sw[2] : '#2f7a5b' };
+  };
+  window.paceBar = (id, rate) => {   // 10 marks; the lit ones are the completion rate, a part-lit one shows the rest
+    const i = window.paceSkinInfo(id), lit = rate == null ? 0 : Math.floor(rate / 10), frac = rate == null ? 0 : (rate % 10) / 10;
+    return '<div class="grp-pips" role="img" aria-label="達成率' + (rate == null ? '' : ' ' + rate + '%') + '" style="--pc:' + i.color + '">' +
+      Array.from({ length: 10 }, (_, k) => '<span class="pip ' + (k < lit ? 'on' : k === lit && frac > 0 ? 'part' : 'off') + '" style="--d:' + k * 45 + 'ms' + (k === lit && frac > 0 ? ';opacity:' + (.25 + .75 * frac).toFixed(2) : '') + '">' + i.pip + '</span>').join('') + '</div>';
+  };
   window.paceUnit = () => { const u = UNITS[skin] || UNITS.default; return { icon: u[0], count: n => u[1].replace('{n}', n), measure: u[2] }; };
   // the weekly report says 「亮度 / 亮起 N 顆星」 for every theme: say it in the theme's own words
   function relabel() {

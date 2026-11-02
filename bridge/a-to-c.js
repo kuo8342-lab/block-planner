@@ -52,6 +52,7 @@ const toMin = hm => { const [h, m] = String(hm || '0:0').split(':'); return (+h 
 const hmOf = m => pad(Math.floor(m / 60) % 24) + ':' + pad(m % 60);
 // A decides which blocks count as study with its own rules; read them from A's source so the numbers match A's report
 const aSrc = fs.readFileSync(path.join(ROOT, 'a-source/planner.html'), 'utf8');
+const SKINS = ["default","night","sakura","ocean","matcha","neon","sunset","forest","lavender","aurora","snow","coffee"];   // the themes both apps know
 const subRules = (() => { const m = /const SUB_RULES = (\[[^\n]*\]);/.exec(aSrc); try { return m ? vm.runInNewContext('(' + m[1] + ')') : []; } catch (e) { return []; } })();
 const studyCats = (() => { const m = /const STUDY_CATS = (\[[^\]]*\]);/.exec(aSrc); try { return m ? vm.runInNewContext(m[1]) : ['study', 'preview', 'code', 'lang', 'exam']; } catch (e) { return ['study', 'preview', 'code', 'lang', 'exam']; } })();
 const subjectOf = b => b.subject || (subRules.find(([re]) => re.test(b.name || '')) || [])[1] || '';
@@ -71,7 +72,7 @@ function weekSnapshot() {
   const done = bl.filter(b => b.done), du = sum(bl.filter(b => b.done || b.failed || b.end <= now)), dn = sum(done);
   const tt = Object.values(cfg2.targets || {}).reduce((a, b) => a + (Number(b) || 0), 0);
   return {
-    week, ageHours: Math.round(age * 10) / 10,
+    week, ageHours: Math.round(age * 10) / 10, skin: SKINS.includes(cfg2.skin) ? cfg2.skin : 'default',
     rate: du ? Math.min(100, Math.round(dn / du * 100)) : -1, stars: Math.min(done.length, 500), glow: tt ? Math.min(100, Math.round(dn / tt * 100)) : 0,
     blocks: all.filter(b => !b.skipped).sort((a, b) => a.day - b.day || toMin(a.start) - toMin(b.start)).slice(0, 150)
       .map(b => ({ d: b.day, s: String(b.start || '').slice(0, 5), m: Math.max(0, Math.min(1440, Math.round(Number(b.minutes) || 0))), n: String(b.name || '').slice(0, 40), c: String(b.cat || '').replace(/[^a-z]/g, '').slice(0, 12), x: !!b.done }))
@@ -99,7 +100,7 @@ function weekSnapshot() {
     const members = g.members || [];
     const allow = mine.access === 'some' ? (mine.allow || []).filter(u => members.includes(u)).slice(0, 29) : [];
     const name = (g.names && g.names[uid]) || cfg.email.split('@')[0];
-    const stats = { uid, name: String(name).slice(0, 30), week: snap.week, rate: snap.rate, stars: snap.stars, glow: snap.glow, share: mine.access };
+    const stats = { uid, name: String(name).slice(0, 30), week: snap.week, rate: snap.rate, stars: snap.stars, glow: snap.glow, share: mine.access, skin: snap.skin };
     const plan = { uid, week: snap.week, access: mine.access, allow, blocks: mine.access === 'none' ? [] : snap.blocks, choiceAt: Number.isInteger(mine.choiceAt) ? mine.choiceAt : 0, source: RELEASE ? '' : 'a' };
     if (RELEASE) delete plan.source;
     log('  ' + g.name + ': choice =', mine.access + (allow.length ? ' (' + allow.length + ' people)' : '') + ', ' + plan.blocks.length + ' blocks shared' + (RELEASE ? ', releasing' : ''));

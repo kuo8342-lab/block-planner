@@ -78,7 +78,8 @@ service cloud.firestore {
         allow get: if member() && isMember(uid);
         allow list: if member();   // the app only shows people who are still members
         allow create, update: if member() && uid == me()
-          && request.resource.data.keys().hasOnly(['uid', 'name', 'week', 'rate', 'stars', 'glow', 'share', 'at'])
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'week', 'rate', 'stars', 'glow', 'share', 'skin', 'at'])
+          && (!('skin' in request.resource.data) || request.resource.data.skin in ['default','night','sakura','ocean','matcha','neon','sunset','forest','lavender','aurora','snow','coffee'])
           && request.resource.data.uid == me()
           && okName(request.resource.data.name)
           && request.resource.data.week is string && request.resource.data.week.size() == 10
