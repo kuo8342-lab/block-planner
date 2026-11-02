@@ -100,7 +100,8 @@ service cloud.firestore {
         allow create: if planOk();
         allow update: if planOk() && request.resource.data.choiceAt >= resource.data.get('choiceAt', 0);
         function planOk() { return member() && uid == me()
-          && request.resource.data.keys().hasOnly(['uid', 'week', 'access', 'allow', 'blocks', 'choiceAt', 'at'])
+          && request.resource.data.keys().hasOnly(['uid', 'week', 'access', 'allow', 'blocks', 'choiceAt', 'source', 'at'])
+          && (!('source' in request.resource.data) || request.resource.data.source == 'a')   // 'a' = filled by the A bridge on the owner's computer
           && request.resource.data.uid == me()
           && request.resource.data.choiceAt is int && request.resource.data.choiceAt >= 0
           && request.resource.data.week is string && request.resource.data.week.size() == 10

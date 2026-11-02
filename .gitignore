@@ -21,3 +21,7 @@ automation/state.json
 automation/typhoon.json
 automation/log.txt
 automation/*.tmp
+
+bridge/config.json
+bridge/last-run.json
+bridge/log.txt

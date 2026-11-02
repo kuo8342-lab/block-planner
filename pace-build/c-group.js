@@ -322,6 +322,16 @@
   function publishGroup(gid, snap, m, force) {
     if (!user || !m) return Promise.resolve();
     const { fs, db } = fb;
+    if (m.external) {   // the A bridge on my computer fills my numbers and plan: only a sharing choice I just made here is written, and the plan keeps its blocks
+      if (!force) return Promise.resolve();
+      const ref = fs.doc(db, 'groups', gid, 'plans', user.uid), members0 = groups.find(g => g.id === gid)?.members;
+      return fs.getDoc(ref).then(s => {
+        const old = s.exists() ? s.data() : {};
+        return fs.setDoc(ref, { uid: user.uid, week: typeof old.week === 'string' && old.week.length === 10 ? old.week : snap.week, access: m.access,
+          allow: m.access === 'some' ? m.allow.filter(u => !members0 || members0.includes(u)).slice(0, 29) : [], blocks: m.access === 'none' ? [] : (Array.isArray(old.blocks) ? old.blocks : []),
+          choiceAt: m.at || 0, source: 'a', at: fs.serverTimestamp() });
+      }).then(() => fs.updateDoc(fs.doc(db, 'groups', gid, 'stats', user.uid), { share: m.access, at: fs.serverTimestamp() }).catch(() => {})).then(() => { lastSig.delete(gid); });   // the label next to my numbers follows the choice at once
+    }
     const stats = { uid: user.uid, name: myName(), week: snap.week, rate: snap.rate, stars: snap.stars, glow: snap.glow, share: m.access };
     const members = groups.find(g => g.id === gid)?.members;   // a person who left is dropped from the list, so rejoining never re-opens my plan
     const plan = { uid: user.uid, week: snap.week, access: m.access, allow: m.access === 'some' ? m.allow.filter(u => !members || members.includes(u)).slice(0, 29) : [], blocks: m.access === 'none' ? [] : snap.blocks, choiceAt: m.at || 0 };
@@ -352,9 +362,9 @@
     mineUnsub.set(gid, fs.onSnapshot(fs.doc(db, 'groups', gid, 'plans', user.uid), s => {
       const d = s.exists() ? s.data() : null, ok = d && ['none', 'some', 'all'].includes(d.access);
       if (ok) {
-        const next = { access: d.access, allow: Array.isArray(d.allow) ? d.allow.filter(x => typeof x === 'string') : [], at: Number.isInteger(d.choiceAt) ? d.choiceAt : 0 };
+        const next = { access: d.access, allow: Array.isArray(d.allow) ? d.allow.filter(x => typeof x === 'string') : [], at: Number.isInteger(d.choiceAt) ? d.choiceAt : 0, external: d.source === 'a' };
         if (mine[gid] && mine[gid].at > next.at) { lastSig.delete(gid); schedulePublish(800); return; }   // what I chose here is newer than the server copy: write it again
-        if (mine[gid] && mine[gid].at === next.at && mine[gid].access === next.access && mine[gid].allow.join() === next.allow.join()) return;
+        if (mine[gid] && mine[gid].at === next.at && mine[gid].access === next.access && mine[gid].allow.join() === next.allow.join() && !!mine[gid].external === next.external) return;
         mine[gid] = next; lastSig.delete(gid); schedulePublish(800);
       } else if (mine[gid] === undefined) mine[gid] = null;   // nothing stored yet: not decided (a choice I just made here wins)
       render(); if (roomGid === gid) renderRoom();
@@ -362,7 +372,7 @@
   }
   async function savePrivacy(gid, pick) {
     const prev = mine[gid];
-    mine[gid] = { access: pick.access, allow: pick.access === 'some' ? pick.allow.slice(0, 29) : [], at: Math.max(Date.now(), (prev?.at || 0) + 1) };
+    mine[gid] = { access: pick.access, allow: pick.access === 'some' ? pick.allow.slice(0, 29) : [], at: Math.max(Date.now(), (prev?.at || 0) + 1), external: !!prev?.external };   // a plan the A bridge fills stays that way
     const p = publishGroup(gid, weekSnapshot(), mine[gid], true); p.catch(() => {});
     let r;
     try { r = await Promise.race([p.then(() => 'ok'), new Promise(res => setTimeout(() => res('pending'), 7000))]); }   // offline: the write waits in the queue

@@ -14,7 +14,7 @@ const snapshot=rows=>({docs:rows.map(x=>({id:x.id,data:()=>x,metadata:{hasPendin
 const mockfs={
  collection:(_,...p)=>({path:p.join('/')}),doc:(_,...p)=>({path:p.join('/')}),where:(...x)=>({where:x}),orderBy:(...x)=>({orderBy:x}),limit:n=>({limit:n}),query:(ref,...filters)=>({...ref,filters}),
  onSnapshot:(q,next)=>{__queries.push(q);if(q.path==='groups')setTimeout(()=>next(snapshot([group])),0);
- else if(/\/plans\//.test(q.path))setTimeout(()=>next({exists:()=>false,data:()=>null,metadata:{}}),0);
+ else if(/\/plans\//.test(q.path)){window.__planNext=next;setTimeout(()=>next({exists:()=>false,data:()=>null,metadata:{}}),0);}
  else if(/\/stats$/.test(q.path))setTimeout(()=>next(snapshot([{id:'qa-friend',uid:'qa-friend',name:'測試朋友',week:__monday(),rate:75,stars:3,glow:40,share:'some'}])),0);
  else if(/\/chat$/.test(q.path))setTimeout(()=>next(snapshot([{id:'qa-friend_1',uid:'qa-friend',name:'測試朋友',text:'<b>synthetic hi</b>',at:{toMillis:()=>Date.now()-60000}}])),0);
  else setTimeout(()=>next(snapshot([
@@ -69,6 +69,16 @@ const checks=await page.evaluate(async()=>{
  ok('joining adds only self',__writes.filter(w=>w.kind==='update').length===1&&__writes.find(w=>w.kind==='update').data.members.union==='qa-user');
  const jp=__writes.find(w=>/JOIN2345\/plans\/qa-user$/.test(w.path));ok('"only ticked" stores the ticked uid',jp&&jp.data.access==='some'&&jp.data.allow.join(',')==='qa-friend');
  window.__reject='permission-denied';$('grpCode').value='FULL2345';$('grpJoin').click();await sleep();await sleep();$('gcAge').click();$('gcYes').click();await sleep();await sleep();await sleep();ok('membership denial provides 30-person/error feedback',$('grpMsg').textContent.includes('30 人'));window.__reject=null;
+ // the A bridge marks the plan source:'a': the C app stops writing numbers and the plan
+ __planNext({exists:()=>true,data:()=>({uid:'qa-user',week:__monday(),access:'all',allow:[],blocks:[{d:0,s:'09:00',m:30,n:'from A',c:'study',x:true}],choiceAt:Date.now()+5000,source:'a'}),metadata:{}});await sleep();await sleep();
+ reset();__localWrite('weeks/'+__monday(),{blocks:[{id:'z1',name:'C side',day:0,start:'09:00',minutes:30,cat:'study',done:true}]});await new Promise(r=>setTimeout(r,4800));
+ ok('with source a the C app publishes no numbers or plan',!__writes.some(w=>/\/(stats|plans)\/qa-user$/.test(w.path)),JSON.stringify(__writes.map(w=>w.path)));
+ // a sharing choice made in C is still written, keeps source a, and does not throw the shared blocks away
+ reset();document.querySelector('#grpList [data-gprivacy]').click();await sleep();document.querySelector('#grpConsent input[value="none"]').click();$('gcYes').click();await sleep();await sleep();
+ const bw=__writes.find(w=>/\/plans\/qa-user$/.test(w.path));
+ ok('a choice made in C is written with source a',bw&&bw.data.access==='none'&&bw.data.source==='a'&&bw.data.blocks.length===0,JSON.stringify(bw&&bw.data));
+ ok('...and from C only the share label next to the numbers changes, no numbers',__writes.filter(w=>/\/stats\/qa-user$/.test(w.path)).every(w=>w.kind==='update'&&Object.keys(w.data).sort().join()==='at,share'&&w.data.share==='none'));
+ __planNext({exists:()=>false,data:()=>null,metadata:{}});await sleep();
  document.querySelector('#grpRooms [data-groom="TEST2345"]').click();await sleep();ok('room opens with every member listed',$('grpRoom').open&&['測試者','測試朋友'].every(n=>$('grpMembers').textContent.includes(n)));
  ok('member numbers are shown',$('grpMembers').textContent.includes('達成率 75%')&&$('grpMembers').textContent.includes('3'));
  ok('chat text is escaped',$('grpChat').textContent.includes('<b>synthetic hi</b>')&&!$('grpChat').querySelector('b'));
