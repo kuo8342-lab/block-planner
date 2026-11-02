@@ -11,6 +11,7 @@ fs.writeFileSync(file, base.replace(A, () => next));
 (async () => {
   const browser = await pw.chromium.launch({ headless: true }), page = await browser.newPage(), errors = [];
   page.on('pageerror', e => errors.push(e.message));
+  await page.clock.install({ time: new Date('2026-11-02T10:00:00+08:00') });   // the legacy drag checks assume it is before 18:40
   await page.route('**/*', r => { const u = new URL(r.request().url()); return u.protocol === 'file:' || u.hostname === '127.0.0.1' || u.protocol === 'data:' ? r.continue() : r.abort(); });
   await page.goto('file:///' + file.replace(/\\/g, '/'), { waitUntil: 'domcontentloaded' });
   const res = await page.evaluate(() => runTests());
