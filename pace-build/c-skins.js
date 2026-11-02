@@ -161,6 +161,7 @@
   // the weekly report says 「亮度 / 亮起 N 顆星」 for every theme: say it in the theme's own words
   function relabel() {
     const el = document.getElementById('rSkyMeta'); if (!el) return;
+    if (window.PACE_KEEP_ORIGINAL_WORDS && (skin === 'default' || skin === 'night')) return;   // A keeps its own 亮度 / 亮起 N 顆星 where they were already
     const [pill, count] = el.querySelectorAll('span'), u = window.paceUnit();
     const g = /(\d+)%/.exec(pill?.textContent || ''), n = /(\d+)/.exec(count?.textContent || '');
     if (pill && g) pill.textContent = u.measure + ' ' + g[1] + '%';
