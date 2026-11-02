@@ -14,7 +14,9 @@ const yes = async q => /^(y|yes|是|好|要)/i.test(await ask(q + ' (y/n) '));
 const call = async (p, body) => { const r = await fetch(AUTH + p + '?key=' + KEY, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); return { ok: r.ok, j }; };
 (async () => {
   console.log('\n=== A → Pace 橋接：設定 ===\n密碼只在這個視窗輸入，不會顯示，也不會傳給任何人；只會存在你電腦的 bridge\\config.json。\n');
-  const email = (await ask('你的 Pace 帳號 Email： ')).toLowerCase();
+  const given = (process.argv.find(a => a.startsWith('--email=')) || '').slice(8);   // e.g. --email=me@example.com skips the question
+  const email = (given || await ask('你的 Pace 帳號 Email： ')).toLowerCase();
+  if (given) console.log('Pace 帳號 Email： ' + email);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { console.log('這不像 Email，已結束。'); process.exit(1); }
   if (!(await yes('你的 Pace 帳號已經有密碼了嗎？（用 Email 註冊的就有；只用 Google 登入的還沒有）'))) {
     const r = await call('/accounts:sendOobCode', { requestType: 'PASSWORD_RESET', email });
