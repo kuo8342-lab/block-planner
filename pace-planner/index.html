@@ -3523,6 +3523,7 @@ renderFixedTrash();
       for (const g of groups) if (!feeds.has(g.id)) listen(g.id);
       for (const [gid, f] of mineUnsub) if (!groups.some(g => g.id === gid)) { f(); mineUnsub.delete(gid); mineAsked.delete(gid); delete mine[gid]; }
       for (const g of groups) loadMine(g.id);
+      for (const g of groups) cleanup(g.id);
       for (const gid of [...leaving]) if (!groups.some(g => g.id === gid)) leaving.delete(gid);
       if (roomGid && !groups.some(g => g.id === roomGid)) { closeRoom(); if ($('grpPlan')?.open) $('grpPlan').close(); msg('你已經不在這個群組了。'); }
       render(); if (roomGid) renderRoom();
@@ -3604,6 +3605,23 @@ renderFixedTrash();
     try { await savePrivacy(code, pick); } catch (e) { msg('群組建好了（邀請碼 ' + code + '），但公開設定沒存成功。請按「計畫公開設定」再選一次。'); return; }
     msg('建立好了！邀請碼是 ' + code + '，按「邀請朋友」把連結傳給大家。');
   }));
+  /* expiry without a paid plan (Firestore's own TTL needs billing): when the app loads a group, old messages are removed.
+     Everyone removes their own; the group owner removes anyone's. Chat lives 90 days, 搞定 30 days. At most once every 6 hours per group. */
+  const lastClean = new Map();
+  async function cleanup(gid) {
+    if (!user || !fb || Date.now() - (lastClean.get(gid) || 0) < 6 * 36e5) return;
+    lastClean.set(gid, Date.now());
+    const g = groups.find(x => x.id === gid), owner = !!g && g.owner === user.uid, { fs, db } = fb;
+    try {
+      for (const [c, days] of [['chat', 90], ['feed', 30]]) {
+        const cutoff = Date.now() - days * DAY;
+        const q = owner ? fs.query(fs.collection(db, 'groups', gid, c), fs.where('at', '<', new Date(cutoff)), fs.limit(200))
+                        : fs.query(fs.collection(db, 'groups', gid, c), fs.where('uid', '==', user.uid), fs.limit(200));
+        const old = (await fs.getDocs(q)).docs.filter(d => { const t = d.data().at?.toMillis?.(); return t && t < cutoff; });
+        if (old.length) { const b = fs.writeBatch(db); old.forEach(d => b.delete(d.ref)); await b.commit(); }
+      }
+    } catch (e) { lastClean.delete(gid); }
+  }
   /* leave: stop publishing, then delete my chat, 搞定, plan and numbers, and only then my membership */
   async function leaveGroup(g) {
     const { fs, db } = fb, prev = mine[g.id];
