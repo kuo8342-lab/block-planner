@@ -1,4 +1,4 @@
-# A → Pace 橋接：在「工作排程器」註冊 \BlockPlanner\A-to-Pace，每 30 分鐘執行一次（不用系統管理員）
+﻿# A → Pace 橋接：在「工作排程器」註冊 \BlockPlanner\A-to-Pace，每 30 分鐘執行一次（不用系統管理員）
 # 已存在就先移除再重建。用法：powershell -ExecutionPolicy Bypass -File install-task.ps1
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
