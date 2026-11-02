@@ -10,7 +10,7 @@ const ok=(name,pass,info)=>{results.checks.push({name,pass:!!pass,...(info?{info
   browser=await pw.chromium.launch({headless:true});
   for(const width of [1440,390]){
     const context=await browser.newContext({viewport:{width,height:width<768?844:1000},timezoneId:'Asia/Taipei',locale:'zh-TW',colorScheme:'dark',serviceWorkers:'block',hasTouch:width<768,isMobile:width<768});
-    await context.addInitScript(()=>{localStorage.setItem('pace-lang','zh');localStorage.setItem('pace-persona','custom');localStorage.setItem('pace-tour-done','1');localStorage.setItem('pace-seen-version','2026-10-28b');});
+    await context.addInitScript(()=>{localStorage.setItem('pace-lang','zh');localStorage.setItem('pace-persona','custom');localStorage.setItem('pace-tour-done','1');localStorage.setItem('pace-seen-version','9999-12-31');});
     await context.route('**/*',r=>{const url=new URL(r.request().url());if(url.hostname==='127.0.0.1')return r.continue();results.blockedExternal.push(url.origin);return r.abort();});
     const page=await context.newPage();page.on('pageerror',e=>results.errors.push(`${width}: ${e.message}`));
     // Stable initial time, unpaused: retain reminder logic and real elapsed deltas.
@@ -42,7 +42,7 @@ const ok=(name,pass,info)=>{results.checks.push({name,pass:!!pass,...(info?{info
       document.querySelector('[data-rmode="day"]').click();await sleep(100);ok('daily report',!$('rListCard').hidden);
       document.querySelector('[data-rmode="month"]').click();await sleep(100);ok('monthly report',$('rBreak').children.length>0);$('backToGrid').click();
       $('toWidget').click();ok('sticky note opens',document.body.classList.contains('w'));$('toPlanner').click();ok('sticky note returns',!document.body.classList.contains('w'));
-      $('skinBtn').click();ok('settings retains AI sync and backup',!!$('aiProvider')&&!!$('syncIn')&&!!$('exportAll')&&$('skinDlg').open);$('skinClose').click();
+      $('skinBtn').click();ok('settings has no AI and keeps sync and backup',!$('aiProvider')&&!!$('syncIn')&&!!$('exportAll')&&$('skinDlg').open);$('skinClose').click();
       document.activeElement?.blur();const before=ymd(state.monday);document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));await sleep(80);ok('next-week keyboard shortcut',ymd(state.monday)!==before);
       document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));await sleep(80);ok('previous-week keyboard shortcut',ymd(state.monday)===before);
       document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'n',bubbles:true}));ok('N shortcut focuses quick add',document.activeElement===$('qa'));$('qa').blur();
@@ -150,20 +150,20 @@ const ok=(name,pass,info)=>{results.checks.push({name,pass:!!pass,...(info?{info
   };
   const migration=await browser.newContext({serviceWorkers:'block'});
   await migration.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
-  await migration.addInitScript(store=>{localStorage.setItem('pace-db-v1',JSON.stringify(store));localStorage.setItem('pace-db-meta','{"weeks/2026-10-26":12345}');localStorage.setItem('pace-lang','zh');localStorage.setItem('pace-persona','custom');localStorage.setItem('pace-tour-done','1');localStorage.setItem('pace-seen-version','2026-10-28b');localStorage.setItem('pace-api-key','sk-ant-SYNTHETIC_QA_SECRET_DO_NOT_LEAK_123456');},oldStore);
+  await migration.addInitScript(store=>{localStorage.setItem('pace-db-v1',JSON.stringify(store));localStorage.setItem('pace-db-meta','{"weeks/2026-10-26":12345}');localStorage.setItem('pace-lang','zh');localStorage.setItem('pace-persona','custom');localStorage.setItem('pace-tour-done','1');localStorage.setItem('pace-seen-version','9999-12-31');localStorage.setItem('pace-api-key','sk-ant-SYNTHETIC_QA_SECRET_DO_NOT_LEAK_123456');},oldStore);
   const oldPage=await migration.newPage();oldPage.on('pageerror',e=>results.errors.push(`legacy-data: ${e.message}`));
   await oldPage.clock.install({time:new Date('2026-10-28T14:37:00+08:00')});
   await oldPage.goto(previewUrl,{waitUntil:'domcontentloaded'});await oldPage.waitForFunction(()=>state.ready&&state.config);await oldPage.waitForTimeout(650);
   ok('existing synthetic records remain byte-for-byte unchanged on boot',await oldPage.evaluate(expected=>localStorage.getItem('pace-db-v1')===JSON.stringify(expected),oldStore));
   ok('existing sync metadata remains unchanged on boot',await oldPage.evaluate(()=>localStorage.getItem('pace-db-meta')==='{"weeks/2026-10-26":12345}'));
   await oldPage.locator('#skinBtn').click();
-  ok('saved API key is not exposed as readable form value',await oldPage.evaluate(()=>!document.documentElement.outerHTML.includes('SYNTHETIC_QA_SECRET_DO_NOT_LEAK_123456')&&document.getElementById('aiKey').value===''));
+  ok('saved API key is not exposed as readable form value',await oldPage.evaluate(()=>!document.documentElement.outerHTML.includes('SYNTHETIC_QA_SECRET_DO_NOT_LEAK_123456')&&(document.getElementById('aiKey')?.value??'')===''&&!Object.keys(localStorage).some(k=>/^pace-api-key/.test(k))));
   const backupEvent=oldPage.waitForEvent('download');await oldPage.locator('#exportAll').click();const backup=await backupEvent;const backupPath=path.join(out,'synthetic-backup.json');await backup.saveAs(backupPath);
   const backupData=fs.readFileSync(backupPath,'utf8');ok('backup excludes saved API key',!backupData.includes('SYNTHETIC_QA_SECRET_DO_NOT_LEAK_123456'));
   await migration.close();
   const reduced=await browser.newContext({reducedMotion:'reduce',viewport:{width:390,height:844},serviceWorkers:'block'});
   await reduced.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
-  await reduced.addInitScript(()=>{localStorage.setItem('pace-lang','zh');localStorage.setItem('pace-persona','custom');localStorage.setItem('pace-tour-done','1');localStorage.setItem('pace-seen-version','2026-10-28b');});
+  await reduced.addInitScript(()=>{localStorage.setItem('pace-lang','zh');localStorage.setItem('pace-persona','custom');localStorage.setItem('pace-tour-done','1');localStorage.setItem('pace-seen-version','9999-12-31');});
   const reducedPage=await reduced.newPage();await reducedPage.clock.install({time:new Date('2026-10-28T14:37:00+08:00')});await reducedPage.goto(previewUrl+'#widget');await reducedPage.waitForFunction(()=>state.ready&&state.config);
   ok('initial #widget URL preserves compact widget mode',await reducedPage.evaluate(()=>document.body.classList.contains('w')&&getComputedStyle(document.getElementById('widget')).display!=='none'));
   await reducedPage.evaluate(()=>{state.tasks=Array.from({length:18},(_,i)=>({id:'widget-test-'+i,title:'合成任務 '+i,minutes:20,cat:'study',done:false,showFrom:ymd(state.monday)}));renderWidget();});

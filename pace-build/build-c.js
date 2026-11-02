@@ -16,7 +16,7 @@ const rep = (a, b, all) => {
 /* ---------- head: name, install files, look ---------- */
 rep('<title>方塊週排程</title>', '');
 rep('</head>', `<title>步調 Pace</title>
-<meta name="description" content="用時間方塊排一週的讀書計畫：拖曳排程、目標拆解、專注計時、週報。資料只存在你的裝置。">
+<meta name="description" content="用時間方塊排一週的讀書計畫：拖曳排程、目標拆解、專注計時、週報。不登入的話，資料只存在你的裝置。">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2f7a5b">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -160,7 +160,7 @@ rep('placeholder="例如：石碇區"', 'placeholder="例如：大安區"');
 rep('方塊週排程', '步調', true);   // backup file name, notification title, heading placeholder
 { const blk = /<h3 class="set-h">放假與地區<\/h3>\n    <div class="pref-grid">\n[\s\S]*?\n    <\/div>\n/.exec(s)[0]; rep(blk, '<div hidden>' + blk + '</div>\n'); }   // A's daily sync looks up typhoon days; C has no one to do that
 rep('資料存在 claude.ai 上，只有你自己的帳號看得到，不會公開。可以隨時匯出備份或全部刪除。',
-  '資料只存在這台裝置的瀏覽器裡，不會上傳到任何伺服器。換裝置或清除瀏覽器資料就會不見，記得定期匯出備份。');
+  '不登入的話，資料只存在這台裝置的瀏覽器裡，不會上傳。登入同步或加入群組後，資料會存到 Google Firebase 雲端（台灣彰化機房），群組裡的人看得到你選擇分享的部分。換裝置或清除瀏覽器資料，沒登入的資料就會不見，記得定期匯出備份。');
 rep('範本和 Claude 回饋，無法復原', '範本和目標，無法復原');
 rep('（這個頁面開著時；電腦另外有 Windows 通知）', '（這個頁面開著時）');
 
@@ -341,6 +341,15 @@ for (const file of ['notion-ui.css', 'notion-components.css', 'notion-mobile.css
 for (const file of ['notion-ui.js', 'notion-mobile.js', 'notion-focus.js', 'notion-feedback.js']) {
   rep('</body>', '<script data-pace-ui="' + file + '">' + fs.readFileSync(path.join(__dirname, file), 'utf8') + '</script>\n</body>');
 }
+rep('</body>', '<script data-pace-ui="c-skins.js">' + fs.readFileSync(path.join(__dirname, 'c-skins.js'), 'utf8') + '</script>\n</body>');   // six more themes, after notion-ui.js has renamed the default one
+/* contact address for reports and the privacy policy: pace-build/contact.txt (one line). Without it the report links stay hidden. */
+const contact = (fs.existsSync(path.join(__dirname, 'contact.txt')) ? fs.readFileSync(path.join(__dirname, 'contact.txt'), 'utf8').trim() : '') || process.env.PACE_CONTACT || '';
+if (contact && !/^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(contact)) throw new Error('contact.txt is not an email address');
+rep('<head>', '<head>\n<script>window.PACE_CONTACT = ' + JSON.stringify(contact) + ';</script>');
+if (!contact) console.warn('WARNING: no contact email (pace-build/contact.txt): report links are hidden and the privacy page has no address');
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, 'index.html'), s.replace(/\r\n/g, '\n'));
+{ const t = path.join(__dirname, 'privacy.template.html');
+  const day = new Date().toISOString().slice(0, 10);
+  fs.writeFileSync(path.join(out, 'privacy.html'), fs.readFileSync(t, 'utf8').replace(/\{\{CONTACT\}\}/g, contact || '（聯絡信箱尚未設定）').replace(/\{\{DATE\}\}/g, day)); }
 console.log('built', path.join(out, 'index.html'), (s.length / 1024).toFixed(0) + ' KB');

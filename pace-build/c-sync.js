@@ -12,8 +12,10 @@
   const privacyHead = [...document.querySelectorAll('#skinDlg .set-h')].find(h => h.textContent.startsWith('資料與隱私'));
   const box = document.createElement('div');
   box.innerHTML = '<h3 class="set-h">同步（登入帳號）</h3>' +
-    '<p class="hint" style="margin:0">登入後，手機、電腦和 App 會自動同步同一份資料。不登入也能用，資料只存在這台裝置。這台裝置的提醒設定不會上傳。</p>' +
+    '<p class="hint" style="margin:0">登入後，手機、電腦和 App 會自動同步同一份資料。不登入也能用，資料只存在這台裝置。登入後，資料會存到 Google Firebase 雲端（台灣彰化機房）；加入群組後，群組裡的人看得到你選擇分享的部分。這台裝置的提醒設定不會上傳。</p>' +
     '<div id="syncOut">' +
+      '<label class="check"><input type="checkbox" id="syncAge"> 我年滿 13 歲；未滿 18 歲，我已經讓家長或老師知道我在用。（註冊和用 Google 登入前要勾）</label>' +
+      '<p class="hint" style="margin:0">資料怎麼用、怎麼刪，請看<a href="privacy.html" target="_blank" rel="noopener">隱私權政策</a>。</p>' +
       '<button class="btn primary" type="button" id="syncGoogle">用 Google 帳號登入</button>' +
       '<details class="sync-mail"><summary>用 Email 登入</summary><div class="sync-form">' +
         '<label>Email<input id="syncEmail" type="email" autocomplete="email"></label>' +
@@ -22,7 +24,7 @@
       '</div></details>' +
     '</div>' +
     '<div id="syncInBox" hidden><p style="margin:0">已登入：<b id="syncWho"></b></p>' +
-      '<div class="sync-acts"><button class="btn" type="button" id="syncOutBtn">登出</button><button class="btn danger" type="button" id="syncWipe">刪除雲端資料</button></div>' +
+      '<div class="sync-acts"><button class="btn" type="button" id="syncOutBtn">登出</button><button class="btn danger" type="button" id="syncWipe">刪除雲端資料</button><button class="btn danger" type="button" id="syncDelAcct">刪除帳號和所有資料</button></div>' +
       '<div id="widgetLinkBox" hidden><button class="btn" type="button" id="widgetLink">連結 Android 桌面小工具</button>' +
       '<p class="hint" style="margin:0">按一下，桌面的「步調・今天」小工具就會顯示你今天的方塊（大約每 30 分鐘更新）。只會連結這支手機。</p></div></div>' +
     '<p class="hint" id="syncMsg" aria-live="polite" style="margin:0"></p>';
@@ -104,18 +106,37 @@
     'auth/popup-closed-by-user': '登入視窗被關掉了。', 'auth/cancelled-popup-request': '', 'auth/unauthorized-domain': '這個網址還沒加到 Firebase 的授權網域。'
   })[e?.code] ?? ('登入失敗：' + (e?.code || e?.message || e));
   const run = f => async () => { msg('處理中…'); try { await load(); await f(); } catch (e) { msg(errText(e)); } };
+  const ageOk = () => { if ($('syncAge').checked) return true; msg('請先勾選「我年滿 13 歲；未滿 18 歲，我已經讓家長或老師知道」。'); return false; };
   $('syncGoogle').addEventListener('click', run(async () => {
+    if (!ageOk()) return;
     const { auth, au } = fb, p = new auth.GoogleAuthProvider();
     try { await auth.signInWithPopup(au, p); msg(''); }
     catch (e) { if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(e?.code)) { remember(true); await auth.signInWithRedirect(au, p); } else throw e; }
   }));
   const creds = () => [$('syncEmail').value.trim(), $('syncPass').value];
   $('syncIn').addEventListener('click', run(async () => { await fb.auth.signInWithEmailAndPassword(fb.au, ...creds()); msg(''); }));
-  $('syncUp').addEventListener('click', run(async () => { await fb.auth.createUserWithEmailAndPassword(fb.au, ...creds()); msg('註冊完成，已登入。'); }));
+  $('syncUp').addEventListener('click', run(async () => { if (!ageOk()) return; await fb.auth.createUserWithEmailAndPassword(fb.au, ...creds()); msg('註冊完成，已登入。'); }));
   $('syncReset').addEventListener('click', run(async () => { await fb.auth.sendPasswordResetEmail(fb.au, creds()[0]); msg('已寄出重設密碼的信，請去收信。'); }));
   $('syncOutBtn').addEventListener('click', run(async () => { await fb.auth.signOut(fb.au); remember(false); msg('已登出。資料還留在這台裝置，但不會再同步。'); unlinkWidget(); }));
+  /* delete the account itself: group data first (chat, 搞定, plan, numbers, membership), then my synced documents, then the login */
+  $('syncDelAcct').addEventListener('click', run(async () => {
+    if (!user || !confirm('要刪除帳號嗎？雲端上的資料、你在群組裡的計畫、數字和說過的話都會刪掉，帳號也會消失，而且不能復原。這台裝置上的資料會保留。')) { msg(''); return; }
+    if (!confirm('再確認一次：真的要刪除帳號和所有雲端資料嗎？')) { msg(''); return; }
+    const { fs, db } = fb;
+    try {
+      if (window.paceGroupLeaveAll) await window.paceGroupLeaveAll();
+      const docs = (await fs.getDocs(fs.collection(db, 'users', user.uid, 'docs'))).docs;
+      for (let i = 0; i < docs.length; i += 400) { const b = fs.writeBatch(db); docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit(); }
+      await fb.auth.deleteUser(fb.au.currentUser);
+    } catch (e) {
+      if (e?.code === 'auth/requires-recent-login') { msg('為了安全，請先登出、重新登入，再按一次「刪除帳號和所有資料」。群組和雲端資料已經刪掉了。'); return; }
+      throw e;
+    }
+    remember(false); msg('帳號和雲端資料都已刪除。這台裝置上的資料還在。'); unlinkWidget();
+  }));
   $('syncWipe').addEventListener('click', run(async () => {
-    if (!user || !confirm('要刪除雲端上的所有資料嗎？這台裝置上的資料會保留，並且登出。')) { msg(''); return; }
+    if (!user || !confirm('要刪除雲端上的所有資料嗎？包含你在群組裡的計畫、數字和說過的話，也會退出所有群組。這台裝置上的資料會保留，並且登出。')) { msg(''); return; }
+    if (window.paceGroupLeaveAll) await window.paceGroupLeaveAll();   // c-group.js: my chat, 搞定, plan and numbers, then my membership
     const { fs, db } = fb, col = fs.collection(db, 'users', user.uid, 'docs');
     const docs = (await fs.getDocs(col)).docs;
     for (let i = 0; i < docs.length; i += 400) { const b = fs.writeBatch(db); docs.slice(i, i + 400).forEach(d => b.delete(d.ref)); await b.commit(); }

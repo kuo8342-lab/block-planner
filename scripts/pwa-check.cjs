@@ -10,7 +10,7 @@ try { playwright = require('playwright'); } catch {
   const browser = await playwright.chromium.launch({ headless: true });
   try {
     const context = await browser.newContext({ locale: 'zh-TW' });
-    await context.addInitScript(()=>{localStorage.setItem('pace-lang','zh');localStorage.setItem('pace-persona','custom');localStorage.setItem('pace-tour-done','1');localStorage.setItem('pace-seen-version','2026-10-28b');});
+    await context.addInitScript(()=>{localStorage.setItem('pace-lang','zh');localStorage.setItem('pace-persona','custom');localStorage.setItem('pace-tour-done','1');localStorage.setItem('pace-seen-version','9999-12-31');});
     const page = await context.newPage();
     await page.clock.install({time:new Date('2026-10-28T14:37:00+08:00')});
     await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());

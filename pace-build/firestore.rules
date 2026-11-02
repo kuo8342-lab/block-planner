@@ -21,37 +21,108 @@ service cloud.firestore {
         && request.resource.data.owner == me()
         && request.resource.data.members == [me()]
         && request.resource.data.names.keys().hasOnly([me()])
+        && okName(request.resource.data.names[me()])
         && request.resource.data.createdAt == request.time;
-      // join, rename yourself, or leave: only members and your own name change
-      allow update: if signedIn()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'names'])
-        && request.resource.data.names.diff(resource.data.names).affectedKeys().hasOnly([me()])
-        && okMembers(request.resource.data.members)
-        && (
-          (request.resource.data.members.toSet() == resource.data.members.toSet().union([me()].toSet())
-            && okName(request.resource.data.names[me()]))
-          || (request.resource.data.members.toSet() == resource.data.members.toSet().difference([me()].toSet())
-            && !(me() in request.resource.data.names))
-        );
-      allow delete: if signedIn() && resource.data.owner == me();
+      // two kinds of update: (1) me joining, renaming myself or leaving; (2) the owner removing ONE member and banning them
+      allow update: if signedIn() && (
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'names'])
+          && request.resource.data.names.diff(resource.data.names).affectedKeys().hasOnly([me()])
+          && okMembers(request.resource.data.members)
+          && (
+            (request.resource.data.members.toSet() == resource.data.members.toSet().union([me()].toSet())
+              && resource.data.members.size() > 0   // a group everyone has left stays closed: its old chat is not handed to the next person with the code
+              && !(me() in resource.data.get('banned', []))
+              && okName(request.resource.data.names[me()]))
+            || (request.resource.data.members.toSet() == resource.data.members.toSet().difference([me()].toSet())
+              && !(me() in request.resource.data.names))
+          ))
+        ||
+        (resource.data.owner == me()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'names', 'banned'])
+          && resource.data.members.toSet().difference(request.resource.data.members.toSet()).size() == 1
+          && request.resource.data.members.toSet().difference(resource.data.members.toSet()).size() == 0
+          && !(me() in resource.data.members.toSet().difference(request.resource.data.members.toSet()))
+          && request.resource.data.names.keys().toSet() == resource.data.names.keys().toSet().difference(resource.data.members.toSet().difference(request.resource.data.members.toSet()))
+          && request.resource.data.banned.toSet() == resource.data.get('banned', []).toSet().union(resource.data.members.toSet().difference(request.resource.data.members.toSet()))
+          && request.resource.data.banned.size() <= 30)
+      );
+      // the app never deletes a group; refusing it keeps an old code from being re-created over its history
+      allow delete: if false;
 
       function member() { return signedIn() && me() in get(/databases/$(database)/documents/groups/$(gid)).data.members; }
+      function isMember(u) { return u in get(/databases/$(database)/documents/groups/$(gid)).data.members; }
+      // the name this group has for me: a post cannot be signed with anybody else's name
+      function isOwner() { return signedIn() && get(/databases/$(database)/documents/groups/$(gid)).data.owner == me(); }
+      function myName() { return get(/databases/$(database)/documents/groups/$(gid)).data.names[me()]; }
 
       // 「搞定！」：只有完成的事，id 以自己的 uid 開頭；別人只能加或收回自己的 👏
       match /feed/{eid} {
         allow read: if member();
         allow create: if member() && eid.matches(me() + '_.+')
-          && request.resource.data.keys().hasOnly(['uid', 'name', 'title', 'minutes', 'at', 'cheers'])
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'title', 'minutes', 'at', 'cheers', 'expireAt'])
+          && (!('expireAt' in request.resource.data) || request.resource.data.expireAt is timestamp)
           && request.resource.data.uid == me()
-          && request.resource.data.name is string && request.resource.data.name.size() <= 30
+          && request.resource.data.name == myName()
           && request.resource.data.title is string && request.resource.data.title.size() <= 60
           && request.resource.data.minutes is int && request.resource.data.minutes >= 0 && request.resource.data.minutes <= 1440
           && request.resource.data.at == request.time
-          && request.resource.data.cheers.size() == 0;
+          && request.resource.data.cheers is map && request.resource.data.cheers.size() == 0;
         allow update: if member()
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cheers'])
           && request.resource.data.cheers.diff(resource.data.cheers).affectedKeys().hasOnly([me()]);
-        allow delete: if signedIn() && resource.data.uid == me();
+        allow delete: if signedIn() && (resource.data.uid == me() || isOwner());
+      }
+
+      // 每個成員這週的數字（達成率、亮起幾顆星）：群組裡的人都看得到；只有自己能寫、能刪
+      match /stats/{uid} {
+        allow get: if member() && isMember(uid);
+        allow list: if member();   // the app only shows people who are still members
+        allow create, update: if member() && uid == me()
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'week', 'rate', 'stars', 'glow', 'share', 'at'])
+          && request.resource.data.uid == me()
+          && okName(request.resource.data.name)
+          && request.resource.data.week is string && request.resource.data.week.size() == 10
+          && request.resource.data.rate is int && request.resource.data.rate >= -1 && request.resource.data.rate <= 100
+          && request.resource.data.stars is int && request.resource.data.stars >= 0 && request.resource.data.stars <= 500
+          && request.resource.data.glow is int && request.resource.data.glow >= 0 && request.resource.data.glow <= 100
+          && request.resource.data.share in ['none', 'some', 'all']
+          && request.resource.data.at == request.time;
+        allow delete: if signedIn() && (uid == me() || isOwner());
+      }
+
+      // 每個成員這週的計畫（唯讀給別人）：只有自己、或對方設成「全部」、或名單裡有自己才讀得到；永遠只有本人能寫
+      match /plans/{uid} {
+        allow get: if member() && isMember(uid) && (uid == me()
+          || resource.data.access == 'all'
+          || (resource.data.access == 'some' && me() in resource.data.allow));
+        // choiceAt = when the person made the sharing choice; a write with an older choice than the stored one is refused,
+        // so a device that has not heard about a newer choice (e.g. a plan just made private) cannot undo it
+        allow create: if planOk();
+        allow update: if planOk() && request.resource.data.choiceAt >= resource.data.get('choiceAt', 0);
+        function planOk() { return member() && uid == me()
+          && request.resource.data.keys().hasOnly(['uid', 'week', 'access', 'allow', 'blocks', 'choiceAt', 'at'])
+          && request.resource.data.uid == me()
+          && request.resource.data.choiceAt is int && request.resource.data.choiceAt >= 0
+          && request.resource.data.week is string && request.resource.data.week.size() == 10
+          && request.resource.data.access in ['none', 'some', 'all']
+          && request.resource.data.allow is list && request.resource.data.allow.size() <= 30
+          && request.resource.data.blocks is list && request.resource.data.blocks.size() <= 150
+          && (request.resource.data.access != 'none' || request.resource.data.blocks.size() == 0)
+          && request.resource.data.at == request.time; }
+        allow delete: if signedIn() && (uid == me() || isOwner());
+      }
+
+      // 聊天室：成員才讀得到、寫得了；id 以自己的 uid 開頭，只能收回自己的話
+      match /chat/{mid} {
+        allow read: if member();
+        allow create: if member() && mid.matches(me() + '_.+')
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'text', 'at', 'expireAt'])
+          && (!('expireAt' in request.resource.data) || request.resource.data.expireAt is timestamp)
+          && request.resource.data.uid == me()
+          && request.resource.data.name == myName()
+          && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 300
+          && request.resource.data.at == request.time;
+        allow delete: if signedIn() && (resource.data.uid == me() || isOwner());
       }
     }
   }

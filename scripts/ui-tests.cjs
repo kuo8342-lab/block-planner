@@ -39,7 +39,7 @@ const results={phase,base,viewports:[],harness:[],errors:[],blockedExternal:[]};
 async function context(browser,width,withSeed=true){
   const c=await browser.newContext({viewport:{width,height:width<768?844:1000},deviceScaleFactor:1,timezoneId:'Asia/Taipei',locale:'zh-TW',colorScheme:'light',serviceWorkers:'block',hasTouch:width<768,isMobile:width<768});
   await c.route('**/*', route=>{const u=new URL(route.request().url());if(['127.0.0.1','localhost'].includes(u.hostname)||['data:','blob:'].includes(u.protocol)) return route.continue(); results.blockedExternal.push(u.origin);return route.abort();});
-  await c.addInitScript(({seed,withSeed})=>{localStorage.setItem('pace-lang','zh');localStorage.setItem('pace-persona','custom');localStorage.setItem('pace-tour-done','1');localStorage.setItem('pace-seen-version','2026-10-28b');if(withSeed&&!sessionStorage.getItem('qa-seeded')){localStorage.setItem('pace-db-v1',JSON.stringify(seed));sessionStorage.setItem('qa-seeded','1');}window.__qaErrors=[];addEventListener('error',e=>window.__qaErrors.push(e.message));}, {seed,withSeed});
+  await c.addInitScript(({seed,withSeed})=>{localStorage.setItem('pace-lang','zh');localStorage.setItem('pace-persona','custom');localStorage.setItem('pace-tour-done','1');localStorage.setItem('pace-seen-version','9999-12-31');if(withSeed&&!sessionStorage.getItem('qa-seeded')){localStorage.setItem('pace-db-v1',JSON.stringify(seed));sessionStorage.setItem('qa-seeded','1');}window.__qaErrors=[];addEventListener('error',e=>window.__qaErrors.push(e.message));}, {seed,withSeed});
   return c;
 }
 (async()=>{
