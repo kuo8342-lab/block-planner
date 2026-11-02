@@ -25,3 +25,4 @@ automation/*.tmp
 bridge/config.json
 bridge/last-run.json
 bridge/log.txt
+bridge/backup-before-import.json
