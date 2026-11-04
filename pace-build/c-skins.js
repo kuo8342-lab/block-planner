@@ -1,4 +1,4 @@
-/* 步調 Pace: six more themes (skins) — 夕陽, 森林, 薰衣草, 極光, 雪地, 咖啡. They join the skins A already has:
+/* 步調 Pace: twelve more themes (skins) — 夕陽, 森林, 薰衣草, 極光, 雪地, 咖啡, 沙漠, 糖果, 銀河, 楓葉, 雨夜, 水墨. They join the skins A already has:
    same picker, same saved choice (localStorage + the synced config), same on/off switch for the moving background.
    A draws its own six backgrounds inside drawBg()/seedParticles(); these two are wrapped here so a new skin draws
    its own scene and every other skin falls through to A's code untouched. Injected by build-c.js after the notion UI. */
@@ -11,7 +11,13 @@
     { id: 'lavender', name: '薰衣草', note: '淡紫色、閃爍的小星光', sw: ['#f6f2fd', '#fffdff', '#8a63d2', '#e9dcff', '#d9c7f5'] },
     { id: 'aurora', name: '極光', note: '深藍夜空、綠紫色的光帶飄動', sw: ['#050d16', '#0f2a35', '#5eead4', '#a78bfa', '#34d399'] },
     { id: 'snow', name: '雪地', note: '冰藍白色、雪花飄落', sw: ['#f1f6fb', '#ffffff', '#3b82c4', '#dcebf8', '#cfdde9'] },
-    { id: 'coffee', name: '咖啡', note: '奶泡米色、咖啡棕、熱氣緩緩上升', sw: ['#f6efe6', '#fffaf3', '#9a6a3f', '#e4c9a8', '#c9a47a'] }
+    { id: 'coffee', name: '咖啡', note: '奶泡米色、咖啡棕、熱氣緩緩上升', sw: ['#f6efe6', '#fffaf3', '#9a6a3f', '#e4c9a8', '#c9a47a'] },
+    { id: 'desert', name: '沙漠', note: '沙丘米黃、細沙隨風飄過', sw: ['#fbf0dc', '#fffaf0', '#c2641f', '#f6d9a8', '#e8c88c'] },
+    { id: 'candy', name: '糖果', note: '粉彩糖果色、一顆顆糖果飄上來', sw: ['#fff1f7', '#ffffff', '#e0559b', '#ffd6e8', '#cfe9ff'] },
+    { id: 'galaxy', name: '銀河', note: '深紫宇宙、星雲與慢慢旋轉的星星', sw: ['#0a0618', '#1a1033', '#c084fc', '#7dd3fc', '#f0abfc'] },
+    { id: 'autumn', name: '楓葉', note: '暖橘紅棕、楓葉緩緩飄落', sw: ['#fbf0e4', '#fffaf4', '#c2410c', '#fbd3a6', '#e7b88a'] },
+    { id: 'rain', name: '雨夜', note: '灰藍雨夜、雨絲斜斜落下', sw: ['#0d141c', '#16212d', '#7fb2e5', '#9fc4ee', '#2c3e50'] },
+    { id: 'ink', name: '水墨', note: '宣紙白、墨黑，墨點慢慢暈開', sw: ['#f5f3ee', '#fdfcf9', '#2b2b2b', '#e6e2d8', '#c9c4b6'] }
   ];
   SKINS.push(...NEW);
 
@@ -62,8 +68,33 @@
       '--accent: #7b5230; --accent-ink: #7b5230; --accent-on: #ffffff; --accent-soft: #f0e0cd; --shadow: 0 2px 4px rgba(154, 106, 63, .06), 0 10px 26px rgba(154, 106, 63, .1);' +
       '--note: #f0dcc0; --note-fg: #3b2a1f; --note-line: rgba(154, 106, 63, .16); --note-tape: rgba(255, 255, 255, .6);',
       'linear-gradient(180deg, #f9f2e9 0%, #efe3d3 100%)');
+  style.textContent +=
+    light('desert', '--bg: #fbf0dc; --panel: #fffaf0; --panel-2: #f6e8cc; --fg: #3d2b17; --muted: #75603f; --line: #ecd8b4; --line-soft: #f4e6c8;' +
+      '--accent: #a8520f; --accent-ink: #a8520f; --accent-on: #ffffff; --accent-soft: #f8e0bb; --shadow: 0 2px 4px rgba(194, 100, 31, .06), 0 10px 26px rgba(194, 100, 31, .1);' +
+      '--note: #f6dfb4; --note-fg: #3d2b17; --note-line: rgba(194, 100, 31, .14); --note-tape: rgba(255, 255, 255, .6);',
+      'linear-gradient(180deg, #fdf3df 0%, #f3d9ad 100%)') +
+    light('candy', '--bg: #fff1f7; --panel: #ffffff; --panel-2: #ffe8f2; --fg: #3a2232; --muted: #7d5a70; --line: #f6d3e3; --line-soft: #fbe5ef;' +
+      '--accent: #b8236f; --accent-ink: #b8236f; --accent-on: #ffffff; --accent-soft: #ffd6e8; --shadow: 0 2px 4px rgba(224, 85, 155, .06), 0 10px 26px rgba(110, 160, 230, .12);' +
+      '--note: #ffe0ee; --note-fg: #3a2232; --note-line: rgba(224, 85, 155, .14); --note-tape: rgba(207, 233, 255, .8);',
+      'radial-gradient(circle at 10% 10%, #ffe0ee 0%, transparent 45%), radial-gradient(circle at 90% 90%, #d8ecff 0%, transparent 45%)') +
+    dark('galaxy', '--bg: #0a0618; --panel: rgba(22, 14, 44, .82); --panel-2: rgba(36, 24, 68, .76); --fg: #ece6ff; --muted: #a99bcf; --line: rgba(190, 150, 255, .22); --line-soft: rgba(190, 150, 255, .09);' +
+      '--accent: #c084fc; --accent-ink: #c084fc; --accent-on: #0a0618; --accent-soft: rgba(192, 132, 252, .17); --danger: #ff9aa8; --shadow: 0 10px 34px rgba(0, 0, 0, .5);' +
+      '--note: #1c1238; --note-fg: #ece6ff; --note-line: rgba(192, 132, 252, .15); --note-tape: rgba(125, 211, 252, .3);',
+      'radial-gradient(ellipse at 70% 15%, #2a1250 0%, transparent 55%), radial-gradient(ellipse at 10% 95%, #0f1d4a 0%, transparent 55%)') +
+    light('autumn', '--bg: #fbf0e4; --panel: #fffaf4; --panel-2: #f7e6d3; --fg: #3b2216; --muted: #7a5a45; --line: #efd6bd; --line-soft: #f6e6d6;' +
+      '--accent: #a8330a; --accent-ink: #a8330a; --accent-on: #ffffff; --accent-soft: #fbdcc0; --shadow: 0 2px 4px rgba(194, 65, 12, .06), 0 10px 26px rgba(194, 65, 12, .1);' +
+      '--note: #fbd9b5; --note-fg: #3b2216; --note-line: rgba(194, 65, 12, .14); --note-tape: rgba(255, 255, 255, .6);',
+      'linear-gradient(180deg, #fcf1e3 0%, #f6dfc4 100%)') +
+    dark('rain', '--bg: #0d141c; --panel: rgba(20, 30, 42, .84); --panel-2: rgba(30, 44, 60, .78); --fg: #e1ebf5; --muted: #8ea3b8; --line: rgba(130, 170, 210, .2); --line-soft: rgba(130, 170, 210, .08);' +
+      '--accent: #7fb2e5; --accent-ink: #7fb2e5; --accent-on: #0d141c; --accent-soft: rgba(127, 178, 229, .16); --danger: #ff9a8a; --shadow: 0 10px 34px rgba(0, 0, 0, .45);' +
+      '--note: #172433; --note-fg: #e1ebf5; --note-line: rgba(127, 178, 229, .14); --note-tape: rgba(255, 214, 120, .25);',
+      'linear-gradient(180deg, #101a26 0%, #0b1119 100%)') +
+    light('ink', '--bg: #f5f3ee; --panel: #fdfcf9; --panel-2: #eeeae1; --fg: #1f1f1f; --muted: #66625a; --line: #dcd7ca; --line-soft: #e8e4d9;' +
+      '--accent: #2b2b2b; --accent-ink: #2b2b2b; --accent-on: #ffffff; --accent-soft: #e6e2d8; --shadow: 0 2px 4px rgba(0, 0, 0, .05), 0 10px 26px rgba(0, 0, 0, .07);' +
+      '--note: #ebe6d9; --note-fg: #1f1f1f; --note-line: rgba(0, 0, 0, .1); --note-tape: rgba(255, 255, 255, .7);',
+      'radial-gradient(circle at 20% 10%, #ffffff 0%, transparent 50%), linear-gradient(180deg, #f7f5f0 0%, #ece8de 100%)');
   // dialogs sit on a solid colour: see-through panels let the page show through the chat and the plan
-  style.textContent += [['forest', '#12201a'], ['aurora', '#0c1826'], ['night', '#141c3a'], ['neon', '#0e0e1a']].map(([id, c]) => sk(id) + ' dialog { background: ' + c + '; backdrop-filter: none; -webkit-backdrop-filter: none; }\n').join('');
+  style.textContent += [['forest', '#12201a'], ['aurora', '#0c1826'], ['night', '#141c3a'], ['neon', '#0e0e1a'], ['galaxy', '#160e2c'], ['rain', '#141f2b']].map(([id, c]) => sk(id) + ' dialog { background: ' + c + '; backdrop-filter: none; -webkit-backdrop-filter: none; }\n').join('');
   document.head.appendChild(style);
 
   /* ---------- moving backgrounds ---------- */
@@ -139,6 +170,73 @@
       }
     }
   };
+  Object.assign(MAKE, {
+    desert: (W, H, a) => Array.from({ length: Math.round(40 * a) + 20 }, () => ({ x: r(0, W), y: r(0, H), vx: r(.3, 1.1), vy: r(-.05, .05), r: r(.6, 1.8), p: r(0, 6.28) })),
+    candy: (W, H, a) => Array.from({ length: Math.round(14 * a) + 8 }, (_, i) => ({ x: r(0, W), y: r(0, H), vy: r(.15, .45), r: r(8, 22), p: r(0, 6.28), c: i % 4 })),
+    galaxy: (W, H, a) => Array.from({ length: Math.round(120 * a) + 50 }, () => ({ a: r(0, 6.28), d: r(10, Math.hypot(W, H) * .6), r: r(.4, 1.5), p: r(0, 6.28), s: r(.5, 2) })),
+    autumn: (W, H, a) => Array.from({ length: Math.round(16 * a) + 8 }, (_, i) => ({ x: r(0, W), y: r(-H * .2, H), vx: r(-.3, .3), vy: r(.4, 1), rot: r(0, 6.28), vr: r(-.03, .03), s: r(6, 13), c: i % 4, p: r(0, 6.28) })),
+    rain: (W, H, a) => Array.from({ length: Math.round(70 * a) + 30 }, () => ({ x: r(0, W + 100), y: r(-H, H), len: r(10, 22), v: r(9, 16), p: r(.15, .45) })),
+    ink: (W, H, a) => Array.from({ length: Math.round(6 * a) + 4 }, () => ({ x: r(0, W), y: r(0, H), r: r(40, 130), p: r(0, 6.28), sp: r(.003, .008), vy: r(-.08, .08) }))
+  });
+  const CANDY = ['255, 126, 182', '110, 197, 255', '255, 209, 102', '142, 224, 180'], LEAF = ['#d9541e', '#e8892b', '#b8421a', '#f0b43a'];
+  Object.assign(DRAW, {
+    desert(ctx, W, H, t) {
+      [[.86, .14, 0], [.93, .2, 2]].forEach(([b, al, ph]) => {
+        ctx.fillStyle = 'rgba(205, 150, 80, ' + al + ')'; ctx.beginPath(); ctx.moveTo(0, H);
+        for (let x = 0; x <= W; x += 16) ctx.lineTo(x, H * b + Math.sin(x * .004 + t * .0004 + ph) * 14 + Math.sin(x * .011 + ph) * 6);
+        ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+      });
+      ctx.globalAlpha = .5; ctx.fillStyle = '#c9985a';
+      for (const p of fx.parts) {
+        p.x += p.vx; p.y += p.vy + Math.sin(t * .02 + p.p) * .15; if (p.x > W + 4) { p.x = -4; p.y = r(0, H); }
+        ctx.fillRect(p.x, p.y, p.r, p.r);
+      }
+    },
+    candy(ctx, W, H, t) {
+      for (const o of fx.parts) {
+        o.y -= o.vy; o.x += Math.sin(t * .01 + o.p) * .3; if (o.y < -o.r) { o.y = H + o.r; o.x = r(0, W); }
+        ctx.globalAlpha = .32; ctx.fillStyle = 'rgb(' + CANDY[o.c] + ')'; ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, 6.283); ctx.fill();
+        ctx.globalAlpha = .45; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(o.x - o.r * .35, o.y - o.r * .35, o.r * .25, 0, 6.283); ctx.fill();
+      }
+    },
+    galaxy(ctx, W, H, t) {
+      [[W * .7 + Math.sin(t * .001) * 40, H * .3, 'rgba(160, 90, 240, .16)'], [W * .25, H * .75 + Math.cos(t * .0008) * 30, 'rgba(70, 120, 240, .13)']].forEach(([x, y, c]) => {
+        const R = Math.max(W, H) * .45, g = ctx.createRadialGradient(x, y, 0, x, y, R); g.addColorStop(0, c); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      });
+      const cx = W * .55, cy = H * .45; ctx.fillStyle = '#ffffff';
+      for (const s of fx.parts) {
+        const an = s.a + t * .00025 * (300 / (s.d + 150)), x = cx + Math.cos(an) * s.d, y = cy + Math.sin(an) * s.d * .6;
+        if (x < -2 || x > W + 2 || y < -2 || y > H + 2) continue;
+        ctx.globalAlpha = .3 + .7 * Math.abs(Math.sin(t * .015 * s.s + s.p)); ctx.beginPath(); ctx.arc(x, y, s.r, 0, 6.283); ctx.fill();
+      }
+    },
+    autumn(ctx, W, H, t) {
+      for (const l of fx.parts) {
+        l.x += l.vx + Math.sin(t * .012 + l.p) * .6; l.y += l.vy; l.rot += l.vr; if (l.y > H + 20) { l.y = -20; l.x = r(0, W); }
+        ctx.save(); ctx.translate(l.x, l.y); ctx.rotate(l.rot); ctx.globalAlpha = .45; ctx.fillStyle = LEAF[l.c];
+        ctx.beginPath(); for (let k = 0; k < 10; k++) { const an = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? l.s * .45 : l.s; ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); } ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+    },
+    rain(ctx, W, H, t) {
+      const g = ctx.createLinearGradient(0, H * .7, 0, H); g.addColorStop(0, 'rgba(255, 200, 120, 0)'); g.addColorStop(1, 'rgba(255, 200, 120, .06)');
+      ctx.fillStyle = g; ctx.fillRect(0, H * .7, W, H * .3);
+      ctx.strokeStyle = '#aacdf0'; ctx.lineWidth = 1; ctx.lineCap = 'round';
+      for (const d of fx.parts) {
+        d.x -= d.v * .12; d.y += d.v; if (d.y > H + d.len) { d.y = -d.len; d.x = r(0, W + 100); }
+        ctx.globalAlpha = d.p; ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x + d.len * .12, d.y - d.len); ctx.stroke();
+      }
+    },
+    ink(ctx, W, H, t) {
+      for (const b of fx.parts) {
+        const k = (Math.sin(t * b.sp + b.p) + 1) / 2; b.y += b.vy; if (b.y < -b.r) b.y = H + b.r; if (b.y > H + b.r) b.y = -b.r;
+        const rr = b.r * (.7 + .3 * k), g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, rr);
+        g.addColorStop(0, 'rgba(30, 30, 30, ' + (.07 * k) + ')'); g.addColorStop(.7, 'rgba(30, 30, 30, ' + (.03 * k) + ')'); g.addColorStop(1, 'rgba(30, 30, 30, 0)');
+        ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, rr, 0, 6.283); ctx.fill();
+      }
+    }
+  });
   const seed0 = seedParticles, draw0 = drawBg;
   window.seedParticles = function () {
     const make = MAKE[skin]; if (!make) return seed0();
@@ -155,10 +253,12 @@
     default: ['✅', '完成 {n} 格', '進度'], night: ['⭐', '亮起 {n} 顆星', '亮度'], sakura: ['🌸', '開了 {n} 朵花', '花開'],
     ocean: ['🫧', '冒出 {n} 顆氣泡', '潛水深度'], matcha: ['🍵', '泡了 {n} 杯茶', '茶香'], neon: ['⚡', '點亮 {n} 盞燈', '電量'],
     sunset: ['🌅', '收集 {n} 道晚霞', '暖度'], forest: ['🌲', '種下 {n} 棵樹', '森林覆蓋'], lavender: ['💜', '採了 {n} 束薰衣草', '香氣'],
-    aurora: ['🌌', '出現 {n} 道極光', '極光強度'], snow: ['❄️', '堆了 {n} 片雪花', '積雪'], coffee: ['☕', '沖了 {n} 杯咖啡', '能量']
+    aurora: ['🌌', '出現 {n} 道極光', '極光強度'], snow: ['❄️', '堆了 {n} 片雪花', '積雪'], coffee: ['☕', '沖了 {n} 杯咖啡', '能量'],
+    desert: ['🌵', '長出 {n} 株仙人掌', '綠洲'], candy: ['🍬', '收集 {n} 顆糖果', '甜度'], galaxy: ['🪐', '拜訪 {n} 顆行星', '航行距離'],
+    autumn: ['🍁', '飄下 {n} 片楓葉', '秋意'], rain: ['🏙️', '亮起 {n} 扇窗', '燈火'], ink: ['🖌️', '寫下 {n} 個圓', '墨色']
   };
   /* another person's theme (the group room draws each member in their own): words, colour and a scale of ten themed marks */
-  window.PACE_SKIN_IDS = ["default","night","sakura","ocean","matcha","neon","sunset","forest","lavender","aurora","snow","coffee"];
+  window.PACE_SKIN_IDS = ["default","night","sakura","ocean","matcha","neon","sunset","forest","lavender","aurora","snow","coffee","desert","candy","galaxy","autumn","rain","ink"];
   window.paceSkinInfo = id => {
     const k = UNITS[id] ? id : 'default', u = UNITS[k], sw = (SKINS.find(s => s.id === k) || {}).sw;
     return { id: k, icon: u[0], pip: k === 'default' ? '■' : u[0], count: n => u[1].replace('{n}', n), measure: u[2], color: sw ? sw[2] : '#2f7a5b' };

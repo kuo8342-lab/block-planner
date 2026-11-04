@@ -345,6 +345,7 @@ for (const file of ['notion-ui.js', 'notion-mobile.js', 'notion-focus.js', 'noti
 }
 rep('</body>', '<script data-pace-ui="c-skins.js">' + fs.readFileSync(path.join(__dirname, 'c-skins.js'), 'utf8') + '</script>\n</body>');
 rep('</body>', '<script data-pace-ui="c-scenes.js">' + fs.readFileSync(path.join(__dirname, 'c-scenes.js'), 'utf8') + '</script>\n</body>');   // each theme's own scene in the weekly report   // six more themes, after notion-ui.js has renamed the default one
+rep('</body>', '<script data-pace-ui="c-sounds.js">' + fs.readFileSync(path.join(__dirname, 'c-sounds.js'), 'utf8') + '</script>\n</body>');   // 20 notification and 20 alarm sounds
 rep('</body>', '<script data-pace-ui="c-folder.js">' + fs.readFileSync(path.join(__dirname, 'c-folder.js'), 'utf8') + '</script>\n</body>');   // pull A's newest backup file out of a folder
 /* contact address for reports and the privacy policy: pace-build/contact.txt (one line). Without it the report links stay hidden. */
 const contact = (fs.existsSync(path.join(__dirname, 'contact.txt')) ? fs.readFileSync(path.join(__dirname, 'contact.txt'), 'utf8').trim() : '') || process.env.PACE_CONTACT || '';

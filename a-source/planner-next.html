@@ -4570,7 +4570,7 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
   document.querySelectorAll('.mobile-brand').forEach(b => { b.textContent = '方塊週排程'; });
 })();</script>
 <script data-pace="c-skins.js">window.PACE_KEEP_ORIGINAL_WORDS = true;
-/* 步調 Pace: six more themes (skins) — 夕陽, 森林, 薰衣草, 極光, 雪地, 咖啡. They join the skins A already has:
+/* 步調 Pace: twelve more themes (skins) — 夕陽, 森林, 薰衣草, 極光, 雪地, 咖啡, 沙漠, 糖果, 銀河, 楓葉, 雨夜, 水墨. They join the skins A already has:
    same picker, same saved choice (localStorage + the synced config), same on/off switch for the moving background.
    A draws its own six backgrounds inside drawBg()/seedParticles(); these two are wrapped here so a new skin draws
    its own scene and every other skin falls through to A's code untouched. Injected by build-c.js after the notion UI. */
@@ -4583,7 +4583,13 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
     { id: 'lavender', name: '薰衣草', note: '淡紫色、閃爍的小星光', sw: ['#f6f2fd', '#fffdff', '#8a63d2', '#e9dcff', '#d9c7f5'] },
     { id: 'aurora', name: '極光', note: '深藍夜空、綠紫色的光帶飄動', sw: ['#050d16', '#0f2a35', '#5eead4', '#a78bfa', '#34d399'] },
     { id: 'snow', name: '雪地', note: '冰藍白色、雪花飄落', sw: ['#f1f6fb', '#ffffff', '#3b82c4', '#dcebf8', '#cfdde9'] },
-    { id: 'coffee', name: '咖啡', note: '奶泡米色、咖啡棕、熱氣緩緩上升', sw: ['#f6efe6', '#fffaf3', '#9a6a3f', '#e4c9a8', '#c9a47a'] }
+    { id: 'coffee', name: '咖啡', note: '奶泡米色、咖啡棕、熱氣緩緩上升', sw: ['#f6efe6', '#fffaf3', '#9a6a3f', '#e4c9a8', '#c9a47a'] },
+    { id: 'desert', name: '沙漠', note: '沙丘米黃、細沙隨風飄過', sw: ['#fbf0dc', '#fffaf0', '#c2641f', '#f6d9a8', '#e8c88c'] },
+    { id: 'candy', name: '糖果', note: '粉彩糖果色、一顆顆糖果飄上來', sw: ['#fff1f7', '#ffffff', '#e0559b', '#ffd6e8', '#cfe9ff'] },
+    { id: 'galaxy', name: '銀河', note: '深紫宇宙、星雲與慢慢旋轉的星星', sw: ['#0a0618', '#1a1033', '#c084fc', '#7dd3fc', '#f0abfc'] },
+    { id: 'autumn', name: '楓葉', note: '暖橘紅棕、楓葉緩緩飄落', sw: ['#fbf0e4', '#fffaf4', '#c2410c', '#fbd3a6', '#e7b88a'] },
+    { id: 'rain', name: '雨夜', note: '灰藍雨夜、雨絲斜斜落下', sw: ['#0d141c', '#16212d', '#7fb2e5', '#9fc4ee', '#2c3e50'] },
+    { id: 'ink', name: '水墨', note: '宣紙白、墨黑，墨點慢慢暈開', sw: ['#f5f3ee', '#fdfcf9', '#2b2b2b', '#e6e2d8', '#c9c4b6'] }
   ];
   SKINS.push(...NEW);
 
@@ -4634,8 +4640,33 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
       '--accent: #7b5230; --accent-ink: #7b5230; --accent-on: #ffffff; --accent-soft: #f0e0cd; --shadow: 0 2px 4px rgba(154, 106, 63, .06), 0 10px 26px rgba(154, 106, 63, .1);' +
       '--note: #f0dcc0; --note-fg: #3b2a1f; --note-line: rgba(154, 106, 63, .16); --note-tape: rgba(255, 255, 255, .6);',
       'linear-gradient(180deg, #f9f2e9 0%, #efe3d3 100%)');
+  style.textContent +=
+    light('desert', '--bg: #fbf0dc; --panel: #fffaf0; --panel-2: #f6e8cc; --fg: #3d2b17; --muted: #75603f; --line: #ecd8b4; --line-soft: #f4e6c8;' +
+      '--accent: #a8520f; --accent-ink: #a8520f; --accent-on: #ffffff; --accent-soft: #f8e0bb; --shadow: 0 2px 4px rgba(194, 100, 31, .06), 0 10px 26px rgba(194, 100, 31, .1);' +
+      '--note: #f6dfb4; --note-fg: #3d2b17; --note-line: rgba(194, 100, 31, .14); --note-tape: rgba(255, 255, 255, .6);',
+      'linear-gradient(180deg, #fdf3df 0%, #f3d9ad 100%)') +
+    light('candy', '--bg: #fff1f7; --panel: #ffffff; --panel-2: #ffe8f2; --fg: #3a2232; --muted: #7d5a70; --line: #f6d3e3; --line-soft: #fbe5ef;' +
+      '--accent: #b8236f; --accent-ink: #b8236f; --accent-on: #ffffff; --accent-soft: #ffd6e8; --shadow: 0 2px 4px rgba(224, 85, 155, .06), 0 10px 26px rgba(110, 160, 230, .12);' +
+      '--note: #ffe0ee; --note-fg: #3a2232; --note-line: rgba(224, 85, 155, .14); --note-tape: rgba(207, 233, 255, .8);',
+      'radial-gradient(circle at 10% 10%, #ffe0ee 0%, transparent 45%), radial-gradient(circle at 90% 90%, #d8ecff 0%, transparent 45%)') +
+    dark('galaxy', '--bg: #0a0618; --panel: rgba(22, 14, 44, .82); --panel-2: rgba(36, 24, 68, .76); --fg: #ece6ff; --muted: #a99bcf; --line: rgba(190, 150, 255, .22); --line-soft: rgba(190, 150, 255, .09);' +
+      '--accent: #c084fc; --accent-ink: #c084fc; --accent-on: #0a0618; --accent-soft: rgba(192, 132, 252, .17); --danger: #ff9aa8; --shadow: 0 10px 34px rgba(0, 0, 0, .5);' +
+      '--note: #1c1238; --note-fg: #ece6ff; --note-line: rgba(192, 132, 252, .15); --note-tape: rgba(125, 211, 252, .3);',
+      'radial-gradient(ellipse at 70% 15%, #2a1250 0%, transparent 55%), radial-gradient(ellipse at 10% 95%, #0f1d4a 0%, transparent 55%)') +
+    light('autumn', '--bg: #fbf0e4; --panel: #fffaf4; --panel-2: #f7e6d3; --fg: #3b2216; --muted: #7a5a45; --line: #efd6bd; --line-soft: #f6e6d6;' +
+      '--accent: #a8330a; --accent-ink: #a8330a; --accent-on: #ffffff; --accent-soft: #fbdcc0; --shadow: 0 2px 4px rgba(194, 65, 12, .06), 0 10px 26px rgba(194, 65, 12, .1);' +
+      '--note: #fbd9b5; --note-fg: #3b2216; --note-line: rgba(194, 65, 12, .14); --note-tape: rgba(255, 255, 255, .6);',
+      'linear-gradient(180deg, #fcf1e3 0%, #f6dfc4 100%)') +
+    dark('rain', '--bg: #0d141c; --panel: rgba(20, 30, 42, .84); --panel-2: rgba(30, 44, 60, .78); --fg: #e1ebf5; --muted: #8ea3b8; --line: rgba(130, 170, 210, .2); --line-soft: rgba(130, 170, 210, .08);' +
+      '--accent: #7fb2e5; --accent-ink: #7fb2e5; --accent-on: #0d141c; --accent-soft: rgba(127, 178, 229, .16); --danger: #ff9a8a; --shadow: 0 10px 34px rgba(0, 0, 0, .45);' +
+      '--note: #172433; --note-fg: #e1ebf5; --note-line: rgba(127, 178, 229, .14); --note-tape: rgba(255, 214, 120, .25);',
+      'linear-gradient(180deg, #101a26 0%, #0b1119 100%)') +
+    light('ink', '--bg: #f5f3ee; --panel: #fdfcf9; --panel-2: #eeeae1; --fg: #1f1f1f; --muted: #66625a; --line: #dcd7ca; --line-soft: #e8e4d9;' +
+      '--accent: #2b2b2b; --accent-ink: #2b2b2b; --accent-on: #ffffff; --accent-soft: #e6e2d8; --shadow: 0 2px 4px rgba(0, 0, 0, .05), 0 10px 26px rgba(0, 0, 0, .07);' +
+      '--note: #ebe6d9; --note-fg: #1f1f1f; --note-line: rgba(0, 0, 0, .1); --note-tape: rgba(255, 255, 255, .7);',
+      'radial-gradient(circle at 20% 10%, #ffffff 0%, transparent 50%), linear-gradient(180deg, #f7f5f0 0%, #ece8de 100%)');
   // dialogs sit on a solid colour: see-through panels let the page show through the chat and the plan
-  style.textContent += [['forest', '#12201a'], ['aurora', '#0c1826'], ['night', '#141c3a'], ['neon', '#0e0e1a']].map(([id, c]) => sk(id) + ' dialog { background: ' + c + '; backdrop-filter: none; -webkit-backdrop-filter: none; }\n').join('');
+  style.textContent += [['forest', '#12201a'], ['aurora', '#0c1826'], ['night', '#141c3a'], ['neon', '#0e0e1a'], ['galaxy', '#160e2c'], ['rain', '#141f2b']].map(([id, c]) => sk(id) + ' dialog { background: ' + c + '; backdrop-filter: none; -webkit-backdrop-filter: none; }\n').join('');
   document.head.appendChild(style);
 
   /* ---------- moving backgrounds ---------- */
@@ -4711,6 +4742,73 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
       }
     }
   };
+  Object.assign(MAKE, {
+    desert: (W, H, a) => Array.from({ length: Math.round(40 * a) + 20 }, () => ({ x: r(0, W), y: r(0, H), vx: r(.3, 1.1), vy: r(-.05, .05), r: r(.6, 1.8), p: r(0, 6.28) })),
+    candy: (W, H, a) => Array.from({ length: Math.round(14 * a) + 8 }, (_, i) => ({ x: r(0, W), y: r(0, H), vy: r(.15, .45), r: r(8, 22), p: r(0, 6.28), c: i % 4 })),
+    galaxy: (W, H, a) => Array.from({ length: Math.round(120 * a) + 50 }, () => ({ a: r(0, 6.28), d: r(10, Math.hypot(W, H) * .6), r: r(.4, 1.5), p: r(0, 6.28), s: r(.5, 2) })),
+    autumn: (W, H, a) => Array.from({ length: Math.round(16 * a) + 8 }, (_, i) => ({ x: r(0, W), y: r(-H * .2, H), vx: r(-.3, .3), vy: r(.4, 1), rot: r(0, 6.28), vr: r(-.03, .03), s: r(6, 13), c: i % 4, p: r(0, 6.28) })),
+    rain: (W, H, a) => Array.from({ length: Math.round(70 * a) + 30 }, () => ({ x: r(0, W + 100), y: r(-H, H), len: r(10, 22), v: r(9, 16), p: r(.15, .45) })),
+    ink: (W, H, a) => Array.from({ length: Math.round(6 * a) + 4 }, () => ({ x: r(0, W), y: r(0, H), r: r(40, 130), p: r(0, 6.28), sp: r(.003, .008), vy: r(-.08, .08) }))
+  });
+  const CANDY = ['255, 126, 182', '110, 197, 255', '255, 209, 102', '142, 224, 180'], LEAF = ['#d9541e', '#e8892b', '#b8421a', '#f0b43a'];
+  Object.assign(DRAW, {
+    desert(ctx, W, H, t) {
+      [[.86, .14, 0], [.93, .2, 2]].forEach(([b, al, ph]) => {
+        ctx.fillStyle = 'rgba(205, 150, 80, ' + al + ')'; ctx.beginPath(); ctx.moveTo(0, H);
+        for (let x = 0; x <= W; x += 16) ctx.lineTo(x, H * b + Math.sin(x * .004 + t * .0004 + ph) * 14 + Math.sin(x * .011 + ph) * 6);
+        ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+      });
+      ctx.globalAlpha = .5; ctx.fillStyle = '#c9985a';
+      for (const p of fx.parts) {
+        p.x += p.vx; p.y += p.vy + Math.sin(t * .02 + p.p) * .15; if (p.x > W + 4) { p.x = -4; p.y = r(0, H); }
+        ctx.fillRect(p.x, p.y, p.r, p.r);
+      }
+    },
+    candy(ctx, W, H, t) {
+      for (const o of fx.parts) {
+        o.y -= o.vy; o.x += Math.sin(t * .01 + o.p) * .3; if (o.y < -o.r) { o.y = H + o.r; o.x = r(0, W); }
+        ctx.globalAlpha = .32; ctx.fillStyle = 'rgb(' + CANDY[o.c] + ')'; ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, 6.283); ctx.fill();
+        ctx.globalAlpha = .45; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(o.x - o.r * .35, o.y - o.r * .35, o.r * .25, 0, 6.283); ctx.fill();
+      }
+    },
+    galaxy(ctx, W, H, t) {
+      [[W * .7 + Math.sin(t * .001) * 40, H * .3, 'rgba(160, 90, 240, .16)'], [W * .25, H * .75 + Math.cos(t * .0008) * 30, 'rgba(70, 120, 240, .13)']].forEach(([x, y, c]) => {
+        const R = Math.max(W, H) * .45, g = ctx.createRadialGradient(x, y, 0, x, y, R); g.addColorStop(0, c); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      });
+      const cx = W * .55, cy = H * .45; ctx.fillStyle = '#ffffff';
+      for (const s of fx.parts) {
+        const an = s.a + t * .00025 * (300 / (s.d + 150)), x = cx + Math.cos(an) * s.d, y = cy + Math.sin(an) * s.d * .6;
+        if (x < -2 || x > W + 2 || y < -2 || y > H + 2) continue;
+        ctx.globalAlpha = .3 + .7 * Math.abs(Math.sin(t * .015 * s.s + s.p)); ctx.beginPath(); ctx.arc(x, y, s.r, 0, 6.283); ctx.fill();
+      }
+    },
+    autumn(ctx, W, H, t) {
+      for (const l of fx.parts) {
+        l.x += l.vx + Math.sin(t * .012 + l.p) * .6; l.y += l.vy; l.rot += l.vr; if (l.y > H + 20) { l.y = -20; l.x = r(0, W); }
+        ctx.save(); ctx.translate(l.x, l.y); ctx.rotate(l.rot); ctx.globalAlpha = .45; ctx.fillStyle = LEAF[l.c];
+        ctx.beginPath(); for (let k = 0; k < 10; k++) { const an = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? l.s * .45 : l.s; ctx.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); } ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+    },
+    rain(ctx, W, H, t) {
+      const g = ctx.createLinearGradient(0, H * .7, 0, H); g.addColorStop(0, 'rgba(255, 200, 120, 0)'); g.addColorStop(1, 'rgba(255, 200, 120, .06)');
+      ctx.fillStyle = g; ctx.fillRect(0, H * .7, W, H * .3);
+      ctx.strokeStyle = '#aacdf0'; ctx.lineWidth = 1; ctx.lineCap = 'round';
+      for (const d of fx.parts) {
+        d.x -= d.v * .12; d.y += d.v; if (d.y > H + d.len) { d.y = -d.len; d.x = r(0, W + 100); }
+        ctx.globalAlpha = d.p; ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(d.x + d.len * .12, d.y - d.len); ctx.stroke();
+      }
+    },
+    ink(ctx, W, H, t) {
+      for (const b of fx.parts) {
+        const k = (Math.sin(t * b.sp + b.p) + 1) / 2; b.y += b.vy; if (b.y < -b.r) b.y = H + b.r; if (b.y > H + b.r) b.y = -b.r;
+        const rr = b.r * (.7 + .3 * k), g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, rr);
+        g.addColorStop(0, 'rgba(30, 30, 30, ' + (.07 * k) + ')'); g.addColorStop(.7, 'rgba(30, 30, 30, ' + (.03 * k) + ')'); g.addColorStop(1, 'rgba(30, 30, 30, 0)');
+        ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, rr, 0, 6.283); ctx.fill();
+      }
+    }
+  });
   const seed0 = seedParticles, draw0 = drawBg;
   window.seedParticles = function () {
     const make = MAKE[skin]; if (!make) return seed0();
@@ -4727,10 +4825,12 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
     default: ['✅', '完成 {n} 格', '進度'], night: ['⭐', '亮起 {n} 顆星', '亮度'], sakura: ['🌸', '開了 {n} 朵花', '花開'],
     ocean: ['🫧', '冒出 {n} 顆氣泡', '潛水深度'], matcha: ['🍵', '泡了 {n} 杯茶', '茶香'], neon: ['⚡', '點亮 {n} 盞燈', '電量'],
     sunset: ['🌅', '收集 {n} 道晚霞', '暖度'], forest: ['🌲', '種下 {n} 棵樹', '森林覆蓋'], lavender: ['💜', '採了 {n} 束薰衣草', '香氣'],
-    aurora: ['🌌', '出現 {n} 道極光', '極光強度'], snow: ['❄️', '堆了 {n} 片雪花', '積雪'], coffee: ['☕', '沖了 {n} 杯咖啡', '能量']
+    aurora: ['🌌', '出現 {n} 道極光', '極光強度'], snow: ['❄️', '堆了 {n} 片雪花', '積雪'], coffee: ['☕', '沖了 {n} 杯咖啡', '能量'],
+    desert: ['🌵', '長出 {n} 株仙人掌', '綠洲'], candy: ['🍬', '收集 {n} 顆糖果', '甜度'], galaxy: ['🪐', '拜訪 {n} 顆行星', '航行距離'],
+    autumn: ['🍁', '飄下 {n} 片楓葉', '秋意'], rain: ['🏙️', '亮起 {n} 扇窗', '燈火'], ink: ['🖌️', '寫下 {n} 個圓', '墨色']
   };
   /* another person's theme (the group room draws each member in their own): words, colour and a scale of ten themed marks */
-  window.PACE_SKIN_IDS = ["default","night","sakura","ocean","matcha","neon","sunset","forest","lavender","aurora","snow","coffee"];
+  window.PACE_SKIN_IDS = ["default","night","sakura","ocean","matcha","neon","sunset","forest","lavender","aurora","snow","coffee","desert","candy","galaxy","autumn","rain","ink"];
   window.paceSkinInfo = id => {
     const k = UNITS[id] ? id : 'default', u = UNITS[k], sw = (SKINS.find(s => s.id === k) || {}).sw;
     return { id: k, icon: u[0], pip: k === 'default' ? '■' : u[0], count: n => u[1].replace('{n}', n), measure: u[2], color: sw ? sw[2] : '#2f7a5b' };
@@ -4851,6 +4951,49 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
       missed(c, x, y, s) { const w = s * .7, h = w * .7; c.strokeStyle = '#b05a4a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x - w / 2, y - h / 2); c.lineTo(x + w / 2, y - h / 2); c.lineTo(x + w * .38, y + h / 2); c.lineTo(x - w * .38, y + h / 2); c.closePath(); c.stroke(); },
       future(c, x, y, s) { const w = s * .7, h = w * .7; c.strokeStyle = '#a58a6a'; dashed(c, 1); c.beginPath(); c.moveTo(x - w / 2, y - h / 2); c.lineTo(x + w / 2, y - h / 2); c.lineTo(x + w * .38, y + h / 2); c.lineTo(x - w * .38, y + h / 2); c.closePath(); c.stroke(); dashed(c, 0); } }
   };
+  const ROT = (c, x, y, a) => { c.save(); c.translate(x, y); c.rotate(a); };
+  const PLANET = [['#e9d5ff', '#7c3aed'], ['#bae6fd', '#1d4ed8'], ['#fecdd3', '#be123c'], ['#fde68a', '#b45309']], CAND = ['#ff7eb6', '#6ec5ff', '#ffc94d', '#7ed9a8'], LEAVES = ['#d9541e', '#e8892b', '#b8421a', '#e3a21a'];
+  const maple = (c, r) => { c.beginPath(); for (let k = 0; k < 10; k++) { const an = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r * .45 : r; c.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); } c.closePath(); };
+  Object.assign(SCENES, {
+    desert: { bg: ['#fde9c4', '#f6cf92', '#e9b66c'], dark: false, label: '#6e4a22', ground: '#dca45a',
+      done(c, x, y, s, a, t, i) { const h = s * 1.2 * a; c.save(); c.translate(x, y + s * .6); c.fillStyle = '#3f8a52';
+        c.beginPath(); c.roundRect(-s * .1, -h, s * .2, h, s * .1); c.fill();
+        c.beginPath(); c.roundRect(-s * .34, -h * .62, s * .12, h * .3, s * .06); c.fill(); c.beginPath(); c.roundRect(-s * .34, -h * .4, s * .3, s * .1, s * .05); c.fill();
+        c.beginPath(); c.roundRect(s * .22, -h * .78, s * .12, h * .3, s * .06); c.fill(); c.beginPath(); c.roundRect(s * .04, -h * .55, s * .3, s * .1, s * .05); c.fill();
+        if (a > .9) { c.fillStyle = '#f472b6'; c.beginPath(); c.arc(0, -h, s * .07, 0, TAU); c.fill(); } c.restore(); },
+      missed(c, x, y, s) { c.save(); c.translate(x, y + s * .6); c.strokeStyle = '#a9824f'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -s * .75); c.moveTo(0, -s * .4); c.lineTo(-s * .22, -s * .3); c.moveTo(0, -s * .55); c.lineTo(s * .2, -s * .45); c.stroke(); c.restore(); },
+      future(c, x, y, s) { c.save(); c.translate(x, y + s * .6); c.strokeStyle = '#a07d4a'; dashed(c, 1); c.beginPath(); c.roundRect(-s * .08, -s * .5, s * .16, s * .5, s * .08); c.stroke(); dashed(c, 0); c.restore(); } },
+    candy: { bg: ['#fff0f6', '#ffe0ee', '#dbeaff'], dark: false, label: '#8a3a66',
+      done(c, x, y, s, a, t, i) { const r = s * .34 * a, col = CAND[i % 4]; ROT(c, x, y, Math.sin(t * .0015 + i) * .15 + i * .5);
+        c.fillStyle = col; c.beginPath(); c.moveTo(-r * .8, 0); c.lineTo(-r * 1.7, -r * .6); c.lineTo(-r * 1.7, r * .6); c.closePath(); c.fill();
+        c.beginPath(); c.moveTo(r * .8, 0); c.lineTo(r * 1.7, -r * .6); c.lineTo(r * 1.7, r * .6); c.closePath(); c.fill();
+        c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fill(); c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = Math.max(1, r * .22); c.beginPath(); c.arc(0, 0, r * .55, -2.4, -.6); c.stroke(); c.restore(); },
+      missed(c, x, y, s) { c.strokeStyle = '#c98aa8'; c.fillStyle = 'rgba(194,55,44,.1)'; c.lineWidth = 1.2; c.beginPath(); c.arc(x, y, s * .3, 0, TAU); c.fill(); c.stroke(); },
+      future(c, x, y, s) { c.strokeStyle = '#d9a9c4'; dashed(c, 1); c.beginPath(); c.arc(x, y, s * .3, 0, TAU); c.stroke(); dashed(c, 0); } },
+    galaxy: { bg: ['#07040f', '#120a2a', '#1e1245'], dark: true, label: '#a99bcf', stars: true,
+      done(c, x, y, s, a, t, i) { const r = s * .32 * a, [lt, dk] = PLANET[i % 4], g = c.createRadialGradient(x - r * .35, y - r * .35, 0, x, y, r);
+        g.addColorStop(0, lt); g.addColorStop(1, dk); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+        if (i % 2 === 0) { ROT(c, x, y, -.4 + Math.sin(t * .0005 + i) * .06); c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.2; c.beginPath(); c.ellipse(0, 0, r * 1.7, r * .42, 0, 0, TAU); c.stroke(); c.restore(); } },
+      missed(c, x, y, s) { c.strokeStyle = 'rgba(255,150,170,.5)'; c.lineWidth = 1; c.beginPath(); c.arc(x, y, s * .26, 0, TAU); c.stroke(); },
+      future(c, x, y, s) { c.strokeStyle = 'rgba(169,155,207,.55)'; dashed(c, 1); c.beginPath(); c.arc(x, y, s * .26, 0, TAU); c.stroke(); dashed(c, 0); } },
+    autumn: { bg: ['#fde7cf', '#f6c99a', '#e9a66d'], dark: false, label: '#7a3c18',
+      done(c, x, y, s, a, t, i) { ROT(c, x, y, i * .9 + Math.sin(t * .0014 + i) * .12); c.fillStyle = LEAVES[i % 4]; maple(c, s * .48 * a); c.fill();
+        c.strokeStyle = 'rgba(90,40,10,.45)'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, s * .5 * a); c.lineTo(0, -s * .2 * a); c.stroke(); c.restore(); },
+      missed(c, x, y, s, a, t, i) { ROT(c, x, y, i * .9); c.strokeStyle = '#9a6a4a'; c.fillStyle = 'rgba(150,110,80,.18)'; c.lineWidth = 1.1; maple(c, s * .4); c.fill(); c.stroke(); c.restore(); },
+      future(c, x, y, s, a, t, i) { ROT(c, x, y, i * .9); c.strokeStyle = '#b07a52'; dashed(c, 1); maple(c, s * .4); c.stroke(); dashed(c, 0); c.restore(); } },
+    rain: { bg: ['#0c1420', '#111d2b', '#17283a'], dark: true, label: '#8ea3b8', ground: '#0a111a',
+      done(c, x, y, s, a, t, i) { const w = s * .5, h = s * .66, f = .85 + .15 * Math.sin(t * .004 + i * 2.3), g = c.createRadialGradient(x, y, 0, x, y, s * a);
+        g.addColorStop(0, 'rgba(255,205,120,' + (.35 * f) + ')'); g.addColorStop(1, 'rgba(255,205,120,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, s * a, 0, TAU); c.fill();
+        c.fillStyle = 'rgba(255,214,130,' + f + ')'; c.beginPath(); c.roundRect(x - w / 2 * a, y - h / 2 * a, w * a, h * a, 2); c.fill();
+        c.strokeStyle = 'rgba(60,45,20,.55)'; c.lineWidth = 1; c.beginPath(); c.moveTo(x, y - h / 2 * a); c.lineTo(x, y + h / 2 * a); c.moveTo(x - w / 2 * a, y); c.lineTo(x + w / 2 * a, y); c.stroke(); },
+      missed(c, x, y, s) { const w = s * .5, h = s * .66; c.fillStyle = 'rgba(255,255,255,.04)'; c.strokeStyle = 'rgba(255,140,140,.35)'; c.lineWidth = 1; c.beginPath(); c.roundRect(x - w / 2, y - h / 2, w, h, 2); c.fill(); c.stroke(); },
+      future(c, x, y, s) { const w = s * .5, h = s * .66; c.strokeStyle = 'rgba(142,163,184,.55)'; dashed(c, 1); c.beginPath(); c.roundRect(x - w / 2, y - h / 2, w, h, 2); c.stroke(); dashed(c, 0); } },
+    ink: { bg: ['#faf8f3', '#f1eee6', '#e7e3d8'], dark: false, label: '#5f5b52',
+      done(c, x, y, s, a, t, i) { const r = s * .36 * Math.min(a, 1.1), st = -.9 + i * .7; c.strokeStyle = 'rgba(25,25,25,.86)'; c.lineCap = 'round'; c.lineWidth = Math.max(1.6, s * .11);
+        c.beginPath(); c.arc(x, y, r, st, st + TAU * .86 * clamp(a, 0, 1)); c.stroke(); c.lineWidth = 1; },
+      missed(c, x, y, s, a, t, i) { const st = -.9 + i * .7; c.strokeStyle = 'rgba(25,25,25,.28)'; c.lineWidth = 1; c.beginPath(); c.arc(x, y, s * .3, st, st + 2.4); c.stroke(); },
+      future(c, x, y, s) { c.strokeStyle = 'rgba(100,95,85,.55)'; dashed(c, 1); c.beginPath(); c.arc(x, y, s * .3, 0, TAU); c.stroke(); dashed(c, 0); } }
+  });
   window.PACE_SCENE_IDS = Object.keys(SCENES);
   const useScene = () => { if (keepOriginal && (skin === 'default' || skin === 'night')) return null; return SCENES[skin] || null; };
 
@@ -4866,7 +5009,13 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
     lavender: ['這週的花田', '每完成一個方塊就採一束薰衣草', '每完成一個方塊長出一束薰衣草，越久越高；枯枝是時間過了沒做的，虛線是還沒到的。香氣 = 這週完成 ÷ 每週目標。'],
     aurora: ['這週的極光', '每完成一個方塊就出現一道極光', '每完成一個方塊出現一道極光，越久越長；細線是時間過了沒做的，虛線是還沒到的。極光強度 = 這週完成 ÷ 每週目標。'],
     snow: ['這週的雪地', '每完成一個方塊就落下一片雪花', '每完成一個方塊落下一片雪花，越久越大，地上的雪越積越高；灰點是時間過了沒做的，虛線是還沒到的。積雪 = 這週完成 ÷ 每週目標。'],
-    coffee: ['這週的咖啡館', '每完成一個方塊就沖好一杯咖啡', '每完成一個方塊沖一杯咖啡，越久越大；空杯是時間過了沒做的，虛線是還沒到的。能量 = 這週完成 ÷ 每週目標。']
+    coffee: ['這週的咖啡館', '每完成一個方塊就沖好一杯咖啡', '每完成一個方塊沖一杯咖啡，越久越大；空杯是時間過了沒做的，虛線是還沒到的。能量 = 這週完成 ÷ 每週目標。'],
+    desert: ['這週的沙漠', '每完成一個方塊就長出一株仙人掌', '每完成一個方塊長出一株仙人掌，越久越高；枯枝是時間過了沒做的，虛線的小苗是還沒到的。綠洲 = 這週完成 ÷ 每週目標。'],
+    candy: ['這週的糖果罐', '每完成一個方塊就收集一顆糖果', '每完成一個方塊收集一顆糖果，越久越大；淡淡的圈是時間過了沒做的，虛線是還沒到的。甜度 = 這週完成 ÷ 每週目標。'],
+    galaxy: ['這週的星系', '每完成一個方塊就拜訪一顆行星', '每完成一個方塊拜訪一顆行星，越久越大；細圈是時間過了沒做的，虛線是還沒到的。航行距離 = 這週完成 ÷ 每週目標。'],
+    autumn: ['這週的楓林', '每完成一個方塊就飄下一片楓葉', '每完成一個方塊飄下一片楓葉，越久越大；褪色的葉子是時間過了沒做的，虛線是還沒到的。秋意 = 這週完成 ÷ 每週目標。'],
+    rain: ['這週的雨夜城市', '每完成一個方塊就亮起一扇窗', '每完成一個方塊亮起一扇窗，越久越大；暗的窗是時間過了沒做的，虛線是還沒到的。燈火 = 這週完成 ÷ 每週目標。'],
+    ink: ['這週的墨跡', '每完成一個方塊就寫下一個圓', '每完成一個方塊寫下一個圓，越久越大；淡淡的短弧是時間過了沒做的，虛線是還沒到的。墨色 = 這週完成 ÷ 每週目標。']
   };
   const original = { title: null, label: null, hint: null };
   function retext() {
@@ -4933,5 +5082,94 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
   };
 })();
 </script>
-<!-- A-next: Pace layout and themes (2026-11-02) -->
+<script data-pace="c-sounds.js">/* 步調 Pace: 20 notification sounds and 20 alarm sounds (A has 3 and 4). They are tiny synthesized tunes (no audio files),
+   added to A's own tables SOUNDS (long alarm, 15 s loop of a short melody) and NOTIFY (the 1–2 s ping before it) and to the two pickers in Settings.
+   Also adds 「試聽通知聲」 and lets a ping use a waveform other than sine. Loaded after A's own script (in C and in A-next). */
+(() => {
+  if (typeof SOUNDS === 'undefined' || typeof NOTIFY === 'undefined' || typeof playNotifyPing !== 'function') return;
+  const sel1 = document.getElementById('notifySound'), sel2 = document.getElementById('alarmSound');
+  if (!sel1 || !sel2) return;
+
+  // [id, 名稱, English, waveform, gain, notes [Hz, start s, length s]]
+  const PINGS = [
+    ['water', '水滴', 'Water drop', 'sine', .25, [[1200, 0, .18], [800, .06, .3]]],
+    ['marimba', '馬林巴', 'Marimba', 'triangle', .3, [[784, 0, .3], [988, .14, .3], [1175, .28, .5]]],
+    ['bubble', '泡泡', 'Bubbles', 'sine', .22, [[500, 0, .1], [900, .05, .12], [1400, .1, .2]]],
+    ['glass', '玻璃杯', 'Glass', 'sine', .16, [[2093, 0, .8], [2637, .02, .7]]],
+    ['harp', '豎琴', 'Harp', 'triangle', .28, [[523, 0, .5], [659, .1, .5], [784, .2, .5], [1047, .3, .8]]],
+    ['wood', '木魚', 'Wood block', 'square', .12, [[392, 0, .12], [392, .2, .12]]],
+    ['coin', '金幣', 'Coin', 'square', .12, [[988, 0, .08], [1319, .08, .6]]],
+    ['jingle', '小鈴鐺', 'Little bell', 'sine', .2, [[1760, 0, .4], [2093, .15, .5], [1760, .4, .5]]],
+    ['sonar', '聲納', 'Sonar', 'sine', .25, [[1000, 0, .7], [1000, .45, .4]]],
+    ['sparkle', '閃亮', 'Sparkle', 'sine', .16, [[1568, 0, .2], [1976, .07, .2], [2349, .14, .2], [3136, .21, .5]]],
+    ['knock', '敲門', 'Knock', 'triangle', .4, [[200, 0, .1], [200, .18, .1], [200, .36, .1]]],
+    ['whistle', '口哨', 'Whistle', 'sine', .22, [[1500, 0, .2], [2000, .15, .4]]],
+    ['retro', '復古遊戲', 'Retro game', 'square', .1, [[523, 0, .07], [659, .07, .07], [784, .14, .07], [1047, .21, .25]]],
+    ['soft', '輕柔', 'Soft', 'sine', .16, [[440, 0, .9], [554, .2, .9]]],
+    ['doorbell', '門鈴', 'Doorbell', 'sine', .25, [[659, 0, .5], [523, .5, .9]]],
+    ['pluck', '撥弦', 'Pluck', 'sawtooth', .09, [[330, 0, .3], [494, .1, .3]]],
+    ['triple', '三連音', 'Triple beep', 'sine', .22, [[587, 0, .25], [587, .25, .25], [880, .5, .6]]]
+  ];
+  // [id, 名稱, English, waveform, melody (Hz), seconds between notes, note length, gain]
+  const ALARMS = [
+    ['musicbox', '音樂盒', 'Music box', 'triangle', [1047, 1319, 1568, 2093, 1568, 1319], .3, .5, .22],
+    ['organ', '電子琴', 'Organ', 'square', [262, 330, 392, 523, 392, 330], .22, .2, .08],
+    ['windchime', '風鈴', 'Wind chimes', 'sine', [1568, 1760, 2093, 1760, 2349, 1976], .35, .8, .22],
+    ['siren', '警報', 'Siren', 'sawtooth', [600, 900], .5, .45, .09],
+    ['radar', '雷達', 'Radar', 'sine', [1200, 900], .8, .15, .25],
+    ['tower', '鐘塔', 'Clock tower', 'sine', [196, 147, 165, 98], .9, 1.2, .35],
+    ['space', '太空', 'Space', 'triangle', [330, 440, 554, 660, 554, 440], .3, .3, .2],
+    ['cuckoo', '布穀鳥', 'Cuckoo', 'sine', [784, 622], .6, .3, .3],
+    ['digital', '數位鬧鐘', 'Digital clock', 'square', [1319, 1319, 1319, 1047], .12, .08, .1],
+    ['lullaby', '搖籃曲', 'Lullaby', 'sine', [392, 392, 587, 587, 659, 659, 587], .4, .5, .25],
+    ['jazz', '爵士', 'Jazz', 'triangle', [262, 330, 392, 466, 440, 392, 330, 294], .3, .3, .28],
+    ['march', '進行曲', 'March', 'square', [392, 392, 523, 392, 523, 659], .25, .2, .09],
+    ['dream', '夢境', 'Dream', 'sine', [262, 330, 392, 494, 392, 330], .5, 1, .22],
+    ['kalimba', '拇指琴', 'Kalimba', 'triangle', [523, 659, 784, 659, 880, 784, 659, 523], .22, .4, .3],
+    ['tick', '時鐘滴答', 'Ticking clock', 'square', [2000, 1500], .5, .04, .1],
+    ['popcorn', '爆米花', 'Popcorn', 'square', [1319, 988, 1175, 1047, 1568, 1175], .13, .06, .1]
+  ];
+
+  for (const [id, , , type, gain, notes] of PINGS) { notes.type = type; notes.gain = gain; NOTIFY[id] = notes; }
+  for (const [id, , , type, seq, step, dur, gain] of ALARMS) SOUNDS[id] = { type, seq, step, dur, gain };
+  const add = (sel, list) => { for (const x of list) sel.add(new Option(x[1], x[0])); };
+  add(sel1, PINGS); add(sel2, ALARMS);
+  window.PACE_SOUND_NAMES = Object.fromEntries([...PINGS, ...ALARMS].map(x => [x[1], x[2]]));
+
+  // pings can now say which waveform and loudness they use (the old ones stay sine / .25)
+  window.playNotifyPing = playNotifyPing = function (ctx, t0) {
+    const notes = NOTIFY[prefGet('planner-notify-sound', 'ding')] || NOTIFY.ding, type = notes.type || 'sine', peak = notes.gain || .25;
+    for (const [f, dt, len] of notes) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0 + dt);
+      g.gain.exponentialRampToValueAtTime(peak, t0 + dt + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + len);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0 + dt); o.stop(t0 + dt + len + 0.02);
+      alarmNodes.push(o);
+    }
+  };
+
+  // a button to hear only the short ping (the existing one plays the ping and then the long alarm)
+  const test = document.getElementById('alarmTest');
+  if (test && !document.getElementById('pingTest')) {
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'btn', id: 'pingTest', textContent: '試聽通知聲' });
+    test.before(b);
+    b.addEventListener('click', () => {
+      try {
+        stopAlarmSound();
+        const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+        const ctx = playChime.ctx || (playChime.ctx = new AC()); if (ctx.state === 'suspended') ctx.resume();
+        playNotifyPing(ctx, ctx.currentTime + .05);
+      } catch (e) {}
+    });
+  }
+  // choosing a sound plays it once, so you hear what you picked
+  sel1.addEventListener('change', () => document.getElementById('pingTest')?.click());
+  // the saved choice may be one of the new ones: the picker was filled before they existed
+  try { sel1.value = prefGet('planner-notify-sound', 'ding'); sel2.value = prefGet('planner-alarm-sound', 'bell'); } catch (e) {}
+})();
+</script>
+<!-- A-next: Pace layout, themes and sounds (2026-11-04) -->
 </body></html>

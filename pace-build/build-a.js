@@ -52,7 +52,7 @@ rep('</body>', '<script data-pace="a-brand">' + `
 })();` + '</script>\n</body>');
 
 /* 4. the themes script reads A's skin globals, so it goes after A's own script */
-rep('</body>', '<script data-pace="c-skins.js">window.PACE_KEEP_ORIGINAL_WORDS = true;\n' + read('c-skins.js') + '</script>\n<script data-pace="c-scenes.js">' + read('c-scenes.js') + '</script>\n<!-- A-next: Pace layout and themes (2026-11-02) -->\n</body>');
+rep('</body>', '<script data-pace="c-skins.js">window.PACE_KEEP_ORIGINAL_WORDS = true;\n' + read('c-skins.js') + '</script>\n<script data-pace="c-scenes.js">' + read('c-scenes.js') + '</script>\n<script data-pace="c-sounds.js">' + read('c-sounds.js') + '</script>\n<!-- A-next: Pace layout, themes and sounds (2026-11-04) -->\n</body>');
 
 fs.writeFileSync(out, s);
 console.log('built', out, (s.length / 1024).toFixed(0) + ' KB');

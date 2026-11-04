@@ -85,6 +85,49 @@
       missed(c, x, y, s) { const w = s * .7, h = w * .7; c.strokeStyle = '#b05a4a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x - w / 2, y - h / 2); c.lineTo(x + w / 2, y - h / 2); c.lineTo(x + w * .38, y + h / 2); c.lineTo(x - w * .38, y + h / 2); c.closePath(); c.stroke(); },
       future(c, x, y, s) { const w = s * .7, h = w * .7; c.strokeStyle = '#a58a6a'; dashed(c, 1); c.beginPath(); c.moveTo(x - w / 2, y - h / 2); c.lineTo(x + w / 2, y - h / 2); c.lineTo(x + w * .38, y + h / 2); c.lineTo(x - w * .38, y + h / 2); c.closePath(); c.stroke(); dashed(c, 0); } }
   };
+  const ROT = (c, x, y, a) => { c.save(); c.translate(x, y); c.rotate(a); };
+  const PLANET = [['#e9d5ff', '#7c3aed'], ['#bae6fd', '#1d4ed8'], ['#fecdd3', '#be123c'], ['#fde68a', '#b45309']], CAND = ['#ff7eb6', '#6ec5ff', '#ffc94d', '#7ed9a8'], LEAVES = ['#d9541e', '#e8892b', '#b8421a', '#e3a21a'];
+  const maple = (c, r) => { c.beginPath(); for (let k = 0; k < 10; k++) { const an = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r * .45 : r; c.lineTo(Math.cos(an) * rr, Math.sin(an) * rr); } c.closePath(); };
+  Object.assign(SCENES, {
+    desert: { bg: ['#fde9c4', '#f6cf92', '#e9b66c'], dark: false, label: '#6e4a22', ground: '#dca45a',
+      done(c, x, y, s, a, t, i) { const h = s * 1.2 * a; c.save(); c.translate(x, y + s * .6); c.fillStyle = '#3f8a52';
+        c.beginPath(); c.roundRect(-s * .1, -h, s * .2, h, s * .1); c.fill();
+        c.beginPath(); c.roundRect(-s * .34, -h * .62, s * .12, h * .3, s * .06); c.fill(); c.beginPath(); c.roundRect(-s * .34, -h * .4, s * .3, s * .1, s * .05); c.fill();
+        c.beginPath(); c.roundRect(s * .22, -h * .78, s * .12, h * .3, s * .06); c.fill(); c.beginPath(); c.roundRect(s * .04, -h * .55, s * .3, s * .1, s * .05); c.fill();
+        if (a > .9) { c.fillStyle = '#f472b6'; c.beginPath(); c.arc(0, -h, s * .07, 0, TAU); c.fill(); } c.restore(); },
+      missed(c, x, y, s) { c.save(); c.translate(x, y + s * .6); c.strokeStyle = '#a9824f'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -s * .75); c.moveTo(0, -s * .4); c.lineTo(-s * .22, -s * .3); c.moveTo(0, -s * .55); c.lineTo(s * .2, -s * .45); c.stroke(); c.restore(); },
+      future(c, x, y, s) { c.save(); c.translate(x, y + s * .6); c.strokeStyle = '#a07d4a'; dashed(c, 1); c.beginPath(); c.roundRect(-s * .08, -s * .5, s * .16, s * .5, s * .08); c.stroke(); dashed(c, 0); c.restore(); } },
+    candy: { bg: ['#fff0f6', '#ffe0ee', '#dbeaff'], dark: false, label: '#8a3a66',
+      done(c, x, y, s, a, t, i) { const r = s * .34 * a, col = CAND[i % 4]; ROT(c, x, y, Math.sin(t * .0015 + i) * .15 + i * .5);
+        c.fillStyle = col; c.beginPath(); c.moveTo(-r * .8, 0); c.lineTo(-r * 1.7, -r * .6); c.lineTo(-r * 1.7, r * .6); c.closePath(); c.fill();
+        c.beginPath(); c.moveTo(r * .8, 0); c.lineTo(r * 1.7, -r * .6); c.lineTo(r * 1.7, r * .6); c.closePath(); c.fill();
+        c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fill(); c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = Math.max(1, r * .22); c.beginPath(); c.arc(0, 0, r * .55, -2.4, -.6); c.stroke(); c.restore(); },
+      missed(c, x, y, s) { c.strokeStyle = '#c98aa8'; c.fillStyle = 'rgba(194,55,44,.1)'; c.lineWidth = 1.2; c.beginPath(); c.arc(x, y, s * .3, 0, TAU); c.fill(); c.stroke(); },
+      future(c, x, y, s) { c.strokeStyle = '#d9a9c4'; dashed(c, 1); c.beginPath(); c.arc(x, y, s * .3, 0, TAU); c.stroke(); dashed(c, 0); } },
+    galaxy: { bg: ['#07040f', '#120a2a', '#1e1245'], dark: true, label: '#a99bcf', stars: true,
+      done(c, x, y, s, a, t, i) { const r = s * .32 * a, [lt, dk] = PLANET[i % 4], g = c.createRadialGradient(x - r * .35, y - r * .35, 0, x, y, r);
+        g.addColorStop(0, lt); g.addColorStop(1, dk); c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+        if (i % 2 === 0) { ROT(c, x, y, -.4 + Math.sin(t * .0005 + i) * .06); c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.2; c.beginPath(); c.ellipse(0, 0, r * 1.7, r * .42, 0, 0, TAU); c.stroke(); c.restore(); } },
+      missed(c, x, y, s) { c.strokeStyle = 'rgba(255,150,170,.5)'; c.lineWidth = 1; c.beginPath(); c.arc(x, y, s * .26, 0, TAU); c.stroke(); },
+      future(c, x, y, s) { c.strokeStyle = 'rgba(169,155,207,.55)'; dashed(c, 1); c.beginPath(); c.arc(x, y, s * .26, 0, TAU); c.stroke(); dashed(c, 0); } },
+    autumn: { bg: ['#fde7cf', '#f6c99a', '#e9a66d'], dark: false, label: '#7a3c18',
+      done(c, x, y, s, a, t, i) { ROT(c, x, y, i * .9 + Math.sin(t * .0014 + i) * .12); c.fillStyle = LEAVES[i % 4]; maple(c, s * .48 * a); c.fill();
+        c.strokeStyle = 'rgba(90,40,10,.45)'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, s * .5 * a); c.lineTo(0, -s * .2 * a); c.stroke(); c.restore(); },
+      missed(c, x, y, s, a, t, i) { ROT(c, x, y, i * .9); c.strokeStyle = '#9a6a4a'; c.fillStyle = 'rgba(150,110,80,.18)'; c.lineWidth = 1.1; maple(c, s * .4); c.fill(); c.stroke(); c.restore(); },
+      future(c, x, y, s, a, t, i) { ROT(c, x, y, i * .9); c.strokeStyle = '#b07a52'; dashed(c, 1); maple(c, s * .4); c.stroke(); dashed(c, 0); c.restore(); } },
+    rain: { bg: ['#0c1420', '#111d2b', '#17283a'], dark: true, label: '#8ea3b8', ground: '#0a111a',
+      done(c, x, y, s, a, t, i) { const w = s * .5, h = s * .66, f = .85 + .15 * Math.sin(t * .004 + i * 2.3), g = c.createRadialGradient(x, y, 0, x, y, s * a);
+        g.addColorStop(0, 'rgba(255,205,120,' + (.35 * f) + ')'); g.addColorStop(1, 'rgba(255,205,120,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, s * a, 0, TAU); c.fill();
+        c.fillStyle = 'rgba(255,214,130,' + f + ')'; c.beginPath(); c.roundRect(x - w / 2 * a, y - h / 2 * a, w * a, h * a, 2); c.fill();
+        c.strokeStyle = 'rgba(60,45,20,.55)'; c.lineWidth = 1; c.beginPath(); c.moveTo(x, y - h / 2 * a); c.lineTo(x, y + h / 2 * a); c.moveTo(x - w / 2 * a, y); c.lineTo(x + w / 2 * a, y); c.stroke(); },
+      missed(c, x, y, s) { const w = s * .5, h = s * .66; c.fillStyle = 'rgba(255,255,255,.04)'; c.strokeStyle = 'rgba(255,140,140,.35)'; c.lineWidth = 1; c.beginPath(); c.roundRect(x - w / 2, y - h / 2, w, h, 2); c.fill(); c.stroke(); },
+      future(c, x, y, s) { const w = s * .5, h = s * .66; c.strokeStyle = 'rgba(142,163,184,.55)'; dashed(c, 1); c.beginPath(); c.roundRect(x - w / 2, y - h / 2, w, h, 2); c.stroke(); dashed(c, 0); } },
+    ink: { bg: ['#faf8f3', '#f1eee6', '#e7e3d8'], dark: false, label: '#5f5b52',
+      done(c, x, y, s, a, t, i) { const r = s * .36 * Math.min(a, 1.1), st = -.9 + i * .7; c.strokeStyle = 'rgba(25,25,25,.86)'; c.lineCap = 'round'; c.lineWidth = Math.max(1.6, s * .11);
+        c.beginPath(); c.arc(x, y, r, st, st + TAU * .86 * clamp(a, 0, 1)); c.stroke(); c.lineWidth = 1; },
+      missed(c, x, y, s, a, t, i) { const st = -.9 + i * .7; c.strokeStyle = 'rgba(25,25,25,.28)'; c.lineWidth = 1; c.beginPath(); c.arc(x, y, s * .3, st, st + 2.4); c.stroke(); },
+      future(c, x, y, s) { c.strokeStyle = 'rgba(100,95,85,.55)'; dashed(c, 1); c.beginPath(); c.arc(x, y, s * .3, 0, TAU); c.stroke(); dashed(c, 0); } }
+  });
   window.PACE_SCENE_IDS = Object.keys(SCENES);
   const useScene = () => { if (keepOriginal && (skin === 'default' || skin === 'night')) return null; return SCENES[skin] || null; };
 
@@ -100,7 +143,13 @@
     lavender: ['這週的花田', '每完成一個方塊就採一束薰衣草', '每完成一個方塊長出一束薰衣草，越久越高；枯枝是時間過了沒做的，虛線是還沒到的。香氣 = 這週完成 ÷ 每週目標。'],
     aurora: ['這週的極光', '每完成一個方塊就出現一道極光', '每完成一個方塊出現一道極光，越久越長；細線是時間過了沒做的，虛線是還沒到的。極光強度 = 這週完成 ÷ 每週目標。'],
     snow: ['這週的雪地', '每完成一個方塊就落下一片雪花', '每完成一個方塊落下一片雪花，越久越大，地上的雪越積越高；灰點是時間過了沒做的，虛線是還沒到的。積雪 = 這週完成 ÷ 每週目標。'],
-    coffee: ['這週的咖啡館', '每完成一個方塊就沖好一杯咖啡', '每完成一個方塊沖一杯咖啡，越久越大；空杯是時間過了沒做的，虛線是還沒到的。能量 = 這週完成 ÷ 每週目標。']
+    coffee: ['這週的咖啡館', '每完成一個方塊就沖好一杯咖啡', '每完成一個方塊沖一杯咖啡，越久越大；空杯是時間過了沒做的，虛線是還沒到的。能量 = 這週完成 ÷ 每週目標。'],
+    desert: ['這週的沙漠', '每完成一個方塊就長出一株仙人掌', '每完成一個方塊長出一株仙人掌，越久越高；枯枝是時間過了沒做的，虛線的小苗是還沒到的。綠洲 = 這週完成 ÷ 每週目標。'],
+    candy: ['這週的糖果罐', '每完成一個方塊就收集一顆糖果', '每完成一個方塊收集一顆糖果，越久越大；淡淡的圈是時間過了沒做的，虛線是還沒到的。甜度 = 這週完成 ÷ 每週目標。'],
+    galaxy: ['這週的星系', '每完成一個方塊就拜訪一顆行星', '每完成一個方塊拜訪一顆行星，越久越大；細圈是時間過了沒做的，虛線是還沒到的。航行距離 = 這週完成 ÷ 每週目標。'],
+    autumn: ['這週的楓林', '每完成一個方塊就飄下一片楓葉', '每完成一個方塊飄下一片楓葉，越久越大；褪色的葉子是時間過了沒做的，虛線是還沒到的。秋意 = 這週完成 ÷ 每週目標。'],
+    rain: ['這週的雨夜城市', '每完成一個方塊就亮起一扇窗', '每完成一個方塊亮起一扇窗，越久越大；暗的窗是時間過了沒做的，虛線是還沒到的。燈火 = 這週完成 ÷ 每週目標。'],
+    ink: ['這週的墨跡', '每完成一個方塊就寫下一個圓', '每完成一個方塊寫下一個圓，越久越大；淡淡的短弧是時間過了沒做的，虛線是還沒到的。墨色 = 這週完成 ÷ 每週目標。']
   };
   const original = { title: null, label: null, hint: null };
   function retext() {

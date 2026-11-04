@@ -52,7 +52,7 @@ const toMin = hm => { const [h, m] = String(hm || '0:0').split(':'); return (+h 
 const hmOf = m => pad(Math.floor(m / 60) % 24) + ':' + pad(m % 60);
 // A decides which blocks count as study with its own rules; read them from A's source so the numbers match A's report
 const aSrc = fs.readFileSync(path.join(ROOT, 'a-source/planner.html'), 'utf8');
-const SKINS = ["default","night","sakura","ocean","matcha","neon","sunset","forest","lavender","aurora","snow","coffee"];   // the themes both apps know
+const SKINS = ["default","night","sakura","ocean","matcha","neon","sunset","forest","lavender","aurora","snow","coffee","desert","candy","galaxy","autumn","rain","ink"];   // the themes both apps know
 const subRules = (() => { const m = /const SUB_RULES = (\[[^\n]*\]);/.exec(aSrc); try { return m ? vm.runInNewContext('(' + m[1] + ')') : []; } catch (e) { return []; } })();
 const studyCats = (() => { const m = /const STUDY_CATS = (\[[^\]]*\]);/.exec(aSrc); try { return m ? vm.runInNewContext(m[1]) : ['study', 'preview', 'code', 'lang', 'exam']; } catch (e) { return ['study', 'preview', 'code', 'lang', 'exam']; } })();
 const subjectOf = b => b.subject || (subRules.find(([re]) => re.test(b.name || '')) || [])[1] || '';
