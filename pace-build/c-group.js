@@ -49,6 +49,7 @@
 
   /* ---------- state ---------- */
   let fb = null, user = null, groups = [], unGroups = null;
+  const hooks = [], roomHooks = [];
   const mine = {};   // gid → { access, allow } = what I decided about my plan (read from my own plans doc; missing = I have not decided yet)
   const mineAsked = new Set();   // groups whose plans doc I am already listening to
   const mineUnsub = new Map();
@@ -68,12 +69,13 @@
   paceSync.onUser(async u => {
     user = u;
     $('grpOff').hidden = !!u; $('grpOn').hidden = !u;
-    if (!u) { unGroups?.(); unGroups = null; for (const f of feeds.values()) f.unsub(); feeds.clear(); groups = []; for (const k of Object.keys(mine)) delete mine[k]; mineAsked.clear(); mineUnsub.forEach(f => f()); mineUnsub.clear(); leaving.clear(); closeRoom(); if ($('grpPlan')?.open) $('grpPlan').close(); if ($('grpConsent')?.open) $('grpConsent').close(); render(); return; }
+    if (!u) { unGroups?.(); unGroups = null; for (const f of feeds.values()) f.unsub(); feeds.clear(); groups = []; hooks.forEach(f => { try { f(groups); } catch (e) {} }); for (const k of Object.keys(mine)) delete mine[k]; mineAsked.clear(); mineUnsub.forEach(f => f()); mineUnsub.clear(); leaving.clear(); closeRoom(); if ($('grpPlan')?.open) $('grpPlan').close(); if ($('grpConsent')?.open) $('grpConsent').close(); render(); return; }
     fb = paceSync.fb();
     $('grpMe').value = myName();
     const { fs, db } = fb;
     unGroups = fs.onSnapshot(fs.query(fs.collection(db, 'groups'), fs.where('members', 'array-contains', u.uid)), snap => {
       groups = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.name.localeCompare(b.name));
+      hooks.forEach(f => { try { f(groups); } catch (e) {} });   // c-board.js
       for (const [gid, f] of feeds) if (!groups.some(g => g.id === gid)) { f.unsub(); feeds.delete(gid); }
       for (const g of groups) if (!feeds.has(g.id)) listen(g.id);
       for (const [gid, f] of mineUnsub) if (!groups.some(g => g.id === gid)) { f(); mineUnsub.delete(gid); mineAsked.delete(gid); delete mine[gid]; }
@@ -448,6 +450,7 @@
       '<div class="grp-head"><select id="grpRoomSel" aria-label="選擇群組"></select><button class="btn" type="button" id="grpRoomMine">計畫公開設定</button><button class="btn plain" type="button" id="grpRoomClose" aria-label="關閉">✕</button></div>' +
       '<p class="hint grp-need" id="grpRoomNeed" hidden>你還沒決定要讓群組看到什麼，所以別人現在看不到你的達成率和計畫。<button class="btn primary" type="button" id="grpRoomDecide">現在決定</button></p>' +
       '<h3 class="set-h">成員</h3><div class="grp-members" id="grpMembers"></div>' +
+      '<h3 class="set-h">共用行程表</h3><div id="grpBoard"></div>' +
       '<h3 class="set-h">聊天室</h3><div class="grp-chat" id="grpChat" aria-live="polite"></div><p class="hint" id="grpBlocked" style="margin:0"></p>' +
       '<div class="sync-acts"><input id="grpMsgIn" maxlength="300" placeholder="說點什麼…" aria-label="聊天內容" autocomplete="off"><button class="btn primary" type="button" id="grpSend">送出</button></div>' +
       '<p class="hint" id="grpRoomMsg" aria-live="polite" style="margin:0">聊天室只有這個群組的人看得到。請友善，不要霸凌，也不要貼別人的個資。</p>' +
@@ -491,11 +494,11 @@
   const roomMsg = t => { $('grpRoomMsg').textContent = t; };
   const shareText = s => s === 'all' ? '計畫：全部公開' : s === 'some' ? '計畫：部分公開' : '計畫：不公開';
   function stopRoom() { roomUnsubs.forEach(f => f()); roomUnsubs = []; roomStats = new Map(); roomChat = []; }
-  function closeRoom() { stopRoom(); roomGid = null; if ($('grpRoom').open) $('grpRoom').close(); }
+  function closeRoom() { stopRoom(); roomGid = null; roomHooks.forEach(f => { try { f(null); } catch (e) {} }); if ($('grpRoom').open) $('grpRoom').close(); }
   function openRoom(gid) {
     if (!user || !fb || !groups.some(g => g.id === gid)) return;
     roomFresh = true; setTimeout(() => { roomFresh = false; }, 1800);
-    stopRoom(); roomGid = gid; roomMsg('聊天室只有這個群組的人看得到。請友善，不要霸凌，也不要貼別人的個資。');
+    stopRoom(); roomGid = gid; roomHooks.forEach(f => { try { f(gid); } catch (e) {} }); roomMsg('聊天室只有這個群組的人看得到。請友善，不要霸凌，也不要貼別人的個資。');
     const { fs, db } = fb;
     roomUnsubs.push(fs.onSnapshot(fs.collection(db, 'groups', gid, 'stats'), snap => {
       roomStats = new Map(snap.docs.map(d => [d.id, d.data()])); renderRoom();
@@ -623,6 +626,9 @@
   $('gpClose').addEventListener('click', () => $('grpPlan').close());
   $('grpPlan').addEventListener('close', () => { planSeq++; });
   window.paceGroupRefresh = () => { if (roomGid) renderRoom(); };
+  /* for c-board.js (the schedule a group shares): my groups, the open room, my name in a group */
+  window.paceGroups = { list: () => groups, onChange: f => { hooks.push(f); f(groups); }, onRoom: f => { roomHooks.push(f); if (roomGid) f(roomGid); },
+    room: () => roomGid, user: () => user, fb: () => fb, nameIn: gid => (groups.find(g => g.id === gid)?.names || {})[user?.uid] || myName(), open: gid => openRoom(gid) };
   /* changing my theme changes how friends see me: publish again soon */
   { const apply0 = window.applySkin; if (typeof apply0 === 'function') window.applySkin = function () { const r = apply0.apply(this, arguments); try { schedulePublish(1500); } catch (e) {} return r; }; }   // theme changed: new words for the numbers
 })();

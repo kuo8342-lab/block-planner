@@ -289,6 +289,7 @@ rep("休 ${rest} 分${restLow ? ' ⚠' : ''}</span>` : ''}</div>`;", "休 ${rest
   const cfg = fs.existsSync(cfgFile) ? JSON.parse(fs.readFileSync(cfgFile, 'utf8')) : null;
   if (cfg) rep('</body>', '<script>window.PACE_FIREBASE = ' + JSON.stringify(cfg) + ';\n' + fs.readFileSync(path.join(__dirname, 'c-sync.js'), 'utf8') + '</script>\n</body>');
   if (cfg) rep('</body>', '<script>' + fs.readFileSync(path.join(__dirname, 'c-group.js'), 'utf8') + '</script>\n</body>');   // 共筆群組, needs sign-in
+  if (cfg) rep('</body>', '<script data-pace-ui="c-board.js">' + fs.readFileSync(path.join(__dirname, 'c-board.js'), 'utf8') + '</script>\n</body>');   // the schedule a group shares + conflict alerts
   console.log(cfg ? 'sync: on (' + cfg.projectId + ')' : 'sync: off (no firebase-config.json)'); }
 
 /* ---------- interface language: Chinese or English, chosen in Settings → Appearance ---------- */
@@ -346,6 +347,7 @@ for (const file of ['notion-ui.js', 'notion-mobile.js', 'notion-focus.js', 'noti
 rep('</body>', '<script data-pace-ui="c-skins.js">' + fs.readFileSync(path.join(__dirname, 'c-skins.js'), 'utf8') + '</script>\n</body>');
 rep('</body>', '<script data-pace-ui="c-scenes.js">' + fs.readFileSync(path.join(__dirname, 'c-scenes.js'), 'utf8') + '</script>\n</body>');   // each theme's own scene in the weekly report   // six more themes, after notion-ui.js has renamed the default one
 rep('</body>', '<script data-pace-ui="c-sounds.js">' + fs.readFileSync(path.join(__dirname, 'c-sounds.js'), 'utf8') + '</script>\n</body>');   // 20 notification and 20 alarm sounds
+rep('</body>', '<script data-pace-ui="c-rewards.js">' + fs.readFileSync(path.join(__dirname, 'c-rewards.js'), 'utf8') + '</script>\n</body>');   // XP, levels, achievements, weekly quest
 rep('</body>', '<script data-pace-ui="c-folder.js">' + fs.readFileSync(path.join(__dirname, 'c-folder.js'), 'utf8') + '</script>\n</body>');   // pull A's newest backup file out of a folder
 /* contact address for reports and the privacy policy: pace-build/contact.txt (one line). Without it the report links stay hidden. */
 const contact = (fs.existsSync(path.join(__dirname, 'contact.txt')) ? fs.readFileSync(path.join(__dirname, 'contact.txt'), 'utf8').trim() : '') || process.env.PACE_CONTACT || '';
