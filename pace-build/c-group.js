@@ -194,7 +194,11 @@
     } catch (e) { leaving.delete(g.id); if (prev !== undefined) mine[g.id] = prev; throw e; }
     if (roomGid === g.id) closeRoom();
   }
-  window.paceGroupLeaveAll = async () => { if (user && fb) for (const g of [...groups]) await leaveGroup(g); };   // used by 「刪除雲端資料」 in c-sync.js
+  // deleting my data: the shared schedule items I added go too (plain leaving keeps them for the group)
+  window.paceGroupLeaveAll = async () => { if (user && fb) for (const g of [...groups]) {
+    try { const { fs, db } = fb, mine = await fs.getDocs(fs.query(fs.collection(db, 'groups', g.id, 'board'), fs.where('uid', '==', user.uid))); for (const d of mine.docs) await fs.deleteDoc(d.ref); } catch (e) {}
+    await leaveGroup(g);
+  } };   // used by 「刪除雲端資料」 in c-sync.js
   async function join(code) {
     const { fs, db } = fb, ref = fs.doc(db, 'groups', code), g = await fs.getDoc(ref);
     if (!g.exists()) { msg('找不到這個邀請碼，請再確認一次。'); return false; }
