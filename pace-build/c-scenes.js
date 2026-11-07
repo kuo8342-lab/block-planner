@@ -174,12 +174,36 @@
     const items = blocks.map((b, i) => {
       const day = b.day, x = ((day + .5) / 7) * W + (rnd() - .5) * (W / 7) * .6, y = 12 + ((toMin(b.start) - START) / SPAN) * (H - 44), r = Math.max(2, Math.sqrt(b.minutes) * .55);
       const date = ymd(addDays(monday, b.day));
-      return { i, x, y: sc.ground ? H - 40 - (y / H) * 14 : sc.snowy ? y : y, s: clamp(Math.sqrt(b.minutes) * 3.6, 16, 40), state: b.done ? 'done' : blockEnd(date, b) <= now ? 'missed' : 'future' };
+      return { b, i, x, y: sc.ground ? H - 40 - (y / H) * 14 : sc.snowy ? y : y, s: clamp(Math.sqrt(b.minutes) * 3.6, 16, 40), state: b.done ? 'done' : blockEnd(date, b) <= now ? 'missed' : 'future' };
     });
     const doneN = items.filter(it => it.state === 'done').length;
     const animate = typeof fxOn !== 'undefined' && fxOn && !(typeof reduceMotion !== 'undefined' && reduceMotion);
-    const st = { canvas, raf: 0, timer: 0, t0: performance.now(), skin, last: 0 };
+    const st = { canvas, raf: 0, timer: 0, t0: performance.now(), skin, last: 0, hoverItem: null, items };
     canvas.__scene = st;
+
+    // Interactive hover feedback on scene canvas
+    if (!canvas.__boundHover) {
+      canvas.__boundHover = true;
+      canvas.addEventListener('mousemove', e => {
+        if (!canvas.__scene) return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        const sc0 = canvas.__scene, hit = sc0.items.find(it => Math.hypot(it.x - mx, it.y - my) <= it.s * 0.7), changed = sc0.hoverItem !== (hit || null);
+        sc0.hoverItem = hit || null;
+        if (changed && !sc0.raf) sc0.raf = requestAnimationFrame(sc0.frame);
+        canvas.style.cursor = hit ? 'pointer' : 'default';
+        if (hit) {
+          canvas.title = `${hit.b.name} (${hit.b.minutes}分) · ${hit.state === 'done' ? '已完成 ✅' : hit.state === 'missed' ? '時間已過 ❌' : '尚未開始 ⏳'}`;
+        } else {
+          canvas.removeAttribute('title');
+        }
+      });
+      canvas.addEventListener('mouseleave', () => {
+        const sc0 = canvas.__scene; if (sc0) { sc0.hoverItem = null; if (!sc0.raf) sc0.raf = requestAnimationFrame(sc0.frame); }
+        canvas.style.cursor = 'default';
+      });
+    }
+
     const stars = sc.stars ? Array.from({ length: 70 }, () => ({ x: rnd() * W, y: rnd() * (H - 30), r: rnd() * 1.1 + .3, p: rnd() * 6.28 })) : null;
     const frame = ts => {
       st.raf = 0;
@@ -190,23 +214,42 @@
       const t = animate ? ts : 0, el = animate ? ts - st.t0 : 99999, c = canvas.getContext('2d');
       c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
       const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, sc.bg[0]); g.addColorStop(.55, sc.bg[1]); g.addColorStop(1, sc.bg[2]); c.fillStyle = g; c.fillRect(0, 0, W, H);
+
+      // 100% completion celestial radiance / golden glow effect
+      if (doneN > 0 && doneN >= items.length) {
+        c.save();
+        const goldG = c.createRadialGradient(W / 2, 0, 0, W / 2, 0, Math.max(W, H) * 0.8);
+        goldG.addColorStop(0, 'rgba(255, 230, 150, 0.28)');
+        goldG.addColorStop(0.5, 'rgba(255, 210, 100, 0.1)');
+        goldG.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        c.fillStyle = goldG;
+        c.fillRect(0, 0, W, H);
+        c.restore();
+      }
+
       if (stars) for (const s of stars) { c.globalAlpha = .3 + .6 * Math.abs(Math.sin(t * .0015 + s.p)); c.fillStyle = '#fff'; c.beginPath(); c.arc(s.x, s.y, s.r, 0, TAU); c.fill(); }
       c.globalAlpha = 1;
       if (sc.ground) { c.fillStyle = sc.ground; c.fillRect(0, H - 32, W, 32); }
       if (sc.snowy) { const mh = 6 + Math.min(34, doneN * 3.2) * easeOut(el / 1200); c.fillStyle = '#ffffff'; c.beginPath(); c.moveTo(0, H); for (let x = 0; x <= W; x += 12) c.lineTo(x, H - 22 - mh * (.7 + .3 * Math.sin(x * .03))); c.lineTo(W, H); c.closePath(); c.fill(); }
       c.lineWidth = 1.2;
       for (const it of items) {
+        const isHovered = st.hoverItem === it;
         const a = it.state === 'done' ? back((el - it.i * 55) / 750) : 1;
         if (a <= 0) continue;
-        c.save(); c.globalAlpha = it.state === 'done' ? clamp(a * 1.4, 0, 1) : clamp((el - it.i * 20) / 300, 0, 1);
-        try { sc[it.state](c, it.x, it.y, it.s, clamp(a, .02, 1.18), t, it.i); } catch (e) { /* one bad shape must not stop the picture */ }
+        c.save();
+        c.globalAlpha = it.state === 'done' ? clamp(a * 1.4, 0, 1) : clamp((el - it.i * 20) / 300, 0, 1);
+        if (isHovered) {
+          c.shadowBlur = 12;
+          c.shadowColor = sc.label || '#ffb703';
+        }
+        try { sc[it.state](c, it.x, it.y, it.s * (isHovered ? 1.15 : 1), clamp(a, .02, 1.18), t, it.i); } catch (e) { /* one bad shape must not stop the picture */ }
         c.restore();
       }
       c.globalAlpha = .75; c.fillStyle = sc.label; c.font = '12px "Noto Sans TC", sans-serif'; c.textAlign = 'center';
       DAYN.forEach((n, i) => c.fillText('週' + n, ((i + .5) / 7) * W, H - 8)); c.globalAlpha = 1;
-      if (animate || el < 1500) st.raf = requestAnimationFrame(frame);
+      if (animate || el < 1500 || st.hoverItem) st.raf = requestAnimationFrame(frame);
     };
-    st.raf = requestAnimationFrame(frame);
+    st.frame = frame; st.raf = requestAnimationFrame(frame);
   };
   // a theme change: new title and words, and an open weekly report draws its new scene
   const apply1 = applySkin;

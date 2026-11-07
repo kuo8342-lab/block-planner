@@ -269,14 +269,177 @@
       Array.from({ length: 10 }, (_, k) => '<span class="pip ' + (k < lit ? 'on' : k === lit && frac > 0 ? 'part' : 'off') + '" style="--d:' + k * 45 + 'ms' + (k === lit && frac > 0 ? ';opacity:' + (.25 + .75 * frac).toFixed(2) : '') + '">' + i.pip + '</span>').join('') + '</div>';
   };
   window.paceUnit = () => { const u = UNITS[skin] || UNITS.default; return { icon: u[0], count: n => u[1].replace('{n}', n), measure: u[2] }; };
+  /* Themed Confetti & Celebration Particle Engine */
+  const THEME_PALETTES = {
+    sakura: { cols: ['#fbbcd0', '#f472b6', '#ffffff', '#fda4af', '#fb7185'], shapes: ['petal', 'circle'] },
+    forest: { cols: ['#4ade80', '#22c55e', '#fef08a', '#86efac', '#15803d'], shapes: ['leaf', 'circle', 'star'] },
+    snow: { cols: ['#e0f2fe', '#bae6fd', '#ffffff', '#7dd3fc', '#38bdf8'], shapes: ['star', 'circle'] },
+    ocean: { cols: ['#38bdf8', '#0ea5e9', '#ffffff', '#7dd3fc', '#a5f3fc'], shapes: ['bubble', 'circle'] },
+    candy: { cols: ['#f472b6', '#c084fc', '#fde047', '#67e8f9', '#ffffff'], shapes: ['heart', 'circle', 'rect'] },
+    galaxy: { cols: ['#c084fc', '#818cf8', '#f472b6', '#38bdf8', '#fef08a'], shapes: ['star', 'circle'] },
+    matcha: { cols: ['#84cc16', '#65a30d', '#fef08a', '#d9f99d', '#ffffff'], shapes: ['leaf', 'circle'] },
+    coffee: { cols: ['#b45309', '#d97706', '#fef3c7', '#78350f', '#fde68a'], shapes: ['rect', 'circle'] },
+    sunset: { cols: ['#fb923c', '#f87171', '#fbbf24', '#f43f5e', '#fda4af'], shapes: ['star', 'circle', 'rect'] },
+    aurora: { cols: ['#2dd4bf', '#a78bfa', '#34d399', '#67e8f9', '#c084fc'], shapes: ['star', 'circle'] },
+    neon: { cols: ['#00e5ff', '#ff3d81', '#39ff14', '#ffff00', '#ffffff'], shapes: ['rect', 'star'] },
+    autumn: { cols: ['#ea580c', '#c2410c', '#f59e0b', '#dc2626', '#fef08a'], shapes: ['leaf', 'rect'] },
+    rain: { cols: ['#60a5fa', '#38bdf8', '#93c5fd', '#fde047', '#ffffff'], shapes: ['bubble', 'circle'] },
+    ink: { cols: ['#18181b', '#27272a', '#52525b', '#a1a1aa', '#f4f4f5'], shapes: ['circle', 'rect'] },
+    desert: { cols: ['#f59e0b', '#d97706', '#10b981', '#fbbf24', '#ffffff'], shapes: ['star', 'circle'] },
+    lavender: { cols: ['#a855f7', '#c084fc', '#e9d5ff', '#7c3aed', '#ffffff'], shapes: ['star', 'circle', 'petal'] },
+    night: { cols: ['#fbbf24', '#60a5fa', '#fef08a', '#e0e7ff', '#ffffff'], shapes: ['star', 'circle'] },
+    default: { cols: ['#2f7a5b', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'], shapes: ['rect', 'circle', 'star'] }
+  };
+
+  const TAU2 = Math.PI * 2;
+  function drawCustomShape(ctx, shape, s) {
+    if (shape === 'petal') {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.7, s * 0.35, 0, 0, TAU2);
+      ctx.fill();
+    } else if (shape === 'leaf') {
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.6);
+      ctx.quadraticCurveTo(s * 0.45, 0, 0, s * 0.6);
+      ctx.quadraticCurveTo(-s * 0.45, 0, 0, -s * 0.6);
+      ctx.fill();
+    } else if (shape === 'star') {
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const rad = -Math.PI / 2 + k * Math.PI / 4;
+        const dist = k % 2 === 0 ? s * 0.6 : s * 0.22;
+        k === 0 ? ctx.moveTo(Math.cos(rad) * dist, Math.sin(rad) * dist) : ctx.lineTo(Math.cos(rad) * dist, Math.sin(rad) * dist);
+      }
+      ctx.closePath();
+      ctx.fill();
+    } else if (shape === 'heart') {
+      const d = s * 0.4;
+      ctx.beginPath();
+      ctx.moveTo(0, d * 0.6);
+      ctx.bezierCurveTo(-d * 1.2, -d * 0.4, -d * 1.2, -d * 1.2, 0, -d * 0.6);
+      ctx.bezierCurveTo(d * 1.2, -d * 1.2, d * 1.2, -d * 0.4, 0, d * 0.6);
+      ctx.fill();
+    } else if (shape === 'bubble') {
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.42, 0, TAU2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.beginPath();
+      ctx.arc(-s * 0.14, -s * 0.14, s * 0.12, 0, TAU2);
+      ctx.fill();
+    } else if (shape === 'rect') {
+      ctx.fillRect(-s / 2, -s / 4, s, s / 2);
+    } else {
+      ctx.beginPath();
+      ctx.arc(0, 0, s / 2.6, 0, TAU2);
+      ctx.fill();
+    }
+  }
+
+  // Override confetti drawing to render thematic particle shapes
+  if (typeof fx !== 'undefined') {
+    window.drawConfetti = function (ctx) {
+      ctx.clearRect(0, 0, fx.w, fx.h);
+      fx.confetti = fx.confetti.filter(c => c.life < c.max);
+      for (const c of fx.confetti) {
+        c.life++;
+        c.vy += c.gravity !== undefined ? c.gravity : 0.18;
+        c.vx *= 0.985;
+        c.x += c.vx;
+        c.y += c.vy;
+        c.a += c.va;
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.a);
+        const progress = c.life / c.max;
+        ctx.globalAlpha = Math.max(0, 1 - progress);
+        ctx.fillStyle = c.col;
+        drawCustomShape(ctx, c.customShape || (c.shape ? 'rect' : 'circle'), c.s);
+        ctx.restore();
+      }
+    };
+
+    // Themed burst function
+    window.burst = function (x, y, combo = 1) {
+      if (!fxOn) return;
+      const themeConfig = THEME_PALETTES[skin] || THEME_PALETTES.default;
+      const count = Math.min(68, 32 + (combo > 1 ? (combo - 1) * 8 : 0));
+      for (let i = 0; i < count; i++) {
+        const a = r(0, TAU2);
+        const v = r(2.5, 7.5 + Math.min(3, combo * 0.6));
+        const customShape = themeConfig.shapes[i % themeConfig.shapes.length];
+        const isPetalOrLeaf = customShape === 'petal' || customShape === 'leaf';
+        fx.confetti.push({
+          x, y,
+          vx: Math.cos(a) * v,
+          vy: Math.sin(a) * v - (isPetalOrLeaf ? 1.8 : 3.2),
+          a: r(0, TAU2),
+          va: r(-0.25, 0.25),
+          s: r(6, 11),
+          col: themeConfig.cols[i % themeConfig.cols.length],
+          customShape,
+          shape: customShape === 'rect',
+          life: 0,
+          max: r(50, 85),
+          gravity: isPetalOrLeaf ? 0.09 : 0.18
+        });
+      }
+      fx.topDirty = true;
+      kickFx();
+    };
+
+    window.burstAt = function (el, combo = 1) {
+      if (!el) return;
+      const rct = el.getBoundingClientRect();
+      window.burst(rct.left + rct.width / 2, rct.top + Math.min(rct.height, 40) / 2, combo);
+    };
+  }
+
   // the weekly report says 「亮度 / 亮起 N 顆星」 for every theme: say it in the theme's own words
+  const THEME_TITLES = {
+    sakura: '🌸 滿園綻放', forest: '🌲 綠蔭蔽日', snow: '❄️ 銀裝素裹', ocean: '🫧 碧波純澈',
+    candy: '🍬 甜蜜大滿貫', galaxy: '🪐 萬象星輝', matcha: '🍵 茶韻悠長', coffee: '☕ 醇香盈室',
+    sunset: '🌅 晚霞漫天', aurora: '🌌 極光璀璨', neon: '⚡ 耀眼燈火', autumn: '🍁 金秋滿枝',
+    rain: '🌧️ 萬家燈火', ink: '🖌️ 妙筆生花', desert: '🌵 綠洲繁生', lavender: '💜 馥郁花田',
+    night: '⭐ 星河長明', default: '🏆 完美達標'
+  };
+
   function relabel() {
     const el = document.getElementById('rSkyMeta'); if (!el) return;
     if (window.PACE_KEEP_ORIGINAL_WORDS && (skin === 'default' || skin === 'night')) return;   // A keeps its own 亮度 / 亮起 N 顆星 where they were already
-    const [pill, count] = el.querySelectorAll('span'), u = window.paceUnit();
-    const g = /(\d+)%/.exec(pill?.textContent || ''), n = /(\d+)/.exec(count?.textContent || '');
-    if (pill && g) pill.textContent = u.measure + ' ' + g[1] + '%';
-    if (count && n) { const t = document.createElement('span'); t.textContent = u.count(n[1]); count.replaceChildren(u.icon + ' ', t); }
+    const [pill, count] = el.querySelectorAll('span');
+    const u = window.paceUnit();
+    const g = /(\d+)%/.exec(pill?.textContent || '');
+    const n = /(\d+)/.exec(count?.textContent || '');
+    const rateVal = g ? parseInt(g[1], 10) : 0;
+    if (pill && g) {
+      pill.textContent = u.measure + ' ' + g[1] + '%';
+      if (rateVal >= 100) {
+        pill.classList.add('pace-all-done');
+        pill.style.background = 'var(--accent)';
+        pill.style.color = 'var(--accent-on, #fff)';
+        pill.style.fontWeight = '700';
+      }
+    }
+    if (count && n) {
+      const t = document.createElement('span');
+      t.textContent = u.count(n[1]);
+      count.replaceChildren(u.icon + ' ', t);
+    }
+    // Add celebratory badge if 100% completed
+    let badge = el.querySelector('.pace-sky-badge');
+    if (rateVal >= 100) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'glow-pill pace-sky-badge';
+        badge.style.marginLeft = '6px';
+        badge.style.animation = 'pace-badge-pop 400ms cubic-bezier(.2,.9,.3,1.3)';
+        el.appendChild(badge);
+      }
+      badge.textContent = THEME_TITLES[skin] || '🏆 完美達標';
+    } else if (badge) {
+      badge.remove();
+    }
   }
   if (typeof renderReview === 'function') {
     const review0 = renderReview;

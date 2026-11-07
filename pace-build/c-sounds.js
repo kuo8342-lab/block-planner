@@ -85,4 +85,38 @@
   sel1.addEventListener('change', () => document.getElementById('pingTest')?.click());
   // the saved choice may be one of the new ones: the picker was filled before they existed
   try { sel1.value = prefGet('planner-notify-sound', 'ding'); sel2.value = prefGet('planner-alarm-sound', 'bell'); } catch (e) {}
+
+  // Delightful synthesized chime for completing a task/block with combo support
+  window.playDoneChime = function (combo = 1) {
+    try {
+      if (typeof fxOn !== 'undefined' && !fxOn) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const ctx = playChime.ctx || (playChime.ctx = new AC());
+      if (ctx.state === 'suspended') ctx.resume();
+      const t0 = ctx.currentTime;
+      // Base frequencies: C5, E5, G5, C6 (crystal arpeggio)
+      const pitchOffset = Math.min(5, Math.max(0, (combo - 1))) * 1.5;
+      const baseFreqs = [523.25, 659.25, 783.99, 1046.5];
+      const freqs = baseFreqs.map(f => f * Math.pow(1.05946, pitchOffset));
+      const dur = 0.22;
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = idx === freqs.length - 1 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, t0 + idx * 0.055);
+        gain.gain.setValueAtTime(0.0001, t0 + idx * 0.055);
+        gain.gain.exponentialRampToValueAtTime(0.14, t0 + idx * 0.055 + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + idx * 0.055 + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t0 + idx * 0.055);
+        osc.stop(t0 + idx * 0.055 + dur + 0.02);
+      });
+      // Light haptic feedback on supported mobile devices
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(combo > 1 ? [25, 30, 35] : 25);
+      }
+    } catch (e) {}
+  };
 })();

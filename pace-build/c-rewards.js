@@ -21,7 +21,7 @@
   const motion = () => (typeof fxOn === 'undefined' || fxOn) && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   const blockXp = b => 10 + Math.floor((Number(b.minutes) || 0) / 10) * 2;
   const comboXp = k => Math.min(10, (k - 1) * 2);   // the k-th block finished in a day
-  const TITLES = [[1, '新手'], [3, '起步者'], [5, '穩定前進'], [8, '專注者'], [12, '自律達人'], [18, '時間大師'], [25, '傳奇']];
+  const TITLES = [[1, '新手探索者'], [3, '起步者'], [5, '穩定前行'], [8, '專注旅人'], [12, '自律之星'], [16, '心流大師'], [20, '時間掌舵人'], [25, '步調傳奇'], [30, '時光領航員']];
   const titleOf = lv => TITLES.filter(([n]) => lv >= n).pop()[1];
   const PETS = [[1, '🥚', '一顆蛋'], [2, '🐣', '破殼了'], [3, '🐥', '小雞'], [5, '🐤', '會跑的小雞'], [8, '🐦', '小鳥'], [12, '🦉', '貓頭鷹'], [18, '🦅', '老鷹'], [25, '🐉', '神龍']];
   const petOf = lv => PETS.filter(([n]) => lv >= n).pop();
@@ -45,14 +45,18 @@
     ['hundred', '💯', '百塊', '完成 100 個方塊', s => s.done >= 100],
     ['streak3', '🔥', '三天不斷', '連續 3 天達標（完成 7 成以上）', s => s.best >= 3],
     ['streak7', '🌟', '一週不斷', '連續 7 天達標', s => s.best >= 7],
-    ['early', '🌅', '早起鳥', '在早上 9 點前完成 5 個方塊', s => s.early >= 5],
+    ['streak14', '🚀', '百折不撓', '連續 14 天達標', s => s.best >= 14],
+    ['early', '🌅', '晨曦鳥', '在早上 9 點前完成 5 個方塊', s => s.early >= 5],
+    ['flow', '⚡', '深層心流', '完成過單次 60 分鐘以上的方塊', s => s.maxSingleMin >= 60],
+    ['variety', '🎨', '生活調色盤', '完成過至少 4 種不同分類的方塊', s => s.cats.size >= 4],
+    ['allclear', '💮', '一日全清', '有一天排定的讀書方塊（至少 3 個）全部完成', s => s.hadAllClear],
     ['week80', '🎯', '神準一週', '一週完成 8 成以上（至少 5 個到期的方塊）', s => s.week80],
-    ['comeback', '💪', '回來了', '停了 3 天以上，又重新完成方塊', s => s.comeback],
-    ['rest', '🛋️', '會休息的人', '完成 10 個休息方塊（休息也是計畫的一部分）', s => s.rest >= 10],
-    ['reflect', '📝', '回顧家', '寫下 3 則做完或沒做完的回顧', s => s.reflect >= 3],
-    ['hours20', '⏱️', '二十小時', '讀書類累積 20 小時', s => s.studyMin >= 1200]
+    ['comeback', '💪', '重新出發', '停了 3 天以上，又重新完成方塊', s => s.comeback],
+    ['rest', '🛋️', '會休息的人', '完成 10 個休息方塊（休息也是生活的一部分）', s => s.rest >= 10],
+    ['reflect', '📝', '反思大師', '寫下 3 則做完或沒做完的回顧與心得', s => s.reflect >= 3],
+    ['hours20', '⏱️', '二十小時', '讀書或專注類累積 20 小時', s => s.studyMin >= 1200]
   ];
-  const CHEERS = ['做得好', '又前進一步', '很穩', '保持這個節奏', '專注力在線', '一格一格累積', '這就是進步', '辛苦了'];
+  const CHEERS = ['做得好！', '又前進一步 ✨', '節奏非常穩！', '保持這個美好狀態', '專注力持續在線 🔥', '一格一格，點滴累積', '這就是切實的進步', '辛苦了，給自己一個微笑'];
   // d = 0 (Monday) … 6 (Sunday); no limit and no bedtime unless the person set one
   const health = d => { const h = state.config?.health || {}, i = d >= 5 ? 1 : 0, m = Array.isArray(h.max) ? h.max[i] : 0, b = Array.isArray(h.bed) ? h.bed[i] : ''; return { maxStudy: Number.isFinite(m) ? m : 0, bed: typeof b === 'string' ? b : '', noXp: h.noXp !== false, note: typeof h.note === 'string' ? h.note.trim() : '' }; };
   const dayIdx = date => (new Date(date + 'T00:00:00').getDay() + 6) % 7;
@@ -63,14 +67,14 @@
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const from = addDays(mondayOf(today), -7 * 52), now = new Date();
     const all = await blocksInRange(from, addDays(mondayOf(today), 6));
-    const s = { done: 0, xp: 0, early: 0, rest: 0, reflect: 0, studyMin: 0, best: 0, streak: 0, passUsed: false, week80: false, comeback: false, todayXp: 0, todayDone: 0, overLimit: false };
+    const s = { done: 0, xp: 0, early: 0, rest: 0, reflect: 0, studyMin: 0, best: 0, streak: 0, passUsed: false, week80: false, comeback: false, todayXp: 0, todayDone: 0, overLimit: false, maxSingleMin: 0, cats: new Set(), hadAllClear: false };
     const byDay = {}, byWeek = {}, kDay = {}, minDay = {}, todayKey = ymd(today);
     let lastDone = null;
     for (const b of all.sort((a, c) => a.date.localeCompare(c.date) || toMin(a.start) - toMin(c.start))) {
       if (b.skipped) continue;
       const wk = ymd(mondayOf(new Date(b.date + 'T00:00:00'))), w = byWeek[wk] || (byWeek[wk] = { done: 0, due: 0 });
       if (b.reflection?.text) s.reflect++;
-      if (counts(b)) { const v = byDay[b.date] || (byDay[b.date] = { p: 0, d: 0 }); v.p += b.minutes; if (b.done) v.d += b.minutes; }
+      if (counts(b)) { const v = byDay[b.date] || (byDay[b.date] = { p: 0, d: 0, n: 0, allDone: true }); v.p += b.minutes; v.n++; if (b.done) v.d += b.minutes; else v.allDone = false; }
       if (b.done || b.failed || blockEnd(b.date, b) <= now) w.due++;
       if (!b.done) continue;
       w.done++; s.done++;
@@ -80,11 +84,14 @@
       if (b.date === todayKey) { s.todayDone++; if (over) s.overLimit = true; }
       if (toMin(b.start) < 9 * 60) s.early++;
       if (b.cat === 'rest') s.rest++;
+      if (b.cat) s.cats.add(b.cat);
+      s.maxSingleMin = Math.max(s.maxSingleMin, Number(b.minutes) || 0);
       if (counts(b)) s.studyMin += b.minutes;
       if (lastDone && (new Date(b.date) - new Date(lastDone)) / 864e5 >= 4) s.comeback = true;
       lastDone = b.date;
     }
     s.todayStudy = minDay[todayKey] || 0;
+    s.hadAllClear = Object.values(byDay).some(v => v.n >= 3 && v.allDone);
     // weekly quest: a little more than last week (at least 5); reaching it is worth 30 XP
     const target = wk => { const prev = byWeek[ymd(addDays(new Date(wk + 'T00:00:00'), -7))]; return Math.max(5, Math.min(40, (prev ? prev.done : 0) + 2)); };
     for (const wk of Object.keys(byWeek)) { const w = byWeek[wk]; if (w.done >= target(wk)) s.xp += 30; if (w.due >= 5 && w.done / w.due >= .8) s.week80 = true; }
@@ -164,7 +171,7 @@
     '.xp-dlg { width: min(480px, calc(100vw - 32px)); } .xp-dlg form { max-height: 84vh; overflow: auto; }' +
     '.xp-top { display: flex; align-items: center; gap: 14px; } .xp-petbig { font-size: 3.2rem; line-height: 1; } .xp-big { font-size: 1.7rem; font-weight: 900; font-family: var(--f-mono); color: var(--accent-ink, var(--accent)); line-height: 1.1; } .xp-name { font-weight: 700; }' +
     '.xp-today { margin: 0; font-weight: 700; font-size: .86rem; }' +
-    '.xp-track { height: 12px; border-radius: 99px; background: var(--line-soft); overflow: hidden; } .xp-track i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .8s ease; } .xp-track.quest i { background: var(--c-rest-dot); }' +
+    '.xp-track { height: 12px; border-radius: 99px; background: var(--line-soft); overflow: hidden; } .xp-track i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .8s ease; } .xp-track i { position: relative; } .xp-track i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); animation: pace-shimmer 2.4s infinite; } @keyframes pace-shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } } .xp-track.quest i { background: var(--c-rest-dot); } .xp-badge:not(.locked) { border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }' +
     '.xp-album { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; } .xp-st { aspect-ratio: 1; display: grid; place-items: center; font-size: 1.45rem; border-radius: 10px; background: var(--panel-2); position: relative; } .xp-st.none { filter: grayscale(1); opacity: .22; } .xp-st.rare { box-shadow: inset 0 0 0 2px #5b8def; } .xp-st.legend { box-shadow: inset 0 0 0 2px #e0a100; background: color-mix(in srgb, #e0a100 16%, var(--panel-2)); } .xp-st b { position: absolute; right: 3px; bottom: 1px; font-size: .62rem; }' +
     '.xp-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; }' +
     '.xp-badge { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--panel-2); font-size: .78rem; color: var(--fg); }' +
@@ -232,6 +239,7 @@
     } else { show(c.icon, c.title, c.sub, '太好了', 'reveal'); chime([[523, 0, .2], [659, .12, .2], [784, .24, .2], [1047, .36, .5]]); party(c.big ? 5 : 2); go.onclick = nextCard; }
   }
   const enqueue = c => { queue.push(c); if (!showing) nextCard(); };
+  window.paceRewardCard = c => { if (on()) enqueue(c); };   // c-mystery.js: a finished wonder
   /* remember where we are without any fuss (first load, or rewards switched off) */
   function settle() {
     if (firstDone) return; firstDone = true;
@@ -281,12 +289,16 @@
       const hb = health(b.day), limit = hb.noXp ? hb.maxStudy : 0, others = day.filter(x => x.done && x.id !== b.id && counts(x) && toMin(x.start) <= toMin(b.start)).reduce((a, x) => a + x.minutes, 0), over = limit > 0 && counts(b) && others >= limit;
       const k = day.filter(x => x.done && toMin(x.start) <= toMin(b.start)).length, gain = over ? 0 : blockXp(b) + comboXp(k);
       const today = date === ymd(new Date()), left = day.filter(x => !x.done && counts(x)).length;
+      const allClear = today && counts(b) && left === 0;
       const extra = over ? ' 超過你設的上限了，這格不加 XP。' + (hb.note || '今天夠了 🌙') :
-        ' +' + gain + ' XP · ' + (k > 1 ? '連擊 ×' + k + ' · ' : '') + CHEERS[Math.floor(Math.random() * CHEERS.length)] + (today && counts(b) ? (left === 0 ? '，今天的都完成了！' : left === 1 ? '，今天再 1 個就全部完成' : '') : '');
+        ' +' + gain + ' XP · ' + (k > 1 ? '連擊 ×' + k + ' · ' : '') + CHEERS[Math.floor(Math.random() * CHEERS.length)] + (today && counts(b) ? (allClear ? ' 今天的都完成了！All Clear 💮' : left === 1 ? ' 今天再 1 個就全部完成' : '') : '');
       const t = document.getElementById('toastText'); if (t && !document.getElementById('toast').hidden) t.textContent += extra;
       if (!over) floatAt(document.querySelector('[data-bid="' + b.id + '"]') || document.querySelector('[data-wdone="' + b.id + '"]'), '+' + gain + ' XP' + (k > 1 ? ' ×' + k : ''));
       btn.classList.remove('bump'); void btn.offsetWidth; btn.classList.add('bump');
-      chime([[784, 0, .12], [1047, .07, .22]]);
+      if (ls.get(MUTE) !== '1') { try { window.playDoneChime?.(k); } catch (e) {} }
+      const blkEl = document.querySelector('[data-bid="' + b.id + '"]');
+      if (blkEl && motion()) { blkEl.classList.add('blk-done-pop'); setTimeout(() => blkEl.classList.remove('blk-done-pop'), 600); }
+      if (allClear) party(3);
     }
     return r;
   };

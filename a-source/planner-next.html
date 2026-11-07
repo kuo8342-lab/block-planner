@@ -3875,13 +3875,35 @@ dialog {
   transition: opacity 180ms ease-out, transform 220ms var(--pace-ease-out),
     display 220ms allow-discrete, overlay 220ms allow-discrete;
 }
-dialog[open] { opacity: 1; transform: none; }
-dialog:not([open]), dialog:not([open])::backdrop { pointer-events: none; }
-dialog::backdrop { opacity: 0; transition: opacity 180ms ease-out, display 220ms allow-discrete, overlay 220ms allow-discrete; }
-dialog[open]::backdrop { opacity: 1; }
+
+dialog[open] {
+  opacity: 1;
+  transform: none;
+}
+
+dialog:not([open]),
+dialog:not([open])::backdrop {
+  pointer-events: none;
+}
+
+dialog::backdrop {
+  opacity: 0;
+  transition: opacity 180ms ease-out, display 220ms allow-discrete, overlay 220ms allow-discrete;
+}
+
+dialog[open]::backdrop {
+  opacity: 1;
+}
+
 @starting-style {
-  dialog[open] { opacity: 0; transform: translateY(12px) scale(.985); }
-  dialog[open]::backdrop { opacity: 0; }
+  dialog[open] {
+    opacity: 0;
+    transform: translateY(12px) scale(.985);
+  }
+
+  dialog[open]::backdrop {
+    opacity: 0;
+  }
 }
 
 /* Draggable controls are deliberately excluded: rects are read on pointerdown. */
@@ -3890,15 +3912,33 @@ dialog[open]::backdrop { opacity: 1; }
   transition: scale 160ms var(--pace-ease-release), background-color 140ms ease,
     border-color 140ms ease, box-shadow 140ms ease, color 140ms ease;
 }
+
 :is(button, summary, a.btn, [role="button"]):not([data-drag]):not(.blk):not(.rz):not(:disabled):not([aria-disabled="true"]):is(:active, .pace-pressed) {
   scale: .97;
   transition-duration: 120ms;
   transition-timing-function: ease-out;
 }
-:is(button, summary, a.btn, [role="button"]):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-:is(button, input, select, textarea):disabled { cursor: not-allowed; }
-button:disabled, button[aria-disabled="true"] { opacity: .55; }
-button[data-pace-pending="true"] { position: relative; cursor: progress; opacity: .85; }
+
+:is(button, summary, a.btn, [role="button"]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+:is(button, input, select, textarea):disabled {
+  cursor: not-allowed;
+}
+
+button:disabled,
+button[aria-disabled="true"] {
+  opacity: .55;
+}
+
+button[data-pace-pending="true"] {
+  position: relative;
+  cursor: progress;
+  opacity: .85;
+}
+
 button[data-pace-pending="true"]::after {
   content: "";
   display: inline-block;
@@ -3911,57 +3951,284 @@ button[data-pace-pending="true"]::after {
   vertical-align: -2px;
   animation: pace-spin 700ms linear infinite;
 }
-#coachForm[aria-busy="true"] { position: relative; }
-#coachForm[aria-busy="true"] input { padding-inline-end: 40px; }
-#coachForm[aria-busy="true"]::after { content: ""; position: absolute; right: 14px; top: calc(50% - 7px); width: 14px; height: 14px; border: 2px solid var(--accent); border-right-color: transparent; border-radius: 50%; animation: pace-spin 700ms linear infinite; pointer-events: none; }
+
+#coachForm[aria-busy="true"] {
+  position: relative;
+}
+
+#coachForm[aria-busy="true"] input {
+  padding-inline-end: 40px;
+}
+
+#coachForm[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: calc(50% - 7px);
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--accent);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: pace-spin 700ms linear infinite;
+  pointer-events: none;
+}
 
 @media (hover: hover) {
-  :is(button, summary, a.btn):not(:disabled):not([aria-disabled="true"]):not([data-drag]):hover { box-shadow: inset 0 0 0 999px rgb(127 127 127 / 5%); }
+  :is(button, summary, a.btn):not(:disabled):not([aria-disabled="true"]):not([data-drag]):hover {
+    box-shadow: inset 0 0 0 999px rgb(127 127 127 / 5%);
+  }
 }
-/* The core only adds .lifting after the touch hold has captured the source rect. */
-.lifting { transform: scale(1.025); box-shadow: 0 0 0 2px var(--accent), 0 6px 18px rgb(0 0 0 / 14%) !important; transition: transform 160ms var(--pace-ease-out), box-shadow 160ms ease; }
-.ghost { transform: none; border: 1px solid color-mix(in srgb, currentColor 24%, transparent); box-shadow: 0 8px 24px rgb(0 0 0 / 18%); }
-.ghost .t { font-size: 12px; }
-.col.drop { outline: 2px solid var(--accent); outline-offset: -2px; transition: background-color 120ms; }
-.blk.pop { animation: pace-block-settle 180ms var(--pace-ease-out) both; }
-.round:checked { animation: pace-check 160ms var(--pace-ease-release); }
-body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
-.task.done .title { transition: opacity 160ms ease; }
-.pace-panel[data-active="true"], .pace-view[data-active="true"],
-.pace-panel.is-active, .pace-view.is-active, .pace-panel:not([hidden]) { animation: pace-view-in 200ms var(--pace-ease-out) both; }
-:is(.mobile-nav, .pace-bottom-nav, .pace-nav) button[aria-current="page"] .nav-icon { animation: pace-nav-select 180ms var(--pace-ease-out); }
-[data-pace-nav][aria-pressed="true"] .pace-icon { animation: pace-nav-select 180ms var(--pace-ease-out); }
-.toast:not([hidden]) { animation: pace-toast-in 180ms var(--pace-ease-out); }
-#tour .tour-card { transition: opacity 180ms ease; }
 
-@keyframes pace-spin { to { rotate: 360deg; } }
-@keyframes pace-status-pulse { 50% { opacity: .4; } }
-@keyframes pace-block-settle { from { opacity: .65; transform: scale(.985); } to { opacity: 1; transform: none; } }
-@keyframes pace-check { 50% { scale: 1.12; } }
-@keyframes pace-view-in { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
-@keyframes pace-nav-select { from { translate: 0 2px; opacity: .6; } to { translate: 0 0; opacity: 1; } }
-@keyframes pace-toast-in { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+/* The core only adds .lifting after the touch hold has captured the source rect. */
+.lifting {
+  transform: scale(1.025);
+  box-shadow: 0 0 0 2px var(--accent), 0 6px 18px rgb(0 0 0 / 14%) !important;
+  transition: transform 160ms var(--pace-ease-out), box-shadow 160ms ease;
+}
+
+.ghost {
+  transform: none;
+  border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+}
+
+.ghost .t {
+  font-size: 12px;
+}
+
+.col.drop {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  transition: background-color 120ms;
+}
+
+.blk.pop {
+  animation: pace-block-settle 180ms var(--pace-ease-out) both;
+}
+
+.blk-done-pop {
+  animation: pace-pop-done 420ms cubic-bezier(.2, .9, .3, 1.25) both;
+}
+
+.round:checked {
+  animation: pace-check 160ms var(--pace-ease-release);
+}
+
+body.nofx .round:checked,
+body.nofx .blk.pop,
+body.nofx .blk-done-pop {
+  animation: none;
+}
+
+.task.done .title {
+  transition: opacity 160ms ease;
+}
+
+.ring {
+  filter: drop-shadow(0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent));
+  transition: filter .3s ease;
+}
+
+.kpi {
+  transition: transform .22s cubic-bezier(.2, .8, .2, 1), box-shadow .22s ease;
+}
+
+.kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .07);
+}
+
+.glow-pill.pace-sky-badge {
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+@keyframes pace-badge-pop {
+  0% {
+    transform: scale(.6);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pace-pop-done {
+  0% {
+    transform: scale(1);
+  }
+
+  35% {
+    transform: scale(1.05);
+  }
+
+  65% {
+    transform: scale(.97);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.pace-panel[data-active="true"],
+.pace-view[data-active="true"],
+.pace-panel.is-active,
+.pace-view.is-active,
+.pace-panel:not([hidden]) {
+  animation: pace-view-in 200ms var(--pace-ease-out) both;
+}
+
+:is(.mobile-nav, .pace-bottom-nav, .pace-nav) button[aria-current="page"] .nav-icon {
+  animation: pace-nav-select 180ms var(--pace-ease-out);
+}
+
+[data-pace-nav][aria-pressed="true"] .pace-icon {
+  animation: pace-nav-select 180ms var(--pace-ease-out);
+}
+
+.toast:not([hidden]) {
+  animation: pace-toast-in 180ms var(--pace-ease-out);
+}
+
+#tour .tour-card {
+  transition: opacity 180ms ease;
+}
+
+@keyframes pace-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes pace-status-pulse {
+  50% {
+    opacity: .4;
+  }
+}
+
+@keyframes pace-block-settle {
+  from {
+    opacity: .65;
+    transform: scale(.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pace-check {
+  50% {
+    scale: 1.12;
+  }
+}
+
+@keyframes pace-view-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes pace-nav-select {
+  from {
+    translate: 0 2px;
+    opacity: .6;
+  }
+
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+@keyframes pace-toast-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
 
 @media (max-width: 767px) {
-  dialog { transform: translateY(100%); transition-duration: 200ms, 240ms, 240ms, 240ms; }
-  dialog[open] { transform: none; }
-  @starting-style { dialog[open] { opacity: 0; transform: translateY(100%); } }
+  dialog {
+    transform: translateY(100%);
+    transition-duration: 200ms, 240ms, 240ms, 240ms;
+  }
+
+  dialog[open] {
+    transform: none;
+  }
+
+  @starting-style {
+    dialog[open] {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  dialog, dialog::backdrop, dialog[open], dialog[open]::backdrop,
-  button, summary, a.btn, [role="button"], .lifting, .ghost, .round,
-  .blk.pop, .toast, .pace-panel, .pace-view, .col.drop, .task .title,
-  #tour .tour-hi, #tour .tour-card, button::after, #status::before, #coachForm::after,
-  .pace-icon, .nav-icon {
+
+  dialog,
+  dialog::backdrop,
+  dialog[open],
+  dialog[open]::backdrop,
+  button,
+  summary,
+  a.btn,
+  [role="button"],
+  .lifting,
+  .ghost,
+  .round,
+  .blk.pop,
+  .toast,
+  .pace-panel,
+  .pace-view,
+  .col.drop,
+  .task .title,
+  #tour .tour-hi,
+  #tour .tour-card,
+  button::after,
+  #status::before,
+  #coachForm::after,
+  .pace-icon,
+  .nav-icon {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
   }
-  :is(button, summary, a.btn, [role="button"]):is(:active, .pace-pressed), .lifting { scale: 1 !important; transform: none !important; }
-  dialog[open] { opacity: 1; transform: none; }
-}
-</style>
+
+  :is(button, summary, a.btn, [role="button"]):is(:active, .pace-pressed),
+  .lifting {
+    scale: 1 !important;
+    transform: none !important;
+  }
+
+  dialog[open] {
+    opacity: 1;
+    transform: none;
+  }
+}</style>
 <script data-pace="notion-ui.js">/* Presentation-only enhancement. Existing app nodes/handlers and persisted data stay intact. */
 (() => {
   const $ = id => document.getElementById(id);
@@ -4841,14 +5108,177 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
       Array.from({ length: 10 }, (_, k) => '<span class="pip ' + (k < lit ? 'on' : k === lit && frac > 0 ? 'part' : 'off') + '" style="--d:' + k * 45 + 'ms' + (k === lit && frac > 0 ? ';opacity:' + (.25 + .75 * frac).toFixed(2) : '') + '">' + i.pip + '</span>').join('') + '</div>';
   };
   window.paceUnit = () => { const u = UNITS[skin] || UNITS.default; return { icon: u[0], count: n => u[1].replace('{n}', n), measure: u[2] }; };
+  /* Themed Confetti & Celebration Particle Engine */
+  const THEME_PALETTES = {
+    sakura: { cols: ['#fbbcd0', '#f472b6', '#ffffff', '#fda4af', '#fb7185'], shapes: ['petal', 'circle'] },
+    forest: { cols: ['#4ade80', '#22c55e', '#fef08a', '#86efac', '#15803d'], shapes: ['leaf', 'circle', 'star'] },
+    snow: { cols: ['#e0f2fe', '#bae6fd', '#ffffff', '#7dd3fc', '#38bdf8'], shapes: ['star', 'circle'] },
+    ocean: { cols: ['#38bdf8', '#0ea5e9', '#ffffff', '#7dd3fc', '#a5f3fc'], shapes: ['bubble', 'circle'] },
+    candy: { cols: ['#f472b6', '#c084fc', '#fde047', '#67e8f9', '#ffffff'], shapes: ['heart', 'circle', 'rect'] },
+    galaxy: { cols: ['#c084fc', '#818cf8', '#f472b6', '#38bdf8', '#fef08a'], shapes: ['star', 'circle'] },
+    matcha: { cols: ['#84cc16', '#65a30d', '#fef08a', '#d9f99d', '#ffffff'], shapes: ['leaf', 'circle'] },
+    coffee: { cols: ['#b45309', '#d97706', '#fef3c7', '#78350f', '#fde68a'], shapes: ['rect', 'circle'] },
+    sunset: { cols: ['#fb923c', '#f87171', '#fbbf24', '#f43f5e', '#fda4af'], shapes: ['star', 'circle', 'rect'] },
+    aurora: { cols: ['#2dd4bf', '#a78bfa', '#34d399', '#67e8f9', '#c084fc'], shapes: ['star', 'circle'] },
+    neon: { cols: ['#00e5ff', '#ff3d81', '#39ff14', '#ffff00', '#ffffff'], shapes: ['rect', 'star'] },
+    autumn: { cols: ['#ea580c', '#c2410c', '#f59e0b', '#dc2626', '#fef08a'], shapes: ['leaf', 'rect'] },
+    rain: { cols: ['#60a5fa', '#38bdf8', '#93c5fd', '#fde047', '#ffffff'], shapes: ['bubble', 'circle'] },
+    ink: { cols: ['#18181b', '#27272a', '#52525b', '#a1a1aa', '#f4f4f5'], shapes: ['circle', 'rect'] },
+    desert: { cols: ['#f59e0b', '#d97706', '#10b981', '#fbbf24', '#ffffff'], shapes: ['star', 'circle'] },
+    lavender: { cols: ['#a855f7', '#c084fc', '#e9d5ff', '#7c3aed', '#ffffff'], shapes: ['star', 'circle', 'petal'] },
+    night: { cols: ['#fbbf24', '#60a5fa', '#fef08a', '#e0e7ff', '#ffffff'], shapes: ['star', 'circle'] },
+    default: { cols: ['#2f7a5b', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'], shapes: ['rect', 'circle', 'star'] }
+  };
+
+  const TAU2 = Math.PI * 2;
+  function drawCustomShape(ctx, shape, s) {
+    if (shape === 'petal') {
+      ctx.beginPath();
+      ctx.ellipse(0, 0, s * 0.7, s * 0.35, 0, 0, TAU2);
+      ctx.fill();
+    } else if (shape === 'leaf') {
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.6);
+      ctx.quadraticCurveTo(s * 0.45, 0, 0, s * 0.6);
+      ctx.quadraticCurveTo(-s * 0.45, 0, 0, -s * 0.6);
+      ctx.fill();
+    } else if (shape === 'star') {
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const rad = -Math.PI / 2 + k * Math.PI / 4;
+        const dist = k % 2 === 0 ? s * 0.6 : s * 0.22;
+        k === 0 ? ctx.moveTo(Math.cos(rad) * dist, Math.sin(rad) * dist) : ctx.lineTo(Math.cos(rad) * dist, Math.sin(rad) * dist);
+      }
+      ctx.closePath();
+      ctx.fill();
+    } else if (shape === 'heart') {
+      const d = s * 0.4;
+      ctx.beginPath();
+      ctx.moveTo(0, d * 0.6);
+      ctx.bezierCurveTo(-d * 1.2, -d * 0.4, -d * 1.2, -d * 1.2, 0, -d * 0.6);
+      ctx.bezierCurveTo(d * 1.2, -d * 1.2, d * 1.2, -d * 0.4, 0, d * 0.6);
+      ctx.fill();
+    } else if (shape === 'bubble') {
+      ctx.beginPath();
+      ctx.arc(0, 0, s * 0.42, 0, TAU2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.beginPath();
+      ctx.arc(-s * 0.14, -s * 0.14, s * 0.12, 0, TAU2);
+      ctx.fill();
+    } else if (shape === 'rect') {
+      ctx.fillRect(-s / 2, -s / 4, s, s / 2);
+    } else {
+      ctx.beginPath();
+      ctx.arc(0, 0, s / 2.6, 0, TAU2);
+      ctx.fill();
+    }
+  }
+
+  // Override confetti drawing to render thematic particle shapes
+  if (typeof fx !== 'undefined') {
+    window.drawConfetti = function (ctx) {
+      ctx.clearRect(0, 0, fx.w, fx.h);
+      fx.confetti = fx.confetti.filter(c => c.life < c.max);
+      for (const c of fx.confetti) {
+        c.life++;
+        c.vy += c.gravity !== undefined ? c.gravity : 0.18;
+        c.vx *= 0.985;
+        c.x += c.vx;
+        c.y += c.vy;
+        c.a += c.va;
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.a);
+        const progress = c.life / c.max;
+        ctx.globalAlpha = Math.max(0, 1 - progress);
+        ctx.fillStyle = c.col;
+        drawCustomShape(ctx, c.customShape || (c.shape ? 'rect' : 'circle'), c.s);
+        ctx.restore();
+      }
+    };
+
+    // Themed burst function
+    window.burst = function (x, y, combo = 1) {
+      if (!fxOn) return;
+      const themeConfig = THEME_PALETTES[skin] || THEME_PALETTES.default;
+      const count = Math.min(68, 32 + (combo > 1 ? (combo - 1) * 8 : 0));
+      for (let i = 0; i < count; i++) {
+        const a = r(0, TAU2);
+        const v = r(2.5, 7.5 + Math.min(3, combo * 0.6));
+        const customShape = themeConfig.shapes[i % themeConfig.shapes.length];
+        const isPetalOrLeaf = customShape === 'petal' || customShape === 'leaf';
+        fx.confetti.push({
+          x, y,
+          vx: Math.cos(a) * v,
+          vy: Math.sin(a) * v - (isPetalOrLeaf ? 1.8 : 3.2),
+          a: r(0, TAU2),
+          va: r(-0.25, 0.25),
+          s: r(6, 11),
+          col: themeConfig.cols[i % themeConfig.cols.length],
+          customShape,
+          shape: customShape === 'rect',
+          life: 0,
+          max: r(50, 85),
+          gravity: isPetalOrLeaf ? 0.09 : 0.18
+        });
+      }
+      fx.topDirty = true;
+      kickFx();
+    };
+
+    window.burstAt = function (el, combo = 1) {
+      if (!el) return;
+      const rct = el.getBoundingClientRect();
+      window.burst(rct.left + rct.width / 2, rct.top + Math.min(rct.height, 40) / 2, combo);
+    };
+  }
+
   // the weekly report says 「亮度 / 亮起 N 顆星」 for every theme: say it in the theme's own words
+  const THEME_TITLES = {
+    sakura: '🌸 滿園綻放', forest: '🌲 綠蔭蔽日', snow: '❄️ 銀裝素裹', ocean: '🫧 碧波純澈',
+    candy: '🍬 甜蜜大滿貫', galaxy: '🪐 萬象星輝', matcha: '🍵 茶韻悠長', coffee: '☕ 醇香盈室',
+    sunset: '🌅 晚霞漫天', aurora: '🌌 極光璀璨', neon: '⚡ 耀眼燈火', autumn: '🍁 金秋滿枝',
+    rain: '🌧️ 萬家燈火', ink: '🖌️ 妙筆生花', desert: '🌵 綠洲繁生', lavender: '💜 馥郁花田',
+    night: '⭐ 星河長明', default: '🏆 完美達標'
+  };
+
   function relabel() {
     const el = document.getElementById('rSkyMeta'); if (!el) return;
     if (window.PACE_KEEP_ORIGINAL_WORDS && (skin === 'default' || skin === 'night')) return;   // A keeps its own 亮度 / 亮起 N 顆星 where they were already
-    const [pill, count] = el.querySelectorAll('span'), u = window.paceUnit();
-    const g = /(\d+)%/.exec(pill?.textContent || ''), n = /(\d+)/.exec(count?.textContent || '');
-    if (pill && g) pill.textContent = u.measure + ' ' + g[1] + '%';
-    if (count && n) { const t = document.createElement('span'); t.textContent = u.count(n[1]); count.replaceChildren(u.icon + ' ', t); }
+    const [pill, count] = el.querySelectorAll('span');
+    const u = window.paceUnit();
+    const g = /(\d+)%/.exec(pill?.textContent || '');
+    const n = /(\d+)/.exec(count?.textContent || '');
+    const rateVal = g ? parseInt(g[1], 10) : 0;
+    if (pill && g) {
+      pill.textContent = u.measure + ' ' + g[1] + '%';
+      if (rateVal >= 100) {
+        pill.classList.add('pace-all-done');
+        pill.style.background = 'var(--accent)';
+        pill.style.color = 'var(--accent-on, #fff)';
+        pill.style.fontWeight = '700';
+      }
+    }
+    if (count && n) {
+      const t = document.createElement('span');
+      t.textContent = u.count(n[1]);
+      count.replaceChildren(u.icon + ' ', t);
+    }
+    // Add celebratory badge if 100% completed
+    let badge = el.querySelector('.pace-sky-badge');
+    if (rateVal >= 100) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'glow-pill pace-sky-badge';
+        badge.style.marginLeft = '6px';
+        badge.style.animation = 'pace-badge-pop 400ms cubic-bezier(.2,.9,.3,1.3)';
+        el.appendChild(badge);
+      }
+      badge.textContent = THEME_TITLES[skin] || '🏆 完美達標';
+    } else if (badge) {
+      badge.remove();
+    }
   }
   if (typeof renderReview === 'function') {
     const review0 = renderReview;
@@ -5040,12 +5470,36 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
     const items = blocks.map((b, i) => {
       const day = b.day, x = ((day + .5) / 7) * W + (rnd() - .5) * (W / 7) * .6, y = 12 + ((toMin(b.start) - START) / SPAN) * (H - 44), r = Math.max(2, Math.sqrt(b.minutes) * .55);
       const date = ymd(addDays(monday, b.day));
-      return { i, x, y: sc.ground ? H - 40 - (y / H) * 14 : sc.snowy ? y : y, s: clamp(Math.sqrt(b.minutes) * 3.6, 16, 40), state: b.done ? 'done' : blockEnd(date, b) <= now ? 'missed' : 'future' };
+      return { b, i, x, y: sc.ground ? H - 40 - (y / H) * 14 : sc.snowy ? y : y, s: clamp(Math.sqrt(b.minutes) * 3.6, 16, 40), state: b.done ? 'done' : blockEnd(date, b) <= now ? 'missed' : 'future' };
     });
     const doneN = items.filter(it => it.state === 'done').length;
     const animate = typeof fxOn !== 'undefined' && fxOn && !(typeof reduceMotion !== 'undefined' && reduceMotion);
-    const st = { canvas, raf: 0, timer: 0, t0: performance.now(), skin, last: 0 };
+    const st = { canvas, raf: 0, timer: 0, t0: performance.now(), skin, last: 0, hoverItem: null, items };
     canvas.__scene = st;
+
+    // Interactive hover feedback on scene canvas
+    if (!canvas.__boundHover) {
+      canvas.__boundHover = true;
+      canvas.addEventListener('mousemove', e => {
+        if (!canvas.__scene) return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        const sc0 = canvas.__scene, hit = sc0.items.find(it => Math.hypot(it.x - mx, it.y - my) <= it.s * 0.7), changed = sc0.hoverItem !== (hit || null);
+        sc0.hoverItem = hit || null;
+        if (changed && !sc0.raf) sc0.raf = requestAnimationFrame(sc0.frame);
+        canvas.style.cursor = hit ? 'pointer' : 'default';
+        if (hit) {
+          canvas.title = `${hit.b.name} (${hit.b.minutes}分) · ${hit.state === 'done' ? '已完成 ✅' : hit.state === 'missed' ? '時間已過 ❌' : '尚未開始 ⏳'}`;
+        } else {
+          canvas.removeAttribute('title');
+        }
+      });
+      canvas.addEventListener('mouseleave', () => {
+        const sc0 = canvas.__scene; if (sc0) { sc0.hoverItem = null; if (!sc0.raf) sc0.raf = requestAnimationFrame(sc0.frame); }
+        canvas.style.cursor = 'default';
+      });
+    }
+
     const stars = sc.stars ? Array.from({ length: 70 }, () => ({ x: rnd() * W, y: rnd() * (H - 30), r: rnd() * 1.1 + .3, p: rnd() * 6.28 })) : null;
     const frame = ts => {
       st.raf = 0;
@@ -5056,23 +5510,42 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
       const t = animate ? ts : 0, el = animate ? ts - st.t0 : 99999, c = canvas.getContext('2d');
       c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
       const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, sc.bg[0]); g.addColorStop(.55, sc.bg[1]); g.addColorStop(1, sc.bg[2]); c.fillStyle = g; c.fillRect(0, 0, W, H);
+
+      // 100% completion celestial radiance / golden glow effect
+      if (doneN > 0 && doneN >= items.length) {
+        c.save();
+        const goldG = c.createRadialGradient(W / 2, 0, 0, W / 2, 0, Math.max(W, H) * 0.8);
+        goldG.addColorStop(0, 'rgba(255, 230, 150, 0.28)');
+        goldG.addColorStop(0.5, 'rgba(255, 210, 100, 0.1)');
+        goldG.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        c.fillStyle = goldG;
+        c.fillRect(0, 0, W, H);
+        c.restore();
+      }
+
       if (stars) for (const s of stars) { c.globalAlpha = .3 + .6 * Math.abs(Math.sin(t * .0015 + s.p)); c.fillStyle = '#fff'; c.beginPath(); c.arc(s.x, s.y, s.r, 0, TAU); c.fill(); }
       c.globalAlpha = 1;
       if (sc.ground) { c.fillStyle = sc.ground; c.fillRect(0, H - 32, W, 32); }
       if (sc.snowy) { const mh = 6 + Math.min(34, doneN * 3.2) * easeOut(el / 1200); c.fillStyle = '#ffffff'; c.beginPath(); c.moveTo(0, H); for (let x = 0; x <= W; x += 12) c.lineTo(x, H - 22 - mh * (.7 + .3 * Math.sin(x * .03))); c.lineTo(W, H); c.closePath(); c.fill(); }
       c.lineWidth = 1.2;
       for (const it of items) {
+        const isHovered = st.hoverItem === it;
         const a = it.state === 'done' ? back((el - it.i * 55) / 750) : 1;
         if (a <= 0) continue;
-        c.save(); c.globalAlpha = it.state === 'done' ? clamp(a * 1.4, 0, 1) : clamp((el - it.i * 20) / 300, 0, 1);
-        try { sc[it.state](c, it.x, it.y, it.s, clamp(a, .02, 1.18), t, it.i); } catch (e) { /* one bad shape must not stop the picture */ }
+        c.save();
+        c.globalAlpha = it.state === 'done' ? clamp(a * 1.4, 0, 1) : clamp((el - it.i * 20) / 300, 0, 1);
+        if (isHovered) {
+          c.shadowBlur = 12;
+          c.shadowColor = sc.label || '#ffb703';
+        }
+        try { sc[it.state](c, it.x, it.y, it.s * (isHovered ? 1.15 : 1), clamp(a, .02, 1.18), t, it.i); } catch (e) { /* one bad shape must not stop the picture */ }
         c.restore();
       }
       c.globalAlpha = .75; c.fillStyle = sc.label; c.font = '12px "Noto Sans TC", sans-serif'; c.textAlign = 'center';
       DAYN.forEach((n, i) => c.fillText('週' + n, ((i + .5) / 7) * W, H - 8)); c.globalAlpha = 1;
-      if (animate || el < 1500) st.raf = requestAnimationFrame(frame);
+      if (animate || el < 1500 || st.hoverItem) st.raf = requestAnimationFrame(frame);
     };
-    st.raf = requestAnimationFrame(frame);
+    st.frame = frame; st.raf = requestAnimationFrame(frame);
   };
   // a theme change: new title and words, and an open weekly report draws its new scene
   const apply1 = applySkin;
@@ -5169,6 +5642,40 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
   sel1.addEventListener('change', () => document.getElementById('pingTest')?.click());
   // the saved choice may be one of the new ones: the picker was filled before they existed
   try { sel1.value = prefGet('planner-notify-sound', 'ding'); sel2.value = prefGet('planner-alarm-sound', 'bell'); } catch (e) {}
+
+  // Delightful synthesized chime for completing a task/block with combo support
+  window.playDoneChime = function (combo = 1) {
+    try {
+      if (typeof fxOn !== 'undefined' && !fxOn) return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const ctx = playChime.ctx || (playChime.ctx = new AC());
+      if (ctx.state === 'suspended') ctx.resume();
+      const t0 = ctx.currentTime;
+      // Base frequencies: C5, E5, G5, C6 (crystal arpeggio)
+      const pitchOffset = Math.min(5, Math.max(0, (combo - 1))) * 1.5;
+      const baseFreqs = [523.25, 659.25, 783.99, 1046.5];
+      const freqs = baseFreqs.map(f => f * Math.pow(1.05946, pitchOffset));
+      const dur = 0.22;
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = idx === freqs.length - 1 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, t0 + idx * 0.055);
+        gain.gain.setValueAtTime(0.0001, t0 + idx * 0.055);
+        gain.gain.exponentialRampToValueAtTime(0.14, t0 + idx * 0.055 + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + idx * 0.055 + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t0 + idx * 0.055);
+        osc.stop(t0 + idx * 0.055 + dur + 0.02);
+      });
+      // Light haptic feedback on supported mobile devices
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(combo > 1 ? [25, 30, 35] : 25);
+      }
+    } catch (e) {}
+  };
 })();
 </script>
 <script data-pace="c-rewards.js">/* 步調 Pace: rewards that make finishing a block feel good and show up where you can see them, built on what motivation research says
@@ -5194,7 +5701,7 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
   const motion = () => (typeof fxOn === 'undefined' || fxOn) && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   const blockXp = b => 10 + Math.floor((Number(b.minutes) || 0) / 10) * 2;
   const comboXp = k => Math.min(10, (k - 1) * 2);   // the k-th block finished in a day
-  const TITLES = [[1, '新手'], [3, '起步者'], [5, '穩定前進'], [8, '專注者'], [12, '自律達人'], [18, '時間大師'], [25, '傳奇']];
+  const TITLES = [[1, '新手探索者'], [3, '起步者'], [5, '穩定前行'], [8, '專注旅人'], [12, '自律之星'], [16, '心流大師'], [20, '時間掌舵人'], [25, '步調傳奇'], [30, '時光領航員']];
   const titleOf = lv => TITLES.filter(([n]) => lv >= n).pop()[1];
   const PETS = [[1, '🥚', '一顆蛋'], [2, '🐣', '破殼了'], [3, '🐥', '小雞'], [5, '🐤', '會跑的小雞'], [8, '🐦', '小鳥'], [12, '🦉', '貓頭鷹'], [18, '🦅', '老鷹'], [25, '🐉', '神龍']];
   const petOf = lv => PETS.filter(([n]) => lv >= n).pop();
@@ -5218,14 +5725,18 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
     ['hundred', '💯', '百塊', '完成 100 個方塊', s => s.done >= 100],
     ['streak3', '🔥', '三天不斷', '連續 3 天達標（完成 7 成以上）', s => s.best >= 3],
     ['streak7', '🌟', '一週不斷', '連續 7 天達標', s => s.best >= 7],
-    ['early', '🌅', '早起鳥', '在早上 9 點前完成 5 個方塊', s => s.early >= 5],
+    ['streak14', '🚀', '百折不撓', '連續 14 天達標', s => s.best >= 14],
+    ['early', '🌅', '晨曦鳥', '在早上 9 點前完成 5 個方塊', s => s.early >= 5],
+    ['flow', '⚡', '深層心流', '完成過單次 60 分鐘以上的方塊', s => s.maxSingleMin >= 60],
+    ['variety', '🎨', '生活調色盤', '完成過至少 4 種不同分類的方塊', s => s.cats.size >= 4],
+    ['allclear', '💮', '一日全清', '有一天排定的讀書方塊（至少 3 個）全部完成', s => s.hadAllClear],
     ['week80', '🎯', '神準一週', '一週完成 8 成以上（至少 5 個到期的方塊）', s => s.week80],
-    ['comeback', '💪', '回來了', '停了 3 天以上，又重新完成方塊', s => s.comeback],
-    ['rest', '🛋️', '會休息的人', '完成 10 個休息方塊（休息也是計畫的一部分）', s => s.rest >= 10],
-    ['reflect', '📝', '回顧家', '寫下 3 則做完或沒做完的回顧', s => s.reflect >= 3],
-    ['hours20', '⏱️', '二十小時', '讀書類累積 20 小時', s => s.studyMin >= 1200]
+    ['comeback', '💪', '重新出發', '停了 3 天以上，又重新完成方塊', s => s.comeback],
+    ['rest', '🛋️', '會休息的人', '完成 10 個休息方塊（休息也是生活的一部分）', s => s.rest >= 10],
+    ['reflect', '📝', '反思大師', '寫下 3 則做完或沒做完的回顧與心得', s => s.reflect >= 3],
+    ['hours20', '⏱️', '二十小時', '讀書或專注類累積 20 小時', s => s.studyMin >= 1200]
   ];
-  const CHEERS = ['做得好', '又前進一步', '很穩', '保持這個節奏', '專注力在線', '一格一格累積', '這就是進步', '辛苦了'];
+  const CHEERS = ['做得好！', '又前進一步 ✨', '節奏非常穩！', '保持這個美好狀態', '專注力持續在線 🔥', '一格一格，點滴累積', '這就是切實的進步', '辛苦了，給自己一個微笑'];
   // d = 0 (Monday) … 6 (Sunday); no limit and no bedtime unless the person set one
   const health = d => { const h = state.config?.health || {}, i = d >= 5 ? 1 : 0, m = Array.isArray(h.max) ? h.max[i] : 0, b = Array.isArray(h.bed) ? h.bed[i] : ''; return { maxStudy: Number.isFinite(m) ? m : 0, bed: typeof b === 'string' ? b : '', noXp: h.noXp !== false, note: typeof h.note === 'string' ? h.note.trim() : '' }; };
   const dayIdx = date => (new Date(date + 'T00:00:00').getDay() + 6) % 7;
@@ -5236,14 +5747,14 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const from = addDays(mondayOf(today), -7 * 52), now = new Date();
     const all = await blocksInRange(from, addDays(mondayOf(today), 6));
-    const s = { done: 0, xp: 0, early: 0, rest: 0, reflect: 0, studyMin: 0, best: 0, streak: 0, passUsed: false, week80: false, comeback: false, todayXp: 0, todayDone: 0, overLimit: false };
+    const s = { done: 0, xp: 0, early: 0, rest: 0, reflect: 0, studyMin: 0, best: 0, streak: 0, passUsed: false, week80: false, comeback: false, todayXp: 0, todayDone: 0, overLimit: false, maxSingleMin: 0, cats: new Set(), hadAllClear: false };
     const byDay = {}, byWeek = {}, kDay = {}, minDay = {}, todayKey = ymd(today);
     let lastDone = null;
     for (const b of all.sort((a, c) => a.date.localeCompare(c.date) || toMin(a.start) - toMin(c.start))) {
       if (b.skipped) continue;
       const wk = ymd(mondayOf(new Date(b.date + 'T00:00:00'))), w = byWeek[wk] || (byWeek[wk] = { done: 0, due: 0 });
       if (b.reflection?.text) s.reflect++;
-      if (counts(b)) { const v = byDay[b.date] || (byDay[b.date] = { p: 0, d: 0 }); v.p += b.minutes; if (b.done) v.d += b.minutes; }
+      if (counts(b)) { const v = byDay[b.date] || (byDay[b.date] = { p: 0, d: 0, n: 0, allDone: true }); v.p += b.minutes; v.n++; if (b.done) v.d += b.minutes; else v.allDone = false; }
       if (b.done || b.failed || blockEnd(b.date, b) <= now) w.due++;
       if (!b.done) continue;
       w.done++; s.done++;
@@ -5253,11 +5764,14 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
       if (b.date === todayKey) { s.todayDone++; if (over) s.overLimit = true; }
       if (toMin(b.start) < 9 * 60) s.early++;
       if (b.cat === 'rest') s.rest++;
+      if (b.cat) s.cats.add(b.cat);
+      s.maxSingleMin = Math.max(s.maxSingleMin, Number(b.minutes) || 0);
       if (counts(b)) s.studyMin += b.minutes;
       if (lastDone && (new Date(b.date) - new Date(lastDone)) / 864e5 >= 4) s.comeback = true;
       lastDone = b.date;
     }
     s.todayStudy = minDay[todayKey] || 0;
+    s.hadAllClear = Object.values(byDay).some(v => v.n >= 3 && v.allDone);
     // weekly quest: a little more than last week (at least 5); reaching it is worth 30 XP
     const target = wk => { const prev = byWeek[ymd(addDays(new Date(wk + 'T00:00:00'), -7))]; return Math.max(5, Math.min(40, (prev ? prev.done : 0) + 2)); };
     for (const wk of Object.keys(byWeek)) { const w = byWeek[wk]; if (w.done >= target(wk)) s.xp += 30; if (w.due >= 5 && w.done / w.due >= .8) s.week80 = true; }
@@ -5337,7 +5851,7 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
     '.xp-dlg { width: min(480px, calc(100vw - 32px)); } .xp-dlg form { max-height: 84vh; overflow: auto; }' +
     '.xp-top { display: flex; align-items: center; gap: 14px; } .xp-petbig { font-size: 3.2rem; line-height: 1; } .xp-big { font-size: 1.7rem; font-weight: 900; font-family: var(--f-mono); color: var(--accent-ink, var(--accent)); line-height: 1.1; } .xp-name { font-weight: 700; }' +
     '.xp-today { margin: 0; font-weight: 700; font-size: .86rem; }' +
-    '.xp-track { height: 12px; border-radius: 99px; background: var(--line-soft); overflow: hidden; } .xp-track i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .8s ease; } .xp-track.quest i { background: var(--c-rest-dot); }' +
+    '.xp-track { height: 12px; border-radius: 99px; background: var(--line-soft); overflow: hidden; } .xp-track i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .8s ease; } .xp-track i { position: relative; } .xp-track i::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); animation: pace-shimmer 2.4s infinite; } @keyframes pace-shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } } .xp-track.quest i { background: var(--c-rest-dot); } .xp-badge:not(.locked) { border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }' +
     '.xp-album { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; } .xp-st { aspect-ratio: 1; display: grid; place-items: center; font-size: 1.45rem; border-radius: 10px; background: var(--panel-2); position: relative; } .xp-st.none { filter: grayscale(1); opacity: .22; } .xp-st.rare { box-shadow: inset 0 0 0 2px #5b8def; } .xp-st.legend { box-shadow: inset 0 0 0 2px #e0a100; background: color-mix(in srgb, #e0a100 16%, var(--panel-2)); } .xp-st b { position: absolute; right: 3px; bottom: 1px; font-size: .62rem; }' +
     '.xp-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 8px; }' +
     '.xp-badge { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--panel-2); font-size: .78rem; color: var(--fg); }' +
@@ -5405,6 +5919,7 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
     } else { show(c.icon, c.title, c.sub, '太好了', 'reveal'); chime([[523, 0, .2], [659, .12, .2], [784, .24, .2], [1047, .36, .5]]); party(c.big ? 5 : 2); go.onclick = nextCard; }
   }
   const enqueue = c => { queue.push(c); if (!showing) nextCard(); };
+  window.paceRewardCard = c => { if (on()) enqueue(c); };   // c-mystery.js: a finished wonder
   /* remember where we are without any fuss (first load, or rewards switched off) */
   function settle() {
     if (firstDone) return; firstDone = true;
@@ -5454,12 +5969,16 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
       const hb = health(b.day), limit = hb.noXp ? hb.maxStudy : 0, others = day.filter(x => x.done && x.id !== b.id && counts(x) && toMin(x.start) <= toMin(b.start)).reduce((a, x) => a + x.minutes, 0), over = limit > 0 && counts(b) && others >= limit;
       const k = day.filter(x => x.done && toMin(x.start) <= toMin(b.start)).length, gain = over ? 0 : blockXp(b) + comboXp(k);
       const today = date === ymd(new Date()), left = day.filter(x => !x.done && counts(x)).length;
+      const allClear = today && counts(b) && left === 0;
       const extra = over ? ' 超過你設的上限了，這格不加 XP。' + (hb.note || '今天夠了 🌙') :
-        ' +' + gain + ' XP · ' + (k > 1 ? '連擊 ×' + k + ' · ' : '') + CHEERS[Math.floor(Math.random() * CHEERS.length)] + (today && counts(b) ? (left === 0 ? '，今天的都完成了！' : left === 1 ? '，今天再 1 個就全部完成' : '') : '');
+        ' +' + gain + ' XP · ' + (k > 1 ? '連擊 ×' + k + ' · ' : '') + CHEERS[Math.floor(Math.random() * CHEERS.length)] + (today && counts(b) ? (allClear ? ' 今天的都完成了！All Clear 💮' : left === 1 ? ' 今天再 1 個就全部完成' : '') : '');
       const t = document.getElementById('toastText'); if (t && !document.getElementById('toast').hidden) t.textContent += extra;
       if (!over) floatAt(document.querySelector('[data-bid="' + b.id + '"]') || document.querySelector('[data-wdone="' + b.id + '"]'), '+' + gain + ' XP' + (k > 1 ? ' ×' + k : ''));
       btn.classList.remove('bump'); void btn.offsetWidth; btn.classList.add('bump');
-      chime([[784, 0, .12], [1047, .07, .22]]);
+      if (ls.get(MUTE) !== '1') { try { window.playDoneChime?.(k); } catch (e) {} }
+      const blkEl = document.querySelector('[data-bid="' + b.id + '"]');
+      if (blkEl && motion()) { blkEl.classList.add('blk-done-pop'); setTimeout(() => blkEl.classList.remove('blk-done-pop'), 600); }
+      if (allClear) party(3);
     }
     return r;
   };
@@ -5506,6 +6025,544 @@ body.nofx .round:checked, body.nofx .blk.pop { animation: none; }
     if (n < 120) setTimeout(() => wait(n + 1), 500);
   })(0);
   paint();
+})();
+</script>
+<script data-pace="c-mystery.js">/* 步調 Pace: 「心流奇蹟工程」 (Wonders of Focus), a weekly building project that shows the week's progress as something standing:
+   - 不是耗費時間玩的遊戲，而是利用「One More Turn（再推進一步奇蹟就落成了！）」的強烈自律心智引導；
+   - 每週承接一座世界奇蹟工程（亞歷山大圖書館、空中花園、星空天文台、時光方尖碑…）；
+   - 每完成一個方塊 = 運送砌上一塊漢白玉基石（共 10 塊築成）；
+   - 7 根日之神廟石柱（週一至週日）：每天達標 7 成點亮神廟精力光柱；
+   - 奇蹟完工時全屏慶典，並入駐「專注奇蹟博物館」。博物館是從存好的方塊算出來的，每台裝置都一樣，取消打勾也會跟著變。 */
+
+(() => {
+  if (typeof state === 'undefined' || typeof blocksInRange !== 'function') return;
+  const SEEN = 'pace-wonder-seen';   // the week whose finished wonder has been celebrated
+  const ls = {
+    get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+
+  // 12 座世界級心流奇蹟工程
+  const WONDERS = [
+    {
+      id: 'library', name: '亞歷山大星空圖書館', icon: '🏛️',
+      tagline: '智慧與知識的萬神殿',
+      quote: '「書籍是穿越時間的航船，專注是駛向未知的風帆。」',
+      lore: '每讀一卷書、解一道題，都在為這座人類文明的燈塔添磚加瓦。',
+      color: '#38bdf8'
+    },
+    {
+      id: 'gardens', name: '巴比倫空中花園', icon: '🌺',
+      tagline: '自律與生命的綠洲',
+      quote: '「在荒漠中開鑿清泉，在繁雜的生活中綻放秩序的花朵。」',
+      lore: '張弛有度、生生不息，這座懸浮在空中的奇蹟是你生活平衡的象徵。',
+      color: '#4ade80'
+    },
+    {
+      id: 'observatory', name: '時空星象觀象台', icon: '🔭',
+      tagline: '窺探真理的深空天眼',
+      quote: '「目光越過眼前的喧囂，在浩瀚星軌中校準一生的航向。」',
+      lore: '透過深層心流，你精確掌握了時間的節奏與宏大的格局。',
+      color: '#c084fc'
+    },
+    {
+      id: 'pyramid', name: '太陽黃金金字塔', icon: '🔺',
+      tagline: '恆久不朽的自律基石',
+      quote: '「四千年歲月在此凝視，微小的每一天匯聚成萬仞高山。」',
+      lore: '一磚一瓦皆由不可動搖的決心築成，任何風暴都無法撼動。',
+      color: '#f59e0b'
+    },
+    {
+      id: 'colossus', name: '心流巨人燈塔', icon: '🗼',
+      tagline: '照亮迷航者的破曉航標',
+      quote: '「風浪再大，只要燈塔長明，歸途便無可阻擋。」',
+      lore: '矗立於波濤之中，為你每日的奮鬥指明最堅定的航線。',
+      color: '#fbbf24'
+    },
+    {
+      id: 'forge', name: '赫菲斯托斯鍛造聖殿', icon: '⚒️',
+      tagline: '千錘百鍊的匠心之爐',
+      quote: '「烈火淬鍊真金，每一次攻克難題都在重塑更強大的靈魂。」',
+      lore: '專注就是那柄純青的鐵錘，將平庸敲打成驚世的工藝品。',
+      color: '#f87171'
+    },
+    {
+      id: 'citadel', name: '靜修浮空衛城', icon: '🏰',
+      tagline: '守護專注的絕對要塞',
+      quote: '「劃定神聖的專注邊界，將一切浮躁與干擾拒於城門之外。」',
+      lore: '你的注意力是你最昂貴的資產，這座衛城由你的自律親手加冕。',
+      color: '#a78bfa'
+    },
+    {
+      id: 'clocktower', name: '永恆時光之鐘塔', icon: '🕰️',
+      tagline: '精確到微秒的秩序韻律',
+      quote: '「齒輪不疾不徐，唯有沉穩的嘀嗒聲能穿透歲月的長河。」',
+      lore: '不慌張、不拖延，掌握了時間節奏的人已然掌握了世界。',
+      color: '#e2e8f0'
+    },
+    {
+      id: 'sanctuary', name: '晨曦林間隱修殿', icon: '🍃',
+      tagline: '呼吸與修復的心靈聖泉',
+      quote: '「會休息的靈魂才能走得深遠，平靜是世間最強大的力量。」',
+      lore: '休息不是退縮，而是拉滿下一支神箭前的深沉蓄力。',
+      color: '#34d399'
+    },
+    {
+      id: 'colosseum', name: '意志競技場', icon: '⚔️',
+      tagline: '戰勝怠惰的榮耀之地',
+      quote: '「最強大的對手不是他人，而是那個想放棄的昨天的自己。」',
+      lore: '每一次戰勝拖延起身上路，競技場上就響起雷鳴般的喝采。',
+      color: '#fb923c'
+    },
+    {
+      id: 'pantheon', name: '群星萬神殿', icon: '🌌',
+      tagline: '多元交融的宏偉穹頂',
+      quote: '「包容多維度的人生追求，穹頂之下星光萬道。」',
+      lore: '兼顧學習、健康、工作與心靈，你的生命神殿圓滿無缺。',
+      color: '#818cf8'
+    },
+    {
+      id: 'monolith', name: '起源黑石巨碑', icon: '⬛',
+      tagline: '開啟智識新紀元的奇點',
+      quote: '「邁出舒適圈的第一步，文明與個人都在此蛻變昇華。」',
+      lore: '矗立於宇宙邊緣的神秘巨碑，宣告著全新自我境界的降臨。',
+      color: '#60a5fa'
+    }
+  ];
+
+  function getWonderForWeek(mondayStr) {
+    const d = new Date(mondayStr + 'T00:00:00');
+    const weekNum = Math.floor(d.getTime() / (7 * 864e5));
+    return WONDERS[Math.abs(weekNum) % WONDERS.length];
+  }
+
+  /* ---------- Header Button & Dialog ---------- */
+  const btn = Object.assign(document.createElement('button'), {
+    type: 'button',
+    className: 'btn wonder-nav-btn',
+    id: 'wonderBtn',
+    title: '每週的奇蹟建造工程'
+  });
+  btn.innerHTML = '<span class="wonder-ico">🏛️</span><span class="wonder-lbl">本週奇蹟</span>';
+  // inside the rewards dialog: the header has no room for one more button, and the phone layout hides it
+  const host = document.getElementById('xpQuestTxt'), fallback = document.getElementById('skinBtn');
+  if (host) host.after(btn); else if (fallback) fallback.before(btn); else return;
+
+  // Dialog markup
+  document.body.insertAdjacentHTML('beforeend', `
+    <dialog id="wonderDlg" class="wonder-dlg" aria-labelledby="wonderTitle">
+      <form method="dialog">
+        <div class="wonder-header">
+          <div class="dtitle" id="wonderTitle">🏛️ 心流世界奇蹟工程</div>
+          <button type="button" class="btn sm" id="museumToggleBtn" title="查看已落成的奇蹟博物館">🏛️ 博物館圖鑑</button>
+        </div>
+        <p class="hint" style="margin:2px 0 10px">每完成一個方塊就砌上一塊基石，每天達標點亮一根神柱。這週完成 10 塊基石、3 天以上達標，奇蹟就落成。</p>
+
+        <!-- Wonder Canvas: Building in progress -->
+        <div class="wonder-canvas-wrap">
+          <canvas id="wonderCanvas" width="460" height="260"></canvas>
+          <div class="wonder-build-status" id="wonderBuildStatus">
+            <span class="wonder-stage-pill" id="wonderStagePill">建造中</span>
+            <span class="wonder-blocks-pill" id="wonderBlocksPill">基石 0/10</span>
+          </div>
+        </div>
+
+        <!-- Wonder Blueprint & Lore -->
+        <div class="wonder-blueprint-card">
+          <div class="blueprint-top">
+            <span class="blueprint-icon" id="bpIcon">🏛️</span>
+            <div class="blueprint-meta">
+              <b id="bpName">亞歷山大圖書館</b>
+              <span id="bpTagline">智慧與知識的萬神殿</span>
+            </div>
+            <div class="blueprint-progress-val" id="bpPct">0%</div>
+          </div>
+          <!-- Progress Bar -->
+          <div class="wonder-bar-track">
+            <i id="wonderBarFill"></i>
+          </div>
+          <div class="blueprint-clue" id="bpClueBox">
+            <p id="bpLore">正在平整地基。排定並完成方塊，運送漢白玉基石開始壘砌柱廊…</p>
+          </div>
+        </div>
+
+        <!-- 7 Daily Temples (Zelda Stamina Pillars) -->
+        <h3 class="set-h" style="margin:12px 0 6px">7 日精力試煉神廟（日達標 7 成點亮）</h3>
+        <div class="wonder-temples-row" id="wonderTemplesRow"></div>
+
+        <!-- Museum View (Hidden by default) -->
+        <div id="wonderMuseumView" class="wonder-museum-view" hidden>
+          <h3 class="set-h" style="margin-top:14px">🏛️ 已落成的歷史世界奇蹟 (<span id="museumCount">0</span>)</h3>
+          <div class="museum-grid" id="museumGrid"></div>
+        </div>
+
+        <div class="actions" style="margin-top:14px">
+          <button class="btn primary" value="ok">繼續推進行程</button>
+        </div>
+      </form>
+    </dialog>
+  `);
+
+  /* ---------- Styles ---------- */
+  const style = document.createElement('style');
+  style.textContent = `
+    .wonder-nav-btn {
+      display: inline-flex; align-items: center; gap: 6px; font-weight: 700;
+      position: relative; border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+      transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .wonder-nav-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 25%, transparent);
+      border-color: var(--accent);
+    }
+    .wonder-nav-btn { align-self: flex-start; }
+    .wonder-dlg form > * { flex: none; }
+    .wonder-dlg {
+      width: min(530px, calc(100vw - 32px)); border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35); border: 1px solid var(--line);
+      background: var(--panel); color: var(--fg);
+    }
+    .wonder-dlg form { max-height: 86vh; overflow-y: auto; padding: 4px 2px; }
+    .wonder-header { display: flex; justify-content: space-between; align-items: center; }
+    .wonder-canvas-wrap {
+      position: relative; width: 100%; border-radius: 14px; overflow: hidden;
+      background: linear-gradient(180deg, #0f172a 0%, #020617 100%);
+      border: 1px solid rgba(245, 158, 11, .25);
+      box-shadow: inset 0 0 40px rgba(0,0,0,.8), 0 4px 18px rgba(0,0,0,.25);
+      margin: 8px 0;
+    }
+    #wonderCanvas { display: block; width: 100%; height: auto; }
+    .wonder-build-status {
+      position: absolute; top: 10px; right: 12px; display: flex; gap: 6px;
+    }
+    .wonder-stage-pill, .wonder-blocks-pill {
+      font-size: .75rem; font-weight: 700; padding: 3px 8px; border-radius: 99px;
+      background: rgba(15, 23, 42, .75); backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, .15); color: #e2e8f0;
+    }
+    .wonder-stage-pill.done {
+      background: #fef3c7; color: #92400e; border-color: #fcd34d;
+      box-shadow: 0 0 10px rgba(245, 158, 11, .4);
+    }
+    .wonder-blueprint-card {
+      background: var(--panel-2); border-radius: 14px; padding: 12px 14px;
+      border: 1px solid var(--line); margin-top: 8px;
+    }
+    .blueprint-top { display: flex; align-items: center; gap: 12px; }
+    .blueprint-icon { font-size: 2.2rem; line-height: 1; filter: drop-shadow(0 2px 8px rgba(0,0,0,.2)); }
+    .blueprint-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .blueprint-meta b { font-size: 1.05rem; }
+    .blueprint-meta span { font-size: .82rem; color: var(--muted); }
+    .blueprint-progress-val { font-family: var(--f-mono); font-size: 1.35rem; font-weight: 700; color: var(--accent); }
+    .wonder-bar-track {
+      height: 10px; border-radius: 99px; background: var(--line-soft);
+      overflow: hidden; margin: 10px 0 8px; position: relative;
+    }
+    .wonder-bar-track i {
+      display: block; height: 100%; width: 0; border-radius: 99px;
+      background: linear-gradient(90deg, #f59e0b, #eab308, #fbbf24);
+      transition: width .8s cubic-bezier(.2,.8,.2,1); position: relative;
+    }
+    .wonder-bar-track i::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+      animation: pace-shimmer 2.2s infinite;
+    }
+    .blueprint-clue {
+      margin-top: 6px; padding: 8px 10px; border-radius: 10px;
+      background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+      border-left: 3px solid var(--accent); font-size: .86rem; line-height: 1.5;
+    }
+    .blueprint-clue p { margin: 0; }
+    .wonder-temples-row {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+      margin-top: 6px; text-align: center; font-size: .75rem;
+    }
+    .temple-pill {
+      padding: 6px 2px; border-radius: 8px; background: var(--panel-2);
+      border: 1px solid var(--line-soft); display: flex; flex-direction: column;
+      gap: 3px; align-items: center; transition: all .25s ease;
+    }
+    .temple-pill.active {
+      border-color: #f59e0b; background: rgba(245, 158, 11, .14);
+      color: #d97706; font-weight: 700; box-shadow: 0 2px 8px rgba(245, 158, 11, .18);
+    }
+    .temple-pillar-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+    .temple-pill.active .temple-pillar-dot { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    .museum-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(134px, 1fr));
+      gap: 10px; margin-top: 8px;
+    }
+    .museum-card {
+      padding: 10px; border-radius: 12px; background: var(--panel-2);
+      border: 1px solid var(--line); text-align: center; display: flex;
+      flex-direction: column; gap: 4px; font-size: .78rem;
+    }
+    .museum-card .ic { font-size: 1.9rem; margin-bottom: 2px; filter: drop-shadow(0 2px 6px rgba(0,0,0,.15)); }
+    .museum-card b { font-size: .86rem; }
+    @media (prefers-reduced-motion: reduce) { .wonder-bar-track i::after { animation: none; } }
+  `;
+  document.head.appendChild(style);
+
+  /* ---------- Engine: Wonder Data & Canvas Construction ---------- */
+  function weekFacts(mon, blocks) {
+    const monStr = ymd(mon), byDay = Array.from({ length: 7 }, (_, dIdx) => {
+      const dStr = ymd(addDays(mon, dIdx)), dayBlocks = blocks.filter(b => b.date === dStr && !b.skipped && counts(b));
+      const planned = dayBlocks.reduce((a, b) => a + b.minutes, 0), done = dayBlocks.filter(b => b.done).reduce((a, b) => a + b.minutes, 0);
+      return { dIdx, dStr, planned, done, rate: planned > 0 ? done / planned : 0, active: planned > 0 && done / planned >= 0.7 };
+    });
+    const totalDone = blocks.filter(b => b.done && !b.skipped).length, stonesPlaced = Math.min(10, totalDone), activeDaysCount = byDay.filter(d => d.active).length;
+    return { monStr, wonder: getWonderForWeek(monStr), byDay, totalDone, stonesPlaced, pct: Math.round(stonesPlaced * 10), activeDaysCount, isCompleted: stonesPlaced >= 10 && activeDaysCount >= 3 };
+  }
+  async function getWonderData(withMuseum) {
+    if (!state.db) return null;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const mon = mondayOf(today), from = withMuseum ? addDays(mon, -7 * 52) : mon;
+    const all = await blocksInRange(from, addDays(mon, 6)), museum = [];
+    if (withMuseum) for (let w = new Date(from); w < mon; w = addDays(w, 7)) {
+      const key = ymd(w), end = ymd(addDays(w, 6)), f = weekFacts(w, all.filter(b => b.date >= key && b.date <= end));
+      if (f.isCompleted) museum.push({ week: key, ...f.wonder });
+    }
+    const end = ymd(addDays(mon, 6)), now = weekFacts(mon, all.filter(b => b.date >= ymd(mon) && b.date <= end));
+    if (now.isCompleted) museum.push({ week: now.monStr, ...now.wonder });
+    return { ...now, museum };
+  }
+
+  function drawWonderScene(canvas, data) {
+    if (!data) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = canvas.clientWidth || 460, H = 260;
+    canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.height = H + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Dynamic sky based on completion percentage
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+    if (data.isCompleted) {
+      skyGrad.addColorStop(0, '#1e1b4b');
+      skyGrad.addColorStop(0.5, '#312e81');
+      skyGrad.addColorStop(1, '#4338ca');
+    } else {
+      skyGrad.addColorStop(0, '#020617');
+      skyGrad.addColorStop(0.6, '#0f172a');
+      skyGrad.addColorStop(1, '#1e293b');
+    }
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars in night sky
+    ctx.fillStyle = '#ffffff';
+    let seed = 42;
+    const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    for (let i = 0; i < 45; i++) {
+      ctx.globalAlpha = 0.2 + rnd() * 0.6;
+      ctx.beginPath();
+      ctx.arc(rnd() * W, rnd() * (H - 60), rnd() * 1.2 + 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Ground platform
+    const groundY = H - 36;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, groundY, W, 36);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
+
+    // 10 Construction Blocks (Stones of Civilization)
+    const stones = data.stonesPlaced;
+    const cx = W / 2, baseW = 180;
+
+    // Layer 1: Foundation (4 blocks)
+    for (let i = 0; i < 4; i++) {
+      const bx = cx - baseW / 2 + i * (baseW / 4) + 2;
+      const by = groundY - 18;
+      const isBuilt = stones > i;
+      ctx.fillStyle = isBuilt ? '#cbd5e1' : 'rgba(255,255,255,0.06)';
+      ctx.strokeStyle = isBuilt ? '#94a3b8' : 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 1.2;
+      ctx.fillRect(bx, by, baseW / 4 - 4, 16);
+      ctx.strokeRect(bx, by, baseW / 4 - 4, 16);
+    }
+
+    // Layer 2: Pillars / Colonnade (3 pillars)
+    for (let i = 0; i < 3; i++) {
+      const bx = cx - (baseW * 0.75) / 2 + i * (baseW * 0.75 / 3) + 6;
+      const by = groundY - 48;
+      const isBuilt = stones > 4 + i;
+      ctx.fillStyle = isBuilt ? '#e2e8f0' : 'rgba(255,255,255,0.05)';
+      ctx.strokeStyle = isBuilt ? '#cbd5e1' : 'rgba(255,255,255,0.1)';
+      ctx.fillRect(bx, by, (baseW * 0.75 / 3) - 12, 28);
+      ctx.strokeRect(bx, by, (baseW * 0.75 / 3) - 12, 28);
+    }
+
+    // Layer 3: Architrave & Pediment Dome (2 blocks)
+    for (let i = 0; i < 2; i++) {
+      const bx = cx - 50 + i * 52;
+      const by = groundY - 72;
+      const isBuilt = stones > 7 + i;
+      ctx.fillStyle = isBuilt ? '#f1f5f9' : 'rgba(255,255,255,0.04)';
+      ctx.strokeStyle = isBuilt ? '#e2e8f0' : 'rgba(255,255,255,0.08)';
+      ctx.fillRect(bx, by, 46, 20);
+      ctx.strokeRect(bx, by, 46, 20);
+    }
+
+    // Layer 4: Pinnacle / Golden Crown (Stone 10)
+    const isPinnacle = stones >= 10;
+    ctx.save();
+    ctx.fillStyle = isPinnacle ? '#fbbf24' : 'rgba(255,255,255,0.05)';
+    ctx.strokeStyle = isPinnacle ? '#f59e0b' : 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1.5;
+    if (isPinnacle) {
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = '#fbbf24';
+    }
+    ctx.beginPath();
+    ctx.moveTo(cx, groundY - 105);
+    ctx.lineTo(cx - 24, groundY - 76);
+    ctx.lineTo(cx + 24, groundY - 76);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // Central Icon Badge of the Wonder
+    ctx.font = '28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(data.wonder.icon, cx, groundY - 34);
+
+    // Completed Celebration Sunbeams / Golden Radiance
+    if (data.isCompleted) {
+      ctx.save();
+      const goldRays = ctx.createRadialGradient(cx, groundY - 80, 10, cx, groundY - 80, 180);
+      goldRays.addColorStop(0, 'rgba(251, 191, 36, 0.45)');
+      goldRays.addColorStop(0.5, 'rgba(245, 158, 11, 0.15)');
+      goldRays.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = goldRays;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+  }
+
+  /* ---------- Refresh UI State ---------- */
+  async function refreshWonderUI() {
+    const data = await getWonderData(true);
+    if (!data) return;
+
+    const cv = document.getElementById('wonderCanvas');
+    if (cv) drawWonderScene(cv, data);
+
+    const wonder = data.wonder;
+    document.getElementById('bpIcon').textContent = wonder.icon;
+    document.getElementById('bpName').textContent = wonder.name;
+    document.getElementById('bpTagline').textContent = wonder.tagline;
+    document.getElementById('bpPct').textContent = data.pct + '%';
+    document.getElementById('wonderBarFill').style.width = data.pct + '%';
+
+    const stagePill = document.getElementById('wonderStagePill');
+    stagePill.textContent = data.isCompleted ? '👑 奇蹟完工落成' : data.pct >= 70 ? '🔨 穹頂封頂中' : data.pct >= 40 ? '🏛️ 廊柱壘砌中' : '📐 地基平整中';
+    stagePill.classList.toggle('done', data.isCompleted);
+    document.getElementById('wonderBlocksPill').textContent = `基石 ${data.stonesPlaced}/10 塊`;
+
+    // Clue & Lore box
+    const clueBox = document.getElementById('bpClueBox');
+    let clueHtml = '';
+    if (data.isCompleted) {
+      clueHtml = `<b>👑 奇蹟竣工永恆銘文：</b><p style="margin-top:4px;color:#d97706;font-weight:700">${wonder.quote}</p><small style="color:var(--muted)">${wonder.lore}</small>`;
+    } else if (data.stonesPlaced >= 8) {
+      clueHtml = `<b>⚡ 只差最後 ${10 - data.stonesPlaced} 塊基石！</b><p style="margin-top:3px">再完成方塊，加上 3 天以上達標，本週的奇蹟就落成了。</p>`;
+    } else {
+      clueHtml = `<b>📜 工程藍圖：</b><p style="margin-top:2px">${wonder.lore}</p><small class="hint">每完成一個排程方塊，工匠便為奇蹟砌上一塊基石。</small>`;
+    }
+    clueBox.innerHTML = clueHtml;
+
+    // 7 Daily Temples
+    const dayNames = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
+    const templesRow = document.getElementById('wonderTemplesRow');
+    templesRow.innerHTML = data.byDay.map((d, i) => `
+      <div class="temple-pill ${d.active ? 'active' : ''}">
+        <span class="temple-pillar-dot"></span>
+        <span>${dayNames[i]}</span>
+        <span style="font-size:.68rem;opacity:.8">${d.planned > 0 ? Math.round(d.rate * 100) + '%' : '-'}</span>
+      </div>
+    `).join('');
+
+    // Museum List
+    document.getElementById('museumCount').textContent = data.museum.length;
+    document.getElementById('museumGrid').innerHTML = data.museum.map(m => `
+      <div class="museum-card">
+        <span class="ic">${m.icon}</span>
+        <b>${m.name}</b>
+        <span style="color:var(--muted)">${m.tagline}</span>
+        <span style="font-size:.7rem;opacity:.7">${m.week} 竣工</span>
+      </div>
+    `).join('') || '<p class="hint" style="grid-column:1/-1;text-align:center">博物館尚無藏品。每週完成 10 塊奇蹟基石與 3 天以上達標，即可永久入駐！</p>';
+
+  }
+
+  btn.addEventListener('click', () => {
+    document.getElementById('wonderDlg').showModal();
+    refreshWonderUI();
+  });
+
+  document.getElementById('museumToggleBtn')?.addEventListener('click', () => {
+    const v = document.getElementById('wonderMuseumView');
+    v.hidden = !v.hidden;
+  });
+
+  /* a finished wonder is celebrated once; saved blocks are re-read only while the dialog is open */
+  async function watch() {
+    try {
+      const open = document.getElementById('wonderDlg').open;
+      if (open) refreshWonderUI();
+      const d = await getWonderData(false); if (!d || !d.isCompleted) return;
+      let seen = null; try { seen = localStorage.getItem(SEEN); } catch (e) {}
+      if (seen === d.monStr) return;
+      try { localStorage.setItem(SEEN, d.monStr); } catch (e) {}
+      window.paceRewardCard?.({ icon: d.wonder.icon, title: '奇蹟落成：' + d.wonder.name, sub: d.wonder.quote, big: true });
+    } catch (e) {}
+  }
+  let timer = 0;
+  const save0 = saveWeek;
+  window.saveWeek = saveWeek = function () { const r = save0.apply(this, arguments); clearTimeout(timer); timer = setTimeout(watch, 1400); return r; };
+})();
+</script>
+<script data-pace="c-zen.js">/* 步調 Pace: ambient sounds for focusing (rain, fireplace, stream), synthesized with Web Audio: no files, no data used. Lives in the rewards dialog. */
+(() => {
+  const host = document.getElementById('xpStreak'); if (!host || typeof playChime === 'undefined') return;
+  const KINDS = [['rain', '🌧️', '深夜細雨', 'lowpass', 800], ['fire', '🪵', '溫暖壁爐', 'bandpass', 450], ['stream', '🏞️', '山澗清泉', 'lowpass', 1200]];
+  let cur = null;
+  host.insertAdjacentHTML('afterend', '<h3 class="set-h">專注環境音</h3><div class="zen-row">' + KINDS.map(k => '<button type="button" class="btn zen-btn" data-zen="' + k[0] + '" aria-pressed="false">' + k[1] + ' ' + k[2] + '</button>').join('') + '</div>');
+  const st = document.createElement('style');
+  st.textContent = '.zen-row { display: flex; flex-wrap: wrap; gap: 6px; }';
+  document.head.appendChild(st);
+  const paint = () => document.querySelectorAll('.zen-btn').forEach(b => b.setAttribute('aria-pressed', String(!!cur && cur.kind === b.dataset.zen)));
+  function stop() {
+    if (!cur) return;
+    const { noise, gain, ctx } = cur; cur = null;
+    try { gain.gain.cancelScheduledValues(ctx.currentTime); gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime); gain.gain.linearRampToValueAtTime(.0001, ctx.currentTime + .4); setTimeout(() => { try { noise.stop(); } catch (e) {} }, 450); } catch (e) {}
+  }
+  function start(kind) {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    const ctx = playChime.ctx || (playChime.ctx = new AC()); if (ctx.state === 'suspended') ctx.resume();
+    const k = KINDS.find(x => x[0] === kind), size = ctx.sampleRate * 2, buffer = ctx.createBuffer(1, size, ctx.sampleRate), data = buffer.getChannelData(0);
+    let last = 0;
+    for (let i = 0; i < size; i++) { last = last * .95 + (Math.random() * 2 - 1) * .05; data[i] = kind === 'fire' ? (Math.random() < .003 ? Math.random() * 1.5 - .75 : last * .3) : last * .6; }
+    const noise = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), gain = ctx.createGain();
+    noise.buffer = buffer; noise.loop = true; filter.type = k[3]; filter.frequency.value = k[4];
+    gain.gain.setValueAtTime(.01, ctx.currentTime); gain.gain.linearRampToValueAtTime(.12, ctx.currentTime + 1);
+    noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination); noise.start();
+    cur = { kind, noise, gain, ctx };
+  }
+  document.querySelector('.zen-row').addEventListener('click', e => {
+    const b = e.target.closest('.zen-btn'); if (!b) return;
+    const same = cur && cur.kind === b.dataset.zen; stop();
+    try { if (!same) start(b.dataset.zen); } catch (e) {}
+    paint();
+  });
 })();
 </script>
 <!-- A-next: Pace layout, themes and sounds (2026-11-04) -->
