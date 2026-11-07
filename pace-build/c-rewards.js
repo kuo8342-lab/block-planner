@@ -183,7 +183,7 @@
     '@keyframes xp-shake { 25% { transform: rotate(-9deg); } 75% { transform: rotate(9deg); } } @keyframes xp-reveal { from { transform: scale(0) rotate(-40deg); } to { transform: scale(1) rotate(0); } }' +
     '.xp-cardt { font-size: 1.3rem; font-weight: 900; margin-top: 8px; } .xp-cards { margin: 6px 0 16px; font-size: .9rem; color: var(--muted); }' +
     'body.xp-off .xp-mini, body.xp-off .xp-lv, body.xp-off .xp-fire, body.xp-off .xp-pet { display: none; } body.xp-off .xp-btn { color: inherit; background: var(--panel); border-color: var(--line); font-weight: 500; } body.xp-off .xp-btn::after { content: "成就"; }' +
-    '@media (prefers-reduced-motion: reduce) { .xp-track i, .xp-mini i { transition: none; } .xp-btn.bump, .xp-btn.bump .xp-pet, .xp-float, .xp-card, .xp-burst.shake, .xp-burst.reveal { animation: none; } }';
+    '@media (prefers-reduced-motion: reduce) { .xp-track i, .xp-mini i { transition: none; } .xp-track i::after { animation: none; } .xp-btn.bump, .xp-btn.bump .xp-pet, .xp-float, .xp-card, .xp-burst.shake, .xp-burst.reveal { animation: none; } }';
   document.head.appendChild(st);
 
   function paint() {
