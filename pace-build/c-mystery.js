@@ -259,8 +259,30 @@
       border-color: #f59e0b; background: rgba(245, 158, 11, .14);
       color: #d97706; font-weight: 700; box-shadow: 0 2px 8px rgba(245, 158, 11, .18);
     }
-    .temple-pillar-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+    .temple-pillar-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line); position: relative; z-index: 1; }
     .temple-pill.active .temple-pillar-dot { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    /* golden beam: neighbouring lit pillars are joined dot to dot; all 7 lit makes the whole row glow */
+    .wonder-temples-row { position: relative; }
+    .temple-pill { position: relative; }
+    .temple-pill.active { animation: pace-pillar-in .45s ease both; animation-delay: calc(var(--i) * 90ms); }
+    .temple-beam {
+      position: absolute; top: 8px; left: 50%; width: calc(100% + 8px); height: 3px; border-radius: 3px; pointer-events: none;
+      background: linear-gradient(90deg, #f59e0b, #fde68a, #f59e0b); background-size: 200% 100%;
+      box-shadow: 0 0 8px rgba(245, 158, 11, .7); transform-origin: left center;
+      animation: pace-beam-grow .5s ease-out both, pace-beam-flow 2.4s linear infinite;
+      animation-delay: calc(var(--i) * 90ms + 200ms), 0s;
+    }
+    .wonder-temples-row.beam-full .temple-pill.active { box-shadow: 0 0 14px rgba(245, 158, 11, .45); animation: pace-pillar-in .45s ease both, pace-pillar-glow 2.4s ease-in-out infinite; animation-delay: calc(var(--i) * 90ms), 1.2s; }
+    .wonder-temples-row.beam-full::after {
+      content: ""; position: absolute; inset: -4px; border-radius: 12px; pointer-events: none;
+      background: linear-gradient(100deg, transparent 30%, rgba(253, 230, 138, .55) 50%, transparent 70%); background-size: 250% 100%;
+      animation: pace-beam-sweep 2.8s ease-in-out 1s infinite both;
+    }
+    @keyframes pace-pillar-in { from { transform: translateY(6px); opacity: .3; } to { transform: none; opacity: 1; } }
+    @keyframes pace-beam-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @keyframes pace-beam-flow { to { background-position: -200% 0; } }
+    @keyframes pace-pillar-glow { 50% { box-shadow: 0 0 22px rgba(245, 158, 11, .75); } }
+    @keyframes pace-beam-sweep { from { background-position: 150% 0; } to { background-position: -100% 0; } }
     .museum-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(134px, 1fr));
       gap: 10px; margin-top: 8px;
@@ -272,7 +294,7 @@
     }
     .museum-card .ic { font-size: 1.9rem; margin-bottom: 2px; filter: drop-shadow(0 2px 6px rgba(0,0,0,.15)); }
     .museum-card b { font-size: .86rem; }
-    @media (prefers-reduced-motion: reduce) { .wonder-bar-track i::after { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .wonder-bar-track i::after, .temple-pill.active, .temple-beam, .wonder-temples-row.beam-full .temple-pill.active, .wonder-temples-row.beam-full::after { animation: none; } }
   `;
   document.head.appendChild(style);
 
@@ -453,13 +475,18 @@
     // 7 Daily Temples
     const dayNames = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
     const templesRow = document.getElementById('wonderTemplesRow');
-    templesRow.innerHTML = data.byDay.map((d, i) => `
-      <div class="temple-pill ${d.active ? 'active' : ''}">
+    const lit = data.byDay.map(d => !!d.active), allLit = lit.every(Boolean);
+    templesRow.classList.toggle('beam-full', allLit);
+    templesRow.setAttribute('aria-label', '本週 ' + lit.filter(Boolean).length + ' 根神柱點亮' + (allLit ? '，七柱全亮' : ''));
+    const rowHtml = data.byDay.map((d, i) => `
+      <div class="temple-pill ${d.active ? 'active' : ''}" style="--i:${i}">
+        ${d.active && lit[i + 1] ? '<span class="temple-beam" aria-hidden="true"></span>' : ''}
         <span class="temple-pillar-dot"></span>
         <span>${dayNames[i]}</span>
         <span style="font-size:.68rem;opacity:.8">${d.planned > 0 ? Math.round(d.rate * 100) + '%' : '-'}</span>
       </div>
     `).join('');
+    if (rowHtml !== lastRow) { lastRow = rowHtml; templesRow.innerHTML = rowHtml; }   // rebuilt (and animated) only when a pillar changes, or on opening
 
     // Museum List
     document.getElementById('museumCount').textContent = data.museum.length;
@@ -474,7 +501,9 @@
 
   }
 
+  let lastRow = '';
   btn.addEventListener('click', () => {
+    lastRow = '';
     document.getElementById('wonderDlg').showModal();
     refreshWonderUI();
   });
