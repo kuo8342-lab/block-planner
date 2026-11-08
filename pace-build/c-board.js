@@ -208,12 +208,13 @@
 
   /* ---------- conflicts ---------- */
   // silenced conflicts: this device's list plus the synced one, so another device does not ask again
-  const dismissed = async () => {
+  // function declarations (hoisted): check() can run during start-up, before this line is reached
+  async function dismissed() {
     let a = []; try { a = JSON.parse(ls.get(DISMISS) || '[]'); } catch (e) {}
     let b = []; try { const s = await state.db.doc(DOC).get(); b = (s.exists && s.data().keys) || []; } catch (e) {}
     return new Set([...a, ...b]);
-  };
-  const saveDismissed = async set => { const keys = [...set]; ls.set(DISMISS, JSON.stringify(keys)); try { await state.db.doc(DOC).set({ keys }); } catch (e) {} };
+  }
+  async function saveDismissed(set) { const keys = [...set]; ls.set(DISMISS, JSON.stringify(keys)); try { await state.db.doc(DOC).set({ keys }); } catch (e) {} }
   function fixedOn(date, wd) {
     const cfg = state.config || {}, specials = (cfg.special || []).filter(s => s.date === date), replaced = new Set(specials.flatMap(s => s.replaces || []));
     return [...(cfg.fixed || []).filter(f => f.day === wd && !replaced.has(f.id)), ...specials]
