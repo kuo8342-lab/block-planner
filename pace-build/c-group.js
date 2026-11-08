@@ -510,7 +510,7 @@
     roomUnsubs.push(fs.onSnapshot(fs.query(fs.collection(db, 'groups', gid, 'chat'), fs.orderBy('at', 'desc'), fs.limit(100)), snap => {
       roomChat = snap.docs.map(d => ({ id: d.id, pending: d.metadata?.hasPendingWrites === true, ...d.data() })).reverse(); renderChat();
     }, () => roomMsg('讀不到聊天室，請稍後再試。')));
-    renderRoom(); renderChat();
+    renderRoom(); renderChat(); window.paceStickers?.refresh?.();
     if (!$('grpRoom').open) $('grpRoom').showModal();
   }
   function renderRoom() {
@@ -544,7 +544,8 @@
         : '<button class="btn plain" type="button" data-block="' + esc(m.uid) + '">封鎖</button>' +
           (CONTACT && g ? '<a class="btn plain" href="' + esc(reportHref(g, m.name || '?', m.uid, m.text, when)) + '">檢舉</a>' : '') +
           (owner ? '<button class="btn plain" type="button" data-unsend="' + esc(m.id) + '">刪除</button>' : '');
-      return '<div class="grp-msg' + (me ? ' me' : '') + '"><div class="who"><span>' + (me ? '你' : esc(m.name)) + '</span> · <span>' + (m.pending ? '傳送中' : ago(m.at)) + '</span>' + tools + '</div><div>' + esc(m.text) + '</div></div>';
+      const bodyHtml = window.paceStickers?.renderChatMessage ? window.paceStickers.renderChatMessage(m.text) : esc(m.text);
+      return '<div class="grp-msg' + (me ? ' me' : '') + '"><div class="who"><span>' + (me ? '你' : esc(m.name)) + '</span> · <span>' + (m.pending ? '傳送中' : ago(m.at)) + '</span>' + tools + '</div><div>' + bodyHtml + '</div></div>';
     }).join('') : '<p class="hint" style="margin:0">還沒有人說話，打個招呼吧！</p>';
     $('grpBlocked').innerHTML = bl.size ? '已封鎖（聊天和搞定都看不到）：' + [...bl].map(u => '<button class="btn plain" type="button" data-unblock="' + esc(u) + '">' + esc(g?.names?.[u] || roomChat.find(m => m.uid === u)?.name || '某人') + ' ✕ 解除</button>').join(' ') : '';
     if (stick) box.scrollTop = box.scrollHeight;

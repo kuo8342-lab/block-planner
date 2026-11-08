@@ -348,6 +348,7 @@ rep('</body>', '<script data-pace-ui="c-skins.js">' + fs.readFileSync(path.join(
 rep('</body>', '<script data-pace-ui="c-scenes.js">' + fs.readFileSync(path.join(__dirname, 'c-scenes.js'), 'utf8') + '</script>\n</body>');   // each theme's own scene in the weekly report   // six more themes, after notion-ui.js has renamed the default one
 rep('</body>', '<script data-pace-ui="c-sounds.js">' + fs.readFileSync(path.join(__dirname, 'c-sounds.js'), 'utf8') + '</script>\n</body>');   // 20 notification and 20 alarm sounds
 rep('</body>', '<script data-pace-ui="c-rewards.js">' + fs.readFileSync(path.join(__dirname, 'c-rewards.js'), 'utf8') + '</script>\n</body>');   // XP, levels, achievements, weekly quest
+rep('</body>', '<script data-pace-ui="c-stickers.js">' + fs.readFileSync(path.join(__dirname, 'c-stickers.js'), 'utf8') + '</script>\n</body>');   // 240 original Koma stickers with unlock & freeze mechanics
 rep('</body>', '<script data-pace-ui="c-mystery.js">' + fs.readFileSync(path.join(__dirname, 'c-mystery.js'), 'utf8') + '</script>\n</body>');   // the weekly wonder
 rep('</body>', '<script data-pace-ui="c-zen.js">' + fs.readFileSync(path.join(__dirname, 'c-zen.js'), 'utf8') + '</script>\n</body>');   // ambient sounds
 rep('</body>', '<script data-pace-ui="c-rest.js">' + fs.readFileSync(path.join(__dirname, 'c-rest.js'), 'utf8') + '</script>\n</body>');   // rest suggestions
