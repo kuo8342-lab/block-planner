@@ -41,14 +41,15 @@
   $('toReport').insertAdjacentHTML('beforeend','<span class="nav-key" aria-hidden="true">R</span>');
   nav.append(viewtabs);
   const label=document.createElement('div'); label.className='nav-section-label'; label.textContent=tr('我的規劃','MY PLANNING'); nav.append(label);
-  const sections=[['goals','目標','Goals','goal'],['palette','方塊','Blocks','blocks'],['tasks','這週任務','Weekly tasks','tasks']];
-  sections.forEach(([id,zh,english,i])=>{
+  // each menu entry opens its own page (notion-mobile.js keeps one page per entry on every screen size)
+  const sections=[['goals','目標','Goals','goal','goals'],['palette','方塊','Blocks','blocks','blocks'],['tasks','這週任務','Weekly tasks','tasks','tasks']];
+  sections.forEach(([id,zh,english,i,page])=>{
     const section=$(id).closest('.card'); section.id='section-'+id;
-    nav.append(button(tr(zh,english),i,()=>{
-      window.paceUI?.reveal(section);
-      section.scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
-      const target=section.querySelector('button,input'); target?.focus({preventScroll:true});
-    }));
+    const b=button(tr(zh,english),i,()=>{
+      if(window.paceUI)window.paceUI.showView(page);
+      else section.scrollIntoView({block:'start'});
+    });
+    b.dataset.paceDnav=page; nav.append(b);
   });
   rail.prepend(railHeader,nav);
   // Keep verbose instructions available without dominating the daily workspace.
@@ -95,6 +96,7 @@
     if(open) returnFocus=document.activeElement;
     document.body.classList.toggle('rail-open',open && narrow.matches);
     document.body.classList.toggle('rail-collapsed',!open && !narrow.matches);
+    if(!narrow.matches) try{ localStorage.setItem('pace-rail-collapsed',open?'0':'1'); }catch(e){}
     toggle.setAttribute('aria-expanded',String(open)); mobileWork.setAttribute('aria-expanded',String(open));
     const trap=open && narrow.matches;
     top.inert=trap; main.inert=trap; mobile.inert=trap;
@@ -107,6 +109,8 @@
     toggle.setAttribute('aria-expanded',String(!narrow.matches)); mobileWork.setAttribute('aria-expanded','false');
   });
   toggle.setAttribute('aria-expanded',String(!narrow.matches)); mobileWork.setAttribute('aria-expanded','false');
+  // a menu you folded away stays folded next time
+  try{ if(!narrow.matches && localStorage.getItem('pace-rail-collapsed')==='1'){ document.body.classList.add('rail-collapsed'); toggle.setAttribute('aria-expanded','false'); } }catch(e){}
   // The drawer yields to the original drag engine when a drag starts, so the calendar remains a drop target.
   document.addEventListener('pointermove',()=>{ if(narrow.matches && document.body.classList.contains('rail-open') && typeof drag!=='undefined' && drag?.moved) setRail(false,false); });
   $('toGrid').addEventListener('click',()=>{ if(narrow.matches)setRail(false,false); });
@@ -121,7 +125,7 @@
       else if(!e.shiftKey && document.activeElement===last) { e.preventDefault(); first?.focus(); }
     }
     if(e.key.toLowerCase()==='n' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.target.closest?.('input,textarea,select')) {
-      if(window.paceUI?.isMobile())window.paceUI.showView('tasks'); else setRail(true);
+      if(window.paceUI)window.paceUI.showView('tasks'); else setRail(true);
       $('qa').scrollIntoView({block:'center'});
     }
     if(e.key==='Enter' || e.key===' ') {
@@ -135,7 +139,7 @@
       else if(target.dataset.drag?.startsWith('module:'))openModule(target.dataset.drag.slice(7));
     }
   },true);
-  const revealQuickAdd=event=>{ if((event?.newURL ? new URL(event.newURL).hash : location.hash)==='#add'){if(window.paceUI?.isMobile())window.paceUI.showView('tasks'); else setRail(true); $('qa').focus();} };
+  const revealQuickAdd=event=>{ if((event?.newURL ? new URL(event.newURL).hash : location.hash)==='#add'){if(window.paceUI)window.paceUI.showView('tasks'); else setRail(true); $('qa').focus();} };
   addEventListener('hashchange',revealQuickAdd); revealQuickAdd();
   function enhance() {
     document.querySelectorAll('.blk,[data-drag^="module:"],[data-toggle],[data-fail]').forEach(el=>{

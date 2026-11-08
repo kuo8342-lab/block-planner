@@ -96,6 +96,7 @@ const ok=(name,pass,info)=>{results.checks.push({name,pass:!!pass,...(info?{info
     }
     // Drag and resize through the real shell, preserving the original 1 px/min math.
     if(width===390)await page.locator('.mobile-nav button').nth(2).click();
+    else await page.locator('.workspace-nav [data-pace-dnav="blocks"]').click();   // blocks are their own page; dragging one brings the timetable back
     const chip=page.locator('[data-drag="module:m0"]');await chip.scrollIntoViewIfNeeded();const rect=await chip.boundingBox();
     if(width===1440){await page.mouse.move(rect.x+20,rect.y+12);await page.mouse.down();await page.mouse.move(rect.x+35,rect.y+20);}
     else{await chip.dispatchEvent('pointerdown',{bubbles:true,cancelable:true,clientX:rect.x+20,clientY:rect.y+12,button:0,pointerId:8,isPrimary:true,pointerType:'touch'});await page.waitForTimeout(380);await page.evaluate(({x,y})=>document.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,cancelable:true,clientX:x+35,clientY:y+25,button:0,pointerId:8,isPrimary:true,pointerType:'touch'})),rect);await page.waitForTimeout(250);}
@@ -121,7 +122,7 @@ const ok=(name,pass,info)=>{results.checks.push({name,pass:!!pass,...(info?{info
     ok(`${width}: paused countdown does not elapse`,await page.locator('#fTime').innerText()===pausedTime);
     await page.locator('#fPause').click();await page.clock.fastForward(2000);await page.waitForTimeout(50);ok(`${width}: countdown continues after resume`,await page.locator('#fTime').innerText()!==pausedTime);
     await page.locator('#fPause').click();await page.clock.fastForward(65000);await page.locator('#fStop').click();await page.waitForTimeout(80);ok(`${width}: stop while paused clears focus without counting pause`,await page.evaluate(()=>!focus&&!localStorage.getItem('pace-ui-focus-pause-v1')&&(state.week.blocks.find(b=>b.name==='QA 修改名稱').actual||0)<=1));
-    await page.evaluate(()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());setWidget(false);if(innerWidth<768)paceUI.showView('calendar');});
+    await page.evaluate(()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());setWidget(false);paceUI.showView('calendar');});
     const pressButton=page.locator(width<768?'#paceToday':'#thisW');const pressRect=await pressButton.boundingBox();
     await page.mouse.move(pressRect.x+10,pressRect.y+10);await page.mouse.down();
     ok(`${width}: pointer press has immediate visual state`,await pressButton.evaluate(el=>el.classList.contains('pace-pressed')));await page.mouse.up();await page.waitForTimeout(200);

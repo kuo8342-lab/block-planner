@@ -40,14 +40,19 @@
   const saved=[];
   const move=(el,to)=>{if(!el)return;const marker=document.createComment('pace-original-position');el.before(marker);saved.push({el,marker});to.append(el);};
   const sections={tasks:$('tasks').closest('.card'),blocks:$('palette').closest('.card'),goals:$('goals').closest('.card'),wishes:$('wishes').closest('.card'),hours:$('targets').closest('.card'),coach:$('coachCard'),groups:$('grpCard'),focus:$('nowPick')};
+  const cmdSaved=[];
+  function placeCommands(){
+    if(mobile.matches){ if(cmdSaved.length)return; ['toReport','toWidget','skinBtn','installBtn'].forEach(id=>{const el=$(id);if(!el)return;const m=document.createComment('pace-cmd');el.before(m);cmdSaved.push({el,m});commands.append(el);}); }
+    else { for(const {el,m} of cmdSaved.splice(0))m.replaceWith(el); }
+  }
   function mount(){
     if(mounted)return;mounted=true;
     Object.entries(sections).forEach(([key,el])=>move(el,panels[key]));
     move($('skipCard'),panels.hours);move($('wFocus'),panels.focus);
-    ['toReport','toWidget','skinBtn','installBtn'].forEach(id=>move($(id),commands));
+    placeCommands();
     move($('warnbar'),warnings);document.querySelector('.calendar-topbar').after(warnings);
     $('tasks').after(taskEmpty);
-    document.body.classList.remove('rail-open','rail-collapsed');top.inert=false;main.inert=false;document.querySelector('.mobile-nav').inert=false;
+    document.body.classList.remove('rail-open');if(mobile.matches)document.body.classList.remove('rail-collapsed');top.inert=false;main.inert=false;document.querySelector('.mobile-nav').inert=false;
     const wasWidget=document.body.classList.contains('w');
     showView(view,{silent:true});
     if(wasWidget){explicitWidget=true;setWidget(true);explicitWidget=false;}
@@ -64,23 +69,19 @@
   function navigateAnimation(el){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;el.animate([{opacity:.4,translate:'0 5px'},{opacity:1,translate:'0 0'}],{duration:200,easing:'cubic-bezier(.2,.7,.2,1)'});}
   function showView(name,options={}){
     if(!labels[name])return;
-    if(!mobile.matches){
-      if(name==='focus')return baseWidget(true);
-      if(name==='report'||name==='calendar'){baseWidget(false);return baseReport(name==='report');}
-      const el=sections[name];if(name==='groups'&&el?.hidden)return openSettings('grpOff');
-      if(el){baseWidget(false);el.scrollIntoView({block:'start'});}return;
-    }
     if(!mounted)return;
     const prev=view;view=name;document.body.dataset.paceView=name;pages.hidden=['calendar','report'].includes(name);
     if(document.body.classList.contains('w'))baseWidget(false);
     if($('wFocus').parentNode!==panels.focus)panels.focus.append($('wFocus'));
     if(document.body.classList.contains('r')!==(name==='report'))baseReport(name==='report');
-    document.body.classList.remove('rail-open','rail-collapsed');top.inert=false;main.inert=false;document.querySelector('.mobile-nav').inert=false;
+    document.body.classList.remove('rail-open');if(mobile.matches)document.body.classList.remove('rail-collapsed');top.inert=false;main.inert=false;document.querySelector('.mobile-nav').inert=false;
     Object.entries(panels).forEach(([key,el])=>el.hidden=key!==name);
+    document.querySelectorAll('[data-pace-dnav]').forEach(b=>{if(b.dataset.paceDnav===name)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
     document.querySelectorAll('[data-pace-nav]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.paceNav===(['calendar','tasks','blocks','focus'].includes(name)?name:'more'))));
     $('pacePageEyebrow').textContent=name==='calendar'?tr('把時間留給重要的事','Make time for what matters'):tr('我的工作台','MY WORKSPACE');
     $('pacePageTitle').textContent=tr(...labels[name]);
-    add.hidden=!['calendar','tasks','blocks','goals'].includes(name);back.hidden=['calendar','tasks','blocks','focus','more'].includes(name);
+    const crumbNow=document.querySelector('.workspace-crumb strong');if(crumbNow)crumbNow.textContent=name==='calendar'?tr('本週計畫','Weekly plan'):tr(...labels[name]);
+    add.hidden=!['calendar','tasks','blocks','goals'].includes(name);back.hidden=!mobile.matches||['calendar','tasks','blocks','focus','more'].includes(name);
     if(name==='calendar')updateCalendar();if(name==='tasks')filterTasks();if(name==='blocks')filterBlocks();if(name==='focus')syncFocus();
     if(!options.silent&&prev!==name&&!options.fromDrag)navigateAnimation(panels[name]||main);
   }
@@ -118,7 +119,7 @@
   function syncFocus(){const active=typeof focus!=='undefined'&&!!focus;panels.focus.classList.toggle('pace-focus-live',active);focusIdle.hidden=active;}
   function openSettings(target){$('skinBtn').click();requestAnimationFrame(()=>$(target==='grpOff'&&$('grpOff')?.hidden?'grpOn':target)?.scrollIntoView({block:'center'}));}
   function reveal(target){
-    if(!target||!mobile.matches)return;
+    if(!target||!mounted)return;
     if(target.closest('#grid')){showView('calendar',{silent:true});const col=target.closest('.col');if(col)setDay(col.dataset.day);return;}
     for(const [key,p]of Object.entries(panels))if(p.contains(target)){showView(key,{silent:true});return;}
     if(target===$('weekMenu')||main.contains(target)){showView('calendar',{silent:true});return;}
@@ -130,29 +131,31 @@
   ['calendar','tasks','blocks','focus','more'].forEach(name=>{const b=makeButton(name,tr(...labels[name]),()=>showView(name),'');b.dataset.paceNav=name;navigation.append(b);});
   // Desktop gets every new entry as well, using the same original surfaces.
   const desktopNav=document.querySelector('.workspace-nav');
-  ['wishes','focus',window.PACE_HAS_COACH?'coach':'groups'].forEach(name=>desktopNav.append(makeButton(name,tr(...labels[name]),()=>showView(name),'')));
+  ['wishes','hours','focus',window.PACE_HAS_COACH?'coach':'groups'].forEach(name=>{const b=makeButton(name,tr(...labels[name]),()=>showView(name),'');b.dataset.paceDnav=name;desktopNav.append(b);});
+  $('toGrid').dataset.paceDnav='calendar';$('toReport').dataset.paceDnav='report';
+  if(!mobile.matches)showView(view,{silent:true});
   document.addEventListener('click',e=>{if(e.target.closest('#toWidget')){explicitWidget=true;setTimeout(()=>explicitWidget=false,0);}},true);
   document.addEventListener('keydown',e=>{if(e.key.toLowerCase()==='w'&&!e.target.closest('input,textarea,select')){explicitWidget=true;setTimeout(()=>explicitWidget=false,0);}},true);
   setWidget=function(on){if(on&&mobile.matches&&mounted&&!explicitWidget&&typeof focus!=='undefined'&&focus){showView('focus');return;}if(on&&mounted){const record=saved.find(r=>r.el===$('wFocus'));if(record)record.marker.parentNode.insertBefore(record.el,record.marker.nextSibling);}else if(mounted&&$('wFocus').parentNode!==panels.focus)panels.focus.append($('wFocus'));baseWidget(on);};
-  setReport=function(on){baseReport(on);if(mobile.matches&&mounted)showView(on?'report':'calendar');};
+  setReport=function(on){baseReport(on);if(mounted)showView(on?'report':'calendar');};
   let dragFrom=null,lastHoverDay=-1;
   document.addEventListener('pointerdown',e=>{dragFrom=e.target.closest('[data-drag]')?view:null;},true);
   document.addEventListener('pointermove',e=>{
-    if(!mobile.matches||!drag?.moved)return;
+    if(!mounted||!drag?.moved)return;
     if(view!=='calendar')showView('calendar',{fromDrag:true});
     const day=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-pace-day]');
     if(day&&Number(day.dataset.paceDay)!==lastHoverDay){lastHoverDay=Number(day.dataset.paceDay);setDay(lastHoverDay);}
   });
   document.addEventListener('pointerup',()=>{lastHoverDay=-1;dragFrom=null;});
-  document.addEventListener('pointercancel',()=>{if(dragFrom&&mobile.matches)showView(dragFrom);dragFrom=null;});
+  document.addEventListener('pointercancel',()=>{if(dragFrom&&mounted)showView(dragFrom);dragFrom=null;});
   new MutationObserver(()=>{updateCalendar();filterTasks();}).observe($('grid'),{childList:true});
   new MutationObserver(filterTasks).observe($('tasks'),{childList:true});
   new MutationObserver(filterBlocks).observe($('palette'),{childList:true});
   new MutationObserver(syncFocus).observe($('wFocus'),{attributes:true,attributeFilter:['hidden']});
   const syncWarnings=()=>{warnings.hidden=$('warnbar').hidden;warnings.querySelector('#paceWarningCount').textContent=String($('warnbar').querySelectorAll('.pill').length||'');};
   new MutationObserver(syncWarnings).observe($('warnbar'),{childList:true,attributes:true,attributeFilter:['hidden']});syncWarnings();
-  mobile.addEventListener('change',()=>{mobile.matches?mount():unmount();updateCalendar();});
-  if(mobile.matches)mount();else pages.hidden=true;
+  mobile.addEventListener('change',()=>{placeCommands();if(!mobile.matches){$('grid').classList.remove('pace-day-grid');document.querySelectorAll('#grid [data-pace-active]').forEach(el=>el.removeAttribute('data-pace-active'));if(view==='more')showView('calendar');}updateCalendar();showView(view,{silent:true});});
+  mount();
   if(location.hash==='#add'&&mobile.matches){showView('tasks');$('qa').focus();}
   // Existing completed/failed controls are also keyboard-accessible in single-day mode.
 })();

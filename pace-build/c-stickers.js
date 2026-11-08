@@ -579,13 +579,44 @@
     }
   }
 
+  /* ---------- 每張貼圖自己的動作：道具照它的意思動（揮手、眼淚往下滴、蒸氣往上飄、雪花飄落…），
+     身體依表情做小動作（大笑抖、睡覺慢慢呼吸、生氣發抖…），不再全部原地彈跳 ---------- */
+  const PROP_MOTION = {};
+  const motionOf = (list, m) => list.split(' ').forEach(p => { PROP_MOTION[p] = m; });
+  motionOf('wave nowave handup pointup salute flags torch bow shrug poke', 'wave');
+  motionOf('thumb twothumbs fist ok vsign score100 check pinky stampclear', 'pump');
+  motionOf('clap highfive pat', 'clap');
+  motionOf('heart fingerheart pixelheart hug openarms duo', 'beat');
+  motionOf('tears sweatdrop', 'drip');
+  motionOf('snowflake sakura maple ginkgo leaf confetti applefall meteor', 'fall');
+  motionOf('steam zzz notes bubbles bubble sigh huff wind', 'rise');
+  motionOf('ghost balloon rocketmini rocket senddoc', 'lift');
+  motionOf('sparkles stars diamond crownmini crown galaxy aurora bulb fullmoon moon trophy medal seal laurel', 'twinkle');
+  motionOf('swirl spiralgold windmill clock timer compass sun infinity saturn coin target', 'spin');
+  motionOf('flame fire firewings angervein', 'flicker');
+  motionOf('excl alarm bell lightning phoneoff icebreak qmark', 'shake');
+  motionOf('sprout trees cactus sunflower clover branch bamboo scarf tentacles wavecrest greatwave wavebg sail seed suncloud rainbow umbrella', 'sway');
+  motionOf('wings_bee wings_bfly wings_bird', 'flap');
+  motionOf('ear_dog ear_cat ear_bunny ear_fox ear_bear horn antlers paws pawmouth', 'twitch');
+  motionOf('book thickbook pencil redpen highlighter notebook papers cards math laptop magnify telescope glasses headphones', 'study');
+  const FACE_MOOD = {
+    laugh: 'giggle', happy: 'hop', starry: 'hop', proud: 'hop', determ: 'hop', st_cheer: 'hop',
+    sleep: 'breathe', yawn: 'breathe', zen: 'float', relief: 'float', gentle: 'float',
+    sob: 'tremble', touched: 'tremble', shock: 'jolt', scream: 'jolt', quake: 'tremble',
+    angry: 'tremble', rage: 'tremble', pout: 'tilt', dizzy: 'wobble', spiral: 'wobble',
+    love: 'sway', blush: 'sway', shy: 'sway', curious: 'tilt', doubt: 'tilt', think: 'tilt', peek: 'tilt'
+  };
+  const propMotion = prop => PROP_MOTION[prop] || 'bob';
+  const faceMood = face => FACE_MOOD[face] || 'breathe';
+  const propG = (prop, pal) => `<g class="stk-prop stk-m-${propMotion(prop)}">${drawProp(prop, pal)}</g>`;
+
   function svgOf(stkOrId, opts = {}) {
     const stk = typeof stkOrId === 'string' ? (BY_ID.get(stkOrId) || BY_NAME.get(stkOrId) || STICKERS[0]) : (stkOrId || STICKERS[0]);
     const size = opts.size || 60;
     const frozen = !!opts.frozen;
     const locked = !!opts.locked;
     const pal = stk.pal;
-    const animCls = opts.noAnim || frozen || locked ? '' : (' stk-anim-' + (stk.anim || 'bounce'));
+    const animCls = opts.noAnim || frozen || locked ? '' : (' stk-anim stk-mood-' + faceMood(stk.face));
 
     const iceOverlay = frozen ? (
       `<rect x="3" y="3" width="58" height="58" rx="15" fill="rgba(165, 232, 255, 0.58)" stroke="#38bdf8" stroke-width="2.2"/>` +
@@ -602,7 +633,7 @@
         `<circle cx="13" cy="34" r="3.6" fill="${pal.body}" stroke="${pal.edge}" stroke-width="2"/>` +
         `<circle cx="51" cy="34" r="3.6" fill="${pal.body}" stroke="${pal.edge}" stroke-width="2"/>` +
         drawFace(stk.face, pal.edge, pal.cheek) +
-        drawProp(stk.prop, pal) +
+        propG(stk.prop, pal) +
       `</g>` +
       `<g transform="translate(32,54)">` +
         `<rect x="-18" y="-6.5" width="36" height="11" rx="5.5" fill="${pal.edge}"/>` +
@@ -680,10 +711,9 @@
     const size = opts.size || 68;
     const noAnim = !!opts.noAnim;
     const gradId = 'stkG_' + list.map(s => s.id).join('_');
-    const animCls = noAnim ? '' : (' stk-anim-' + (s2.anim || s1.anim || 'bounce') + (s3 ? ' stk-combo-3' : ' stk-combo-2'));
-
     // 決定最終五官：若 s1 是基本微笑但 s2 有強烈表情（如大哭、墨鏡、星星眼、愛心），優先展現戲劇化五官
     const facePick = (s1.face === 'smile' && s2.face !== 'smile') ? s2.face : s1.face;
+    const animCls = (noAnim ? '' : ' stk-anim stk-mood-' + faceMood(facePick)) + (s3 ? ' stk-combo-3' : ' stk-combo-2');
     const earSticker = list.find(s => /^ear_|^antlers$|^horn$/.test(s.prop));
     const prop1 = s1.prop;
     const prop2 = s2.prop !== prop1 ? s2.prop : (s3 ? s3.prop : 'sparkles');
@@ -710,7 +740,7 @@
       `<g class="stk-actor">` +
         `<ellipse cx="32" cy="49" rx="16" ry="3.8" fill="rgba(0,0,0,.12)"/>` +
         // 若有靈獸耳朵基因，先繪製於頭頂
-        (earSticker ? drawProp(earSticker.prop, earSticker.pal) : '') +
+        (earSticker ? propG(earSticker.prop, earSticker.pal) : '') +
         // 雙色漸層方塊森靈本體
         `<rect x="13" y="14" width="38" height="33" rx="13" fill="url(#${gradId}_body)" stroke="${s1.pal.edge}" stroke-width="2.4"/>` +
         `<path d="M18 19c3-2 8-2.5 14-2.5" fill="none" stroke="rgba(255,255,255,.65)" stroke-width="2.4" stroke-linecap="round"/>` +
@@ -719,11 +749,11 @@
         // 融合五官
         drawFace(facePick, s1.pal.edge, s2.pal.cheek) +
         // 左側縮放道具 (來自第 1 張貼圖)
-        `<g transform="translate(-24, 4) scale(0.78)">${drawProp(prop1, s1.pal)}</g>` +
+        `<g transform="translate(-24, 4) scale(0.78)">${propG(prop1, s1.pal)}</g>` +
         // 右側主道具 (來自第 2 張貼圖)
-        `<g transform="translate(4, 1) scale(0.92)">${drawProp(prop2, s2.pal)}</g>` +
+        `<g transform="translate(4, 1) scale(0.92)">${propG(prop2, s2.pal)}</g>` +
         // 若為三合一，頭頂正中央疊加第 3 張貼圖的精粹道具
-        (prop3 ? `<g transform="translate(-5, -10) scale(0.68)">${drawProp(prop3, s3.pal)}</g>` : '') +
+        (prop3 ? `<g transform="translate(-5, -10) scale(0.68)">${propG(prop3, s3.pal)}</g>` : '') +
       `</g>` +
       // 底部合成雙色印記籤
       `<g transform="translate(32,54.5)">` +
@@ -979,23 +1009,64 @@
   style.textContent = `
     .pace-stk-svg { display: inline-block; vertical-align: middle; overflow: visible; user-select: none; -webkit-user-select: none; }
     .pace-stk-svg .stk-actor { transform-origin: 32px 34px; }
-    .pace-stk-svg.stk-anim-bounce .stk-actor { animation: paceStkBounce 2.2s ease-in-out infinite; }
-    .pace-stk-svg.stk-anim-wiggle .stk-actor { animation: paceStkWiggle 2.4s ease-in-out infinite; }
-    .pace-stk-svg.stk-anim-pulse .stk-actor { animation: paceStkPulse 2s ease-in-out infinite; }
-    .pace-stk-svg.stk-anim-float .stk-actor { animation: paceStkFloat 2.8s ease-in-out infinite; }
-    .pace-stk-svg.stk-anim-clap .stk-actor { animation: paceStkClap 1.4s ease-in-out infinite; }
-    .pace-stk-svg.stk-anim-nod .stk-actor { animation: paceStkNod 2s ease-in-out infinite; }
-    .pace-stk-svg.stk-anim-pop .stk-actor { animation: paceStkPop 2.4s cubic-bezier(.2,1.4,.4,1) infinite; }
     .pace-stk-svg.stk-combo-3 { filter: drop-shadow(0 3px 8px rgba(244, 185, 66, .35)); }
-    @keyframes paceStkBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px) scale(1.03, .98); } }
-    @keyframes paceStkWiggle { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
-    @keyframes paceStkPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
-    @keyframes paceStkFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3.5px); } }
-    @keyframes paceStkClap { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(1.08) translateY(-1.5px); } }
-    @keyframes paceStkNod { 0%, 100% { transform: translateY(0) rotate(0); } 40% { transform: translateY(2px) rotate(3deg); } }
-    @keyframes paceStkPop { 0%, 85%, 100% { transform: scale(1); } 40% { transform: scale(1.07) translateY(-2px); } }
-    @media (prefers-reduced-motion: reduce) { .pace-stk-svg .stk-actor { animation: none !important; } }
-    body.nofx .pace-stk-svg .stk-actor { animation: none !important; }
+    /* 道具照意思動：揮手、比讚、拍手、心跳、滴落、飄落、上飄、閃爍、旋轉、火焰、發抖、搖曳、拍翅、抖耳、寫字、輕晃 */
+    .pace-stk-svg .stk-prop { transform-box: fill-box; transform-origin: 50% 50%; }
+    .stk-anim .stk-m-wave { transform-origin: 50% 100%; animation: pkWave 1.1s ease-in-out infinite alternate; }
+    .stk-anim .stk-m-pump { animation: pkPump 1.4s cubic-bezier(.3,1.6,.5,1) infinite; }
+    .stk-anim .stk-m-clap { animation: pkClap .7s ease-in-out infinite; }
+    .stk-anim .stk-m-beat { animation: pkBeat 1.3s ease-in-out infinite; }
+    .stk-anim .stk-m-drip { animation: pkDrip 1.6s ease-in infinite; }
+    .stk-anim .stk-m-fall { animation: pkFall 2.8s linear infinite; }
+    .stk-anim .stk-m-rise { animation: pkRise 2.4s ease-out infinite; }
+    .stk-anim .stk-m-twinkle { animation: pkTwinkle 1.5s ease-in-out infinite alternate; }
+    .stk-anim .stk-m-spin { animation: pkSpin 6s linear infinite; }
+    .stk-anim .stk-m-flicker { transform-origin: 50% 100%; animation: pkFlicker .45s ease-in-out infinite alternate; }
+    .stk-anim .stk-m-shake { animation: pkShake 2.2s linear infinite; }
+    .stk-anim .stk-m-sway { transform-origin: 50% 100%; animation: pkSway 3s ease-in-out infinite alternate; }
+    .stk-anim .stk-m-flap { animation: pkFlap .35s ease-in-out infinite alternate; }
+    .stk-anim .stk-m-twitch { transform-origin: 50% 100%; animation: pkTwitch 2.6s ease-in-out infinite; }
+    .stk-anim .stk-m-study { transform-origin: 30% 80%; animation: pkStudy 1.6s ease-in-out infinite; }
+    .stk-anim .stk-m-bob { animation: pkBob 2.6s ease-in-out infinite alternate; }
+    .stk-anim .stk-m-lift { animation: pkLift 1.8s ease-in-out infinite alternate; }
+    @keyframes pkLift { from { transform: translateY(1px); } to { transform: translateY(-4px); } }
+    @keyframes pkWave { from { transform: rotate(-16deg); } to { transform: rotate(16deg); } }
+    @keyframes pkPump { 0%, 55%, 100% { transform: none; } 20% { transform: translateY(-3px) scale(1.1); } }
+    @keyframes pkClap { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(.72); } }
+    @keyframes pkBeat { 0%, 40%, 100% { transform: scale(1); } 12% { transform: scale(1.18); } 26% { transform: scale(1.08); } }
+    @keyframes pkDrip { 0% { transform: translateY(-1px); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(6px); opacity: 0; } }
+    @keyframes pkFall { 0% { transform: translateY(-4px) rotate(0); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(7px) rotate(50deg); opacity: 0; } }
+    @keyframes pkRise { 0% { transform: translateY(3px); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-6px); opacity: 0; } }
+    @keyframes pkTwinkle { from { transform: scale(.86); opacity: .55; } to { transform: scale(1.12); opacity: 1; } }
+    @keyframes pkSpin { to { transform: rotate(360deg); } }
+    @keyframes pkFlicker { from { transform: scaleY(.92) skewX(3deg); } to { transform: scaleY(1.12) skewX(-4deg); } }
+    @keyframes pkShake { 0%, 70%, 100% { transform: none; } 74%, 82%, 90% { transform: translateX(-1.5px) rotate(-6deg); } 78%, 86%, 94% { transform: translateX(1.5px) rotate(6deg); } }
+    @keyframes pkSway { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+    @keyframes pkFlap { from { transform: scaleX(1); } to { transform: scaleX(.68); } }
+    @keyframes pkTwitch { 0%, 80%, 100% { transform: none; } 85% { transform: rotate(-10deg); } 90% { transform: rotate(6deg); } }
+    @keyframes pkStudy { 0%, 100% { transform: none; } 30% { transform: translate(1px, -1px) rotate(-7deg); } 60% { transform: translate(-1px, 0) rotate(3deg); } }
+    @keyframes pkBob { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+    /* 身體依表情做小動作 */
+    .stk-anim.stk-mood-breathe .stk-actor { transform-origin: 32px 48px; animation: pkBreathe 3.2s ease-in-out infinite alternate; }
+    .stk-anim.stk-mood-giggle .stk-actor { animation: pkGiggle 1.6s ease-in-out infinite; }
+    .stk-anim.stk-mood-hop .stk-actor { animation: pkHop 2s cubic-bezier(.3,1.5,.5,1) infinite; }
+    .stk-anim.stk-mood-float .stk-actor { animation: pkFloat 3.4s ease-in-out infinite alternate; }
+    .stk-anim.stk-mood-tremble .stk-actor { animation: pkTremble .28s linear infinite; }
+    .stk-anim.stk-mood-jolt .stk-actor { animation: pkJolt 2.2s ease-out infinite; }
+    .stk-anim.stk-mood-tilt .stk-actor { animation: pkTilt 3s ease-in-out infinite; }
+    .stk-anim.stk-mood-wobble .stk-actor { animation: pkWobble 2s ease-in-out infinite; }
+    .stk-anim.stk-mood-sway .stk-actor { transform-origin: 32px 48px; animation: pkSwayBody 3s ease-in-out infinite alternate; }
+    @keyframes pkBreathe { from { transform: scale(1, 1); } to { transform: scale(1.015, 1.035); } }
+    @keyframes pkGiggle { 0%, 50%, 100% { transform: none; } 10%, 30% { transform: rotate(-3deg); } 20%, 40% { transform: rotate(3deg); } }
+    @keyframes pkHop { 0%, 40%, 100% { transform: none; } 18% { transform: translateY(-4px); } }
+    @keyframes pkFloat { from { transform: translateY(0); } to { transform: translateY(-2.5px); } }
+    @keyframes pkTremble { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-.7px); } 75% { transform: translateX(.7px); } }
+    @keyframes pkJolt { 0%, 30%, 100% { transform: none; } 6% { transform: scale(1.07) translateY(-2px); } }
+    @keyframes pkTilt { 0%, 100% { transform: none; } 30%, 70% { transform: rotate(-6deg); } }
+    @keyframes pkWobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-7deg); } 75% { transform: rotate(7deg); } }
+    @keyframes pkSwayBody { from { transform: rotate(-3.5deg); } to { transform: rotate(3.5deg); } }
+    @media (prefers-reduced-motion: reduce) { .pace-stk-svg .stk-actor, .pace-stk-svg .stk-prop { animation: none !important; } }
+    body.nofx .pace-stk-svg .stk-actor, body.nofx .pace-stk-svg .stk-prop { animation: none !important; }
 
     .grp-stk-jumbo-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 4px 2px; }
     .grp-stk-jumbo { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; transition: transform .2s ease; }
@@ -1043,12 +1114,17 @@
     .grp-stk-slot.filled { border-style: solid; border-color: var(--accent); }
     .grp-stk-slot.locked-slot { opacity: .45; cursor: not-allowed; background: var(--panel-2); }
     .grp-stk-result { display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); min-height: 58px; }
+    /* 聊天室裡的精簡版：只有分類和貼圖 */
+    .grp-stk-wrap.is-compact :is(.grp-stk-quick, .grp-stk-thermo, .grp-stk-lvbar, .grp-stk-lab-btn, .grp-stk-motion, .grp-stk-sim, .grp-stk-lab, .grp-stk-catdesc, label.check) { display: none !important; }
+    .grp-stk-wrap.is-compact .grp-stk-drawer { box-shadow: none; padding: 8px; gap: 6px; border-width: 1px; }
+    .grp-stk-wrap.is-compact .grp-stk-grid { max-height: min(190px, 30dvh); grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
+    .grp-stk-wrap.is-compact .grp-stk-search { flex: 1 1 auto; }
+    /* 格子裡的貼圖平常不動，滑過／選到才動，免得整片一起跳 */
+    .grp-stk-cell:not(:hover):not(:focus-visible) .pace-stk-svg :is(.stk-actor, .stk-prop) { animation: none !important; }
   `;
   document.head.appendChild(style);
 
   /* ---------- 掛載至群組聊天室 (#grpRoom) 與成就圖鑑 (#xpDlg) ---------- */
-  let activeCat = 'starter';
-  let searchQuery = '';
   let directSend = false;
   let motionPref = ls.get('pace-stk-motion') || 'auto'; // 'auto' (預設動態) | 'static' (指定不動)
   let labOpen = false;
@@ -1059,9 +1135,21 @@
     pickerInstances.forEach(fn => { try { fn(); } catch (e) {} });
   }
 
-  function buildStickerPickerUI(hostEl, onPickToken) {
+  /* 最近用過的貼圖（含在「成就」做好的合成貼圖），聊天室的「⭐ 常用」會先列出它們 */
+  const RECENT_KEY = 'pace-stk-recent';
+  const recentTokens = () => { try { const a = JSON.parse(ls.get(RECENT_KEY) || '[]'); return Array.isArray(a) ? a.filter(t => typeof t === 'string' && /^\[貼圖:[^\][\n]{1,42}\]$/.test(t) && parseTokenSpec(t.slice(4, -1))).slice(0, 16) : []; } catch (e) { return []; } };
+  const pushRecent = token => { const a = recentTokens().filter(t => t !== token); a.unshift(token); ls.set(RECENT_KEY, JSON.stringify(a.slice(0, 16))); };
+
+  function buildStickerPickerUI(hostEl, onPickRaw, pickerOpts = {}) {
+    // compact = the chat room: only the stickers; levels, merging, previews and freezing details live in 成就
+    const compact = !!pickerOpts.compact;
+    const onPickToken = (token, ...rest) => { pushRecent(token); onPickRaw(token, ...rest); };
+    const progNow = () => scanProgress(compact);
+    const inLab = () => !compact && labOpen;
+    let activeCat = compact ? 'recent' : 'starter';
+    let searchQuery = '';
     const wrap = document.createElement('div');
-    wrap.className = 'grp-stk-wrap';
+    wrap.className = 'grp-stk-wrap' + (compact ? ' is-compact' : '');
     wrap.innerHTML =
       `<div class="grp-stk-quick" aria-label="基本常用貼圖快捷列"></div>` +
       `<div class="grp-stk-drawer" hidden>` +
@@ -1105,7 +1193,7 @@
         `<div class="grp-stk-catdesc hint" style="margin:0;font-size:.75rem"></div>` +
         `<div class="grp-stk-grid" role="listbox" aria-label="原創貼圖列表"></div>` +
         `<div class="grp-stk-foot">` +
-          `<span class="grp-stk-status-msg">🌱 初始 24 款基本貼圖永不結凍；升等可逐步解鎖「動態貼圖」、「動靜自選」、「合理合併」、「萬物合併」與「三合一傳奇動態」！</span>` +
+          `<span class="grp-stk-status-msg">${compact ? '' : '🌱 初始 24 款基本貼圖永不結凍；升等可逐步解鎖「動態貼圖」、「動靜自選」、「合理合併」、「萬物合併」與「三合一傳奇動態」！做好的合成貼圖會出現在聊天室貼圖的「⭐ 常用」。'}</span>` +
         `</div>` +
       `</div>`;
 
@@ -1210,7 +1298,7 @@
     }
 
     function paint() {
-      const prog = scanProgress();
+      const prog = progNow();
       const p = prog.perks;
       simSel.value = simMode;
       directChk.checked = directSend;
@@ -1250,11 +1338,28 @@
 
       paintLab(prog);
 
-      tabsBox.innerHTML = CATEGORIES.map(c => {
+      tabsBox.innerHTML = (compact ? `<button type="button" class="grp-stk-tab${activeCat === 'recent' && !searchQuery ? ' on' : ''}" data-stkat="recent">⭐ 常用</button>` : '') + CATEGORIES.map(c => {
         const list = STICKERS.filter(s => s.cat === c.id);
         const usableInCat = list.filter(s => prog.itemState.get(s.id)?.usable).length;
-        return `<button type="button" class="grp-stk-tab${activeCat === c.id && !searchQuery ? ' on' : ''}" data-stkat="${c.id}">${c.icon} ${esc(c.name)} <small>(${usableInCat}/${list.length})</small></button>`;
+        return `<button type="button" class="grp-stk-tab${activeCat === c.id && !searchQuery ? ' on' : ''}" data-stkat="${c.id}">${c.icon} ${esc(c.name)}${compact ? '' : ` <small>(${usableInCat}/${list.length})</small>`}</button>`;
       }).join('');
+
+      if (compact && !statusMsg.dataset.busy) {
+        statusMsg.textContent = `可用 ${prog.usableCount}/${prog.total} 款${prog.frozenCount ? ` · 🧊 ${prog.frozenCount} 款結凍中（完成 1 個方塊就解凍）` : ''} · 等級和合成貼圖在「成就」`;
+      }
+      if (compact && activeCat === 'recent' && !searchQuery.trim()) {
+        // recent first (singles and merges made in 成就), then the always-free basics
+        const toks = recentTokens();
+        QUICK_IDS.forEach(id => { const t = `[貼圖:${BY_ID.get(id).name}]`; if (!toks.some(x => x.replace('!靜', '') === t)) toks.push(t); });
+        gridBox.innerHTML = toks.slice(0, 24).map(t => {
+          const parsed = parseTokenSpec(t.slice(4, -1));
+          const label = parsed.stks.map(s => s.name).join('＋');
+          const ok = parsed.stks.every(s => prog.itemState.get(s.id)?.usable);
+          return `<button type="button" class="grp-stk-cell${ok ? '' : ' frozen'}" data-token="${esc(t)}" title="${esc(label)}">` +
+            renderTokenSvg(parsed, 50, prog) + `<span class="grp-stk-cname">${esc(label)}</span></button>`;
+        }).join('');
+        return;
+      }
 
       const curCatObj = CATEGORIES.find(c => c.id === activeCat) || CATEGORIES[0];
       const q = searchQuery.trim().toLowerCase();
@@ -1271,7 +1376,7 @@
 
       gridBox.innerHTML = shown.length ? shown.map(s => {
         const st = prog.itemState.get(s.id) || { unlocked: true, frozen: false, usable: true, needMore: 0 };
-        const cls = (st.frozen ? ' frozen' : (!st.unlocked ? ' locked' : '')) + (labOpen && pickedIds.has(s.id) ? ' picked' : '');
+        const cls = (st.frozen ? ' frozen' : (!st.unlocked ? ' locked' : '')) + (inLab() && pickedIds.has(s.id) ? ' picked' : '');
         const badge = s.neverFreeze
           ? `<span class="grp-stk-cbadge starter" title="初始基本貼圖・永不結凍">常駐</span>`
           : st.frozen
@@ -1371,15 +1476,31 @@
     });
 
     gridBox.addEventListener('click', e => {
+      const tokCell = e.target.closest('[data-token]');
+      if (tokCell) {
+        const t = tokCell.dataset.token, parsed = parseTokenSpec(t.slice(4, -1)), prog = scanProgress(true);
+        if (!parsed) return;
+        const label = parsed.stks.map(s => s.name).join('＋');
+        const usable = parsed.stks.every(s => prog.itemState.get(s.id)?.usable);
+        const hm = parsed.stks.length > 1 ? checkMergeHarmony(parsed.stks) : null;
+        const allowed = !hm || (hm.valid && (parsed.stks.length === 3 ? prog.perks.merge3 : hm.harmonious ? prog.perks.merge2Logical : prog.perks.merge2Any));
+        if (!usable || !allowed) {
+          tokCell.classList.remove('shake'); void tokCell.offsetWidth; tokCell.classList.add('shake');
+          statusMsg.textContent = !usable ? `🧊「${label}」裡有貼圖結凍了，完成 1 個方塊就能再用。` : `「${label}」需要更高等級才能用。`;
+          return;
+        }
+        onPickToken(t, label, directSend, statusMsg);
+        return;
+      }
       const cell = e.target.closest('[data-stkid]');
       if (!cell) return;
       const stk = BY_ID.get(cell.dataset.stkid);
       if (!stk) return;
-      const prog = scanProgress();
+      const prog = progNow();
       const st = prog.itemState.get(stk.id);
       // preview modes only change how the album looks; what can really be sent follows actual progress
       const realSt = scanProgress(true).itemState.get(stk.id);
-      if (simMode !== 'real' && st?.usable && !realSt?.usable && !labOpen) {
+      if (simMode !== 'real' && st?.usable && !realSt?.usable && !inLab()) {
         cell.classList.remove('shake'); void cell.offsetWidth; cell.classList.add('shake');
         statusMsg.textContent = `👀 這是預覽畫面。「${stk.name}」實際上${realSt?.unlocked ? '還在結凍中' : '還沒解鎖'}，切回「🌡️ 實際等級與進度」看看目前能用哪些。`;
         return;
@@ -1395,7 +1516,7 @@
         return;
       }
       // 若森靈調合工坊開啟中，點選貼圖會加入或移出合成槽！
-      if (labOpen) {
+      if (inLab()) {
         const maxSlots = prog.perks.merge3 ? 3 : 2;
         const existIdx = mergeSlots.findIndex(x => x.id === stk.id);
         if (existIdx >= 0) {
@@ -1437,32 +1558,22 @@
     stkBtn.id = 'grpStkBtn';
     stkBtn.className = 'btn';
     stkBtn.setAttribute('aria-expanded', 'false');
-    stkBtn.title = '開啟原創貼圖與森靈調合工坊（240 款＋貼圖合併）';
+    stkBtn.title = '貼圖（點一下就傳出去）';
     stkBtn.innerHTML = '😊 貼圖';
     actsRow.insertBefore(stkBtn, sendBtn);
 
     const pickerHost = document.createElement('div');
     actsRow.before(pickerHost);
 
-    const picker = buildStickerPickerUI(pickerHost, (token, label, isDirect, statusMsg) => {
-      if (isDirect) {
-        const prev = msgIn.value;
-        msgIn.value = token;
-        sendBtn.click();
-        if (msgIn.value === token && prev) msgIn.value = prev + ' ' + token;
-        statusMsg.textContent = `✨ 已傳送貼圖「${label}」！`;
-      } else {
-        const cur = msgIn.value;
-        const sep = cur && !cur.endsWith(' ') ? ' ' : '';
-        if ((cur + sep + token).length <= 300) {
-          msgIn.value = cur + sep + token;
-          msgIn.focus();
-          statusMsg.textContent = `已插入「${label}」${token}，可繼續打字或按「送出」！`;
-        } else {
-          statusMsg.textContent = '訊息字數已滿（上限 300 字）。';
-        }
-      }
-    });
+    // in the chat a tap sends the sticker straight away (what's typed in the box stays there)
+    const picker = buildStickerPickerUI(pickerHost, (token, label, _isDirect, statusMsg) => {
+      const prev = msgIn.value;
+      msgIn.value = token;
+      sendBtn.click();
+      const sent = msgIn.value === '';
+      msgIn.value = prev;   // whatever was being typed stays in the box
+      if (sent) statusMsg.textContent = `✨ 已傳送「${label}」`;
+    }, { compact: true });
 
     stkBtn.addEventListener('click', () => {
       const open = picker.toggle();
@@ -1477,11 +1588,11 @@
     if (!albumBox || document.getElementById('xpChatStkWrap')) return;
     const sec = document.createElement('div');
     sec.id = 'xpChatStkWrap';
-    sec.innerHTML = `<h3 class="set-h">聊天室原創貼圖庫 ＆ 森靈調合工坊（240 款・動態與合併制度）</h3>` +
-      `<p class="hint" style="margin:0 0 6px">Lv 3 解鎖動態貼圖、Lv 5 自由切換動／靜、Lv 6 解鎖合理雙貼圖合併、Lv 8 合理合併動態、Lv 10 萬物任意合併、Lv 12 任意合併動態、Lv 15 三合一調合、Lv 18 三合一傳奇動態！</p>`;
+    sec.innerHTML = `<h3 class="set-h">貼圖圖鑑 ＆ 森靈調合工坊</h3>` +
+      `<p class="hint" style="margin:0 0 6px">240 款原創貼圖。升等會解鎖動態、動靜自選和貼圖合併；做好的貼圖會放進聊天室貼圖的「⭐ 常用」。</p>`;
     albumBox.after(sec);
     const p = buildStickerPickerUI(sec, (token, label, _isDirect, statusMsg) => {
-      statusMsg.textContent = `✨「${label}」（語法：${token}）已準備就緒！在群組聊天室即可傳送。`;
+      statusMsg.textContent = `✨「${label}」已放進聊天室貼圖的「⭐ 常用」，到群組聊天室按 😊 就能傳。`;
     });
     p.drawer.hidden = false;
   }

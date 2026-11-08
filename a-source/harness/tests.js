@@ -377,6 +377,7 @@ window.runTests = async function () {
       // from a task (no block this week)
       const tk = { id: 'tpomo', title: '背單字 Unit 5', minutes: 20, cat: 'lang', showFrom: ymd(state.monday), due: '', done: false, repeat: 'weekly' };
       state.tasks.push(tk); saveTask(tk); render(); await sleep(80);
+      window.paceUI?.showView('tasks'); await sleep(30);   // the task list is its own page in the menu
       const tbtn = document.querySelector('[data-tfocus="tpomo"]');
       ok('task: 開始專注 button in the task list', !!tbtn && tbtn.getBoundingClientRect().width > 0);
       fakeAt(t0); tbtn.click(); await sleep(30);

@@ -453,11 +453,12 @@
     '<dialog id="grpRoom" class="grp-dlg grp-wide" aria-label="群組聊天室"><div class="grp-form">' +
       '<div class="grp-head"><select id="grpRoomSel" aria-label="選擇群組"></select><button class="btn" type="button" id="grpRoomMine">計畫公開設定</button><button class="btn plain" type="button" id="grpRoomClose" aria-label="關閉">✕</button></div>' +
       '<p class="hint grp-need" id="grpRoomNeed" hidden>你還沒決定要讓群組看到什麼，所以別人現在看不到你的達成率和計畫。<button class="btn primary" type="button" id="grpRoomDecide">現在決定</button></p>' +
-      '<h3 class="set-h">成員</h3><div class="grp-members" id="grpMembers"></div>' +
-      '<h3 class="set-h">共用行程表</h3><div id="grpBoard"></div>' +
-      '<h3 class="set-h">聊天室</h3><div class="grp-chat" id="grpChat" aria-live="polite"></div><p class="hint" id="grpBlocked" style="margin:0"></p>' +
+      '<div class="grp-tabs" role="tablist" aria-label="群組內容"><button type="button" role="tab" data-grptab="chat">💬 聊天</button><button type="button" role="tab" data-grptab="members">👥 成員 <span id="grpMemCount"></span></button><button type="button" role="tab" data-grptab="board">📅 共用行程</button></div>' +
+      '<div class="grp-pane" data-pane="members" hidden><div class="grp-members" id="grpMembers"></div></div>' +
+      '<div class="grp-pane" data-pane="board" hidden><div id="grpBoard"></div></div>' +
+      '<div class="grp-pane grp-chat-pane" data-pane="chat"><div class="grp-chat" id="grpChat" aria-live="polite"></div><p class="hint" id="grpBlocked" style="margin:0"></p>' +
       '<div class="sync-acts"><input id="grpMsgIn" maxlength="300" placeholder="說點什麼…" aria-label="聊天內容" autocomplete="off"><button class="btn primary" type="button" id="grpSend">送出</button></div>' +
-      '<p class="hint" id="grpRoomMsg" aria-live="polite" style="margin:0">聊天室只有這個群組的人看得到。請友善，不要霸凌，也不要貼別人的個資。</p>' +
+      '<p class="hint" id="grpRoomMsg" aria-live="polite" style="margin:0">聊天室只有這個群組的人看得到。請友善，不要霸凌，也不要貼別人的個資。</p></div>' +
     '</div></dialog>' +
     '<dialog id="grpPlan" class="grp-dlg grp-wide" aria-labelledby="gpTitle"><div class="grp-form">' +
       '<div class="dtitle" id="gpTitle"></div><p class="hint grp-ro" id="gpNote" style="margin:0"></p><div id="gpBody"></div>' +
@@ -469,8 +470,18 @@
     '.grp-room-btn { justify-content: flex-start; text-align: left; white-space: normal; }' +
     '.grp-need { border: 1px solid var(--accent); border-radius: 10px; padding: 8px 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; }' +
     'dialog.grp-dlg { width: min(460px, calc(100vw - 24px)); max-height: 90vh; max-height: 90dvh; overflow: auto; } dialog.grp-wide { width: min(600px, calc(100vw - 24px)); }' +
-    'dialog#grpRoom[open] { display: flex; flex-direction: column; overflow: hidden; } #grpRoom .grp-form { min-height: 0; flex: 1 1 auto; }' +
-    '#grpRoom .grp-members { max-height: 32dvh; overflow-y: auto; flex: 0 1 auto; min-height: 0; } #grpRoom .grp-chat { height: auto; flex: 1 1 140px; min-height: 120px; }' +
+    'dialog#grpRoom[open] { display: flex; flex-direction: column; overflow: hidden; } #grpRoom .grp-form { min-height: 0; flex: 1 1 auto; overflow-y: auto; gap: 10px; }' +
+    '#grpRoom .grp-chat { height: min(420px, calc(90dvh - 260px)); min-height: 200px; }' +
+    /* tabs: chat, members, shared plan, one at a time */
+    '.grp-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); } .grp-tabs button { flex: 1 1 0; min-height: 40px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; padding: 6px 4px; }' +
+    '.grp-tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); } .grp-pane { display: flex; flex-direction: column; gap: 8px; min-height: 0; }' +
+    /* the room as a page of its own (under 共筆群組 in the menu) */
+    '#grpRoom.as-page { position: static; inset: auto; margin: 0; width: 100%; max-width: 760px; max-height: none; padding: 0; border: 0; background: transparent; color: inherit; box-shadow: none; overflow: visible; }' +
+    '#grpRoom.as-page .grp-form { overflow: visible; } #grpRoom.as-page .grp-chat { height: max(240px, calc(var(--pace-visual-height, 100dvh) - 360px)); }' +
+    '#paceGroupsPanel:has(> #grpRoom[open]) > :not(#grpRoom) { display: none !important; }' +
+    /* message tools stay out of the way until you point at (or tap) a message */
+    '.grp-msg .grp-tools { display: inline-flex; gap: 2px; visibility: hidden; } .grp-msg:hover .grp-tools, .grp-msg:focus-within .grp-tools, .grp-msg.show-tools .grp-tools { visibility: visible; }' +
+    '.grp-msg a.btn { color: inherit; } @media (hover: none) { .grp-msg .grp-tools { display: none; } .grp-msg.show-tools .grp-tools { display: inline-flex; } }' +
     '.grp-form { display: flex; flex-direction: column; gap: 12px; font-size: .88rem; }' +
     '.grp-box { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }' +
     '.grp-ul { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 2px; }' +
@@ -494,7 +505,7 @@
   document.head.appendChild(style);
 
   let roomFresh = false;   // the marks pop in once when the room opens
-  let roomUnsubs = [], roomStats = new Map(), roomChat = [], lastSent = 0;
+  let roomUnsubs = [], roomStats = new Map(), roomChat = [], lastSent = 0, stickNext = false;
   const roomMsg = t => { $('grpRoomMsg').textContent = t; };
   const shareText = s => s === 'all' ? '計畫：全部公開' : s === 'some' ? '計畫：部分公開' : '計畫：不公開';
   function stopRoom() { roomUnsubs.forEach(f => f()); roomUnsubs = []; roomStats = new Map(); roomChat = []; }
@@ -510,15 +521,41 @@
     roomUnsubs.push(fs.onSnapshot(fs.query(fs.collection(db, 'groups', gid, 'chat'), fs.orderBy('at', 'desc'), fs.limit(100)), snap => {
       roomChat = snap.docs.map(d => ({ id: d.id, pending: d.metadata?.hasPendingWrites === true, ...d.data() })).reverse(); renderChat();
     }, () => roomMsg('讀不到聊天室，請稍後再試。')));
-    renderRoom(); renderChat(); window.paceStickers?.refresh?.();
-    if (!$('grpRoom').open) $('grpRoom').showModal();
+    renderRoom(); stickNext = true; renderChat(); window.paceStickers?.refresh?.();
+    const dlg = $('grpRoom'), panel = $('paceGroupsPanel');
+    if (!dlg.open) {
+      setRoomTab('chat');
+      if (panel && window.paceUI?.showView) {   // the app has pages: the room is a page under 共筆群組, not a pop-up
+        if (dlg.parentNode !== panel) panel.prepend(dlg);
+        dlg.classList.add('as-page'); window.paceUI.showView('groups'); dlg.show();
+        panel.scrollTop = 0;
+      } else dlg.showModal();
+    }
+    clearInterval(agoTimer); agoTimer = setInterval(refreshAgo, 60000);
   }
+  let agoTimer = 0;
+  function refreshAgo() {
+    if (!$('grpRoom').open) { clearInterval(agoTimer); return; }
+    $('grpChat').querySelectorAll('[data-at]').forEach(el => { el.textContent = ago({ toMillis: () => Number(el.dataset.at) }); });
+  }
+  function setRoomTab(name) {
+    $('grpRoom').querySelectorAll('[data-grptab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.grptab === name)));
+    $('grpRoom').querySelectorAll('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== name; });
+    if (name === 'chat') { const box = $('grpChat'); box.scrollTop = box.scrollHeight; }
+  }
+  $('grpRoom').querySelector('.grp-tabs').addEventListener('click', e => { const b = e.target.closest('[data-grptab]'); if (b) setRoomTab(b.dataset.grptab); });
+  // leaving the 共筆群組 page closes the room and its listeners
+  new MutationObserver(() => {
+    const dlg = $('grpRoom');
+    if (dlg.open && dlg.classList.contains('as-page') && document.body.dataset.paceView && document.body.dataset.paceView !== 'groups') closeRoom();
+  }).observe(document.body, { attributes: true, attributeFilter: ['data-pace-view'] });
   function renderRoom() {
     const g = groups.find(x => x.id === roomGid); if (!g) return;
     $('grpRoomSel').innerHTML = groups.map(x => '<option value="' + x.id + '"' + (x.id === roomGid ? ' selected' : '') + '>' + esc(x.name) + '（' + x.members.length + ' 人）</option>').join('');
     $('grpRoomNeed').hidden = mine[g.id] !== null;
     const week = ymdOf(mondayOfNow());
     const info = id => window.paceSkinInfo?.(id) || { id: 'default', icon: '⭐', pip: '■', count: n => '亮起 ' + n + ' 顆星', measure: '亮度', color: '' };   // each person is drawn in THEIR theme (c-skins.js)
+    $('grpMemCount').textContent = String(g.members.length);
     const order =[...g.members].sort((a, b) => (a === user.uid ? -1 : b === user.uid ? 1 : String(g.names?.[a]).localeCompare(String(g.names?.[b]))));
     $('grpMembers').innerHTML = order.map(uid => {
       const s = roomStats.get(uid), me = uid === user.uid, fresh = s && s.week === week, nm = esc(g.names?.[uid] || s?.name || '?');
@@ -534,7 +571,8 @@
     }).join('');
   }
   function renderChat() {
-    const box = $('grpChat'), stick = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    const box = $('grpChat'), stick = stickNext || box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+    stickNext = false;
     const g = groups.find(x => x.id === roomGid), bl = new Set(blocked()), owner = !!g && g.owner === user?.uid;
     const shown = roomChat.filter(m => !bl.has(m.uid));
     box.innerHTML = shown.length ? shown.map(m => {
@@ -545,7 +583,8 @@
           (CONTACT && g ? '<a class="btn plain" href="' + esc(reportHref(g, m.name || '?', m.uid, m.text, when)) + '">檢舉</a>' : '') +
           (owner ? '<button class="btn plain" type="button" data-unsend="' + esc(m.id) + '">刪除</button>' : '');
       const bodyHtml = window.paceStickers?.renderChatMessage ? window.paceStickers.renderChatMessage(m.text) : esc(m.text);
-      return '<div class="grp-msg' + (me ? ' me' : '') + '"><div class="who"><span>' + (me ? '你' : esc(m.name)) + '</span> · <span>' + (m.pending ? '傳送中' : ago(m.at)) + '</span>' + tools + '</div><div>' + bodyHtml + '</div></div>';
+      const atMs = m.at?.toMillis ? m.at.toMillis() : 0;
+      return '<div class="grp-msg' + (me ? ' me' : '') + '"><div class="who"><span>' + (me ? '你' : esc(m.name)) + '</span> · <span' + (atMs && !m.pending ? ' data-at="' + atMs + '"' : '') + '>' + (m.pending ? '傳送中' : ago(m.at)) + '</span><span class="grp-tools">' + tools + '</span></div><div>' + bodyHtml + '</div></div>';
     }).join('') : '<p class="hint" style="margin:0">還沒有人說話，打個招呼吧！</p>';
     $('grpBlocked').innerHTML = bl.size ? '已封鎖（聊天和搞定都看不到）：' + [...bl].map(u => '<button class="btn plain" type="button" data-unblock="' + esc(u) + '">' + esc(g?.names?.[u] || roomChat.find(m => m.uid === u)?.name || '某人') + ' ✕ 解除</button>').join(' ') : '';
     if (stick) box.scrollTop = box.scrollHeight;
@@ -557,7 +596,7 @@
     if (mine[roomGid] === undefined) { roomMsg('讀不到你的公開設定，請稍後再試。'); return; }
     if (mine[roomGid] === null && !(await editPrivacy(roomGid))) { roomMsg('先決定要讓群組看到什麼，才能在聊天室說話。'); return; }
     if (!user || !roomGid) return;
-    lastSent = Date.now(); $('grpMsgIn').value = '';
+    lastSent = Date.now(); $('grpMsgIn').value = ''; stickNext = true;   // your own message always shows at the bottom
     const { fs, db } = fb;
     try { await fs.setDoc(fs.doc(db, 'groups', roomGid, 'chat', user.uid + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), { uid: user.uid, name: nameIn(roomGid), text, at: fs.serverTimestamp(), expireAt: new Date(Date.now() + 90 * DAY) }); roomMsg(''); }
     catch (e) { $('grpMsgIn').value = text; roomMsg('沒送出去，請稍後再試。'); }
@@ -604,7 +643,14 @@
       if (confirm('要封鎖「' + nm + '」嗎？你就看不到他的聊天和「搞定」，他不會知道。可以在聊天室下方解除。')) { setBlocked([...blocked(), blk.dataset.block]); renderChat(); render(); }
       return;
     }
-    const b = e.target.closest('[data-unsend]'); if (!b || !roomGid) return;
+    const b = e.target.closest('[data-unsend]');
+    if (!b) {   // on a touch screen, tapping a message shows its 封鎖／檢舉／收回 buttons
+      const msg = e.target.closest('.grp-msg');
+      if (msg && !e.target.closest('a,button')) { $('grpChat').querySelectorAll('.grp-msg.show-tools').forEach(x => { if (x !== msg) x.classList.remove('show-tools'); }); msg.classList.toggle('show-tools'); }
+      return;
+    }
+    if (!roomGid) return;
+    if (!confirm(b.textContent.includes('收回') ? '要收回這則訊息嗎？大家都會看不到。' : '要刪除這則訊息嗎？')) return;
     const { fs, db } = fb;
     try { await fs.deleteDoc(fs.doc(db, 'groups', roomGid, 'chat', b.dataset.unsend)); } catch (err) { roomMsg('沒收回成功，請稍後再試。'); }
   });
