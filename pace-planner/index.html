@@ -8899,13 +8899,25 @@ body.nofx .blk-done-pop {
   paint();
 })();
 </script>
-<script data-pace-ui="c-stickers.js">/* 步調 Pace: 原創「方塊森靈 (Koma)」貼圖與表情系統 (c-stickers.js)
+<script data-pace-ui="c-stickers.js">/* 步調 Pace: 原創「方塊森靈 (Koma)」貼圖與表情系統 ＋ 森靈調合工坊 (c-stickers.js)
    - 100% 獨立原創向量繪圖（和紙水彩 × 森林方塊精靈 × 書齋印記），絕不抄襲任何商業貼圖或系統 Emoji，僅含少數合法名畫／科學致敬。
-   - 規模超越一般 Emoji：共 10 大分類 × 每類 24 款 = 240 款獨立原創動態 SVG 貼圖。
-   - 解鎖與結凍制度：
-     1. 初始基本貼圖（第 1 類「基本常用」24 款：笑、大笑、讚、拍手、加油、OK、收到、揮手等）開局免費贈送，且【永遠不會結凍】。
-     2. 進階貼圖（其餘 9 大類共 216 款）隨完成方塊／任務數量與連續天數逐步解鎖（每完成 1 格即可解鎖 3 款新貼圖）。
-     3. 久不動結凍機制（🧊）：休息 3 天內完全不凍（週末、段考、生病都不扣）；之後已解鎖的進階貼圖才會從高階往低階慢慢「結凍」（閒置 4–5 天凍 25%、6–7 天凍 50%、8–9 天凍 75%、10 天以上進階貼圖全數結凍，只剩初始基本貼圖可用）。只要再完成 1 個方塊即可瞬間「破冰解凍」！ */
+   - 法律與智慧財產權安全設計（針對貼圖合併功能）：
+     Google 的「Emoji Kitchen」受保護的部分為其商標名稱與預先繪製的 Noto Emoji 圖庫資產。本系統採用原創名稱「🧪 森靈調合工坊 (Koma Atelier)」，
+     並透過 100% 自研的「基因圖層合成引擎（色票基因 × 表情五官 × 靈獸耳翼 × 雙重道具 × 天象背景環）」即時運算生成 SVG，完全不涉及任何第三方圖庫或商標，100% 合法原創。
+   - 規模超越一般 Emoji：共 10 大分類 × 每類 24 款 = 240 款獨立原創 SVG 貼圖（外加數萬種雙貼圖／三貼圖合成組合）。
+   - 解鎖、久不動結凍（🧊）與【等級進階制度（動態＆合併階層）】：
+     1. 初始基本貼圖（第 1 類「基本常用」24 款：笑、大笑、讚、拍手、加油、OK 等）開局免費贈送，且【永遠不會結凍】。
+     2. 進階貼圖（其餘 9 大類共 216 款）隨完成方塊／任務數量逐步解鎖；休息 3 天內完全不凍，之後從高階往下逐步結凍🧊（4–5 天 25%、6–7 天 50%、8–9 天 75%、10 天以上全凍），完成 1 格立即破冰🔥！
+     3. 等級能力階梯（依完成方塊 XP 計算等級 Lv）：
+        - Lv 1–2：貼圖為【靜態和紙印章】模式。
+        - Lv 3+ ：【單張貼圖全面升級動態】！所有可用貼圖自動獲得物理微動畫。
+        - Lv 5+ ：【動靜自由切換】！可自由選擇貼圖要「🎞️ 動態」或「🖼️ 靜態（不動）」。
+        - Lv 6+ ：開啟【🧪 合理雙貼圖合併】（例如：情緒＋美食／讀書／手勢／作息／靈獸），合成後為靜態。
+        - Lv 8+ ：【合理雙貼圖合併升級動態】（並可自由切換動／靜）！
+        - Lv 10+：【任意雙貼圖自由合併】！解除合理配方限制，萬物皆可二合一（跨界合成此時為靜態）。
+        - Lv 12+：【任意雙貼圖合併升級動態】！所有二合一貼圖皆可動態並自由切換動／靜。
+        - Lv 15+：【多重貼圖（三合一）調合】！開放第 3 個合成槽，可將 3 張貼圖融合為傳奇森靈（此時三合一為靜態）。
+        - Lv 18+：【多重貼圖（三合一）升級傳奇動態】！解鎖全套動態與自由動靜切換！ */
 (() => {
   if (window.paceStickers) return;
   const ls = {
@@ -8928,7 +8940,7 @@ body.nofx .blk-done-pop {
     { id: 'honor',   icon: '🏆', name: '榮耀致敬', desc: '傳奇獎盃、破冰聖火與世界名畫／科學定律合法致敬' }
   ];
 
-  /* ---------- 色票系統（和紙溫潤感 × 森林原創配色） ---------- */
+  /* ---------- 色票系統 ---------- */
   const PALETTES = {
     mint:   { bg: '#e6f5ec', body: '#6bc497', edge: '#2a6f4e', cheek: '#f79489', acc: '#f4b942' },
     peach:  { bg: '#fdf0ea', body: '#f7a389', edge: '#9e3d22', cheek: '#ef5b5b', acc: '#ffd166' },
@@ -8944,8 +8956,7 @@ body.nofx .blk-done-pop {
     cosmos: { bg: '#e6e8f8', body: '#5e60ce', edge: '#1e1b4b', cheek: '#ff758f', acc: '#ffd166' }
   };
 
-  /* ---------- 240 款原創貼圖資料庫 ----------
-     欄位：[id, name(唯一短名，用於 [貼圖:name]), cat, pal, face, prop, anim, tag(印記字)] */
+  /* ---------- 240 款原創貼圖資料庫 ---------- */
   const RAW_STICKERS = [
     /* ===== 1. starter: 基本常用 (24款，tier=0 永久免費、永不結凍) ===== */
     ['st_smile',    '笑',       'starter', 'mint',   'smile',   'sprout',     'bounce',  '笑'],
@@ -8965,7 +8976,7 @@ body.nofx .blk-done-pop {
     ['st_focus',    '專注',     'starter', 'jade',   'focus',   'flame',      'pulse',   '專注'],
     ['st_done',     '搞定',     'starter', 'mint',   'proud',   'check',      'pop',     '搞定'],
     ['st_pat',      '拍拍',     'starter', 'peach',  'gentle',  'pat',        'wiggle',  '拍拍'],
-    ['st_np',       '沒問題',   'starter', 'gold',   'cool',    'vsign',      'bounce',  '妥'],
+    ['st_np',       '沒問題',   'starter', 'gold',    'cool',    'vsign',      'bounce',  '妥'],
     ['st_nod',      '點頭',     'starter', 'mint',   'smile',   'nodlines',   'nod',     '嗯嗯'],
     ['st_hug',      '抱抱',     'starter', 'rose',   'blush',   'hug',        'pulse',   '抱抱'],
     ['st_breathe',  '深呼吸',   'starter', 'sky',    'zen',     'wind',       'float',   '呼～'],
@@ -9208,39 +9219,34 @@ body.nofx .blk-done-pop {
     ['hn_grad',     '榮耀學位帽','honor',  'cosmos', 'laugh',   'gradcap',    'bounce',  '畢業']
   ];
 
-  /* 建立索引與解鎖階梯：
-     - 第 1 類 starter 共 24 款：tier = 0, reqDone = 0, neverFreeze = true
-     - 其餘 9 類共 216 款：依各分類內順序 (idxInCat = 0..23) 交錯分配解鎖門檻，
-       讓使用者每完成 1 個方塊就能在多個分類同時解鎖新貼圖！ */
   const catCounters = {};
   const STICKERS = RAW_STICKERS.map((r, idx) => {
-    const [id, name, cat, pal, face, prop, anim, tag] = r;
+    const [id, name, cat, palKey, face, prop, anim, tag] = r;
     const cIdx = catCounters[cat] = (catCounters[cat] || 0);
     catCounters[cat] = cIdx + 1;
     const isStarter = cat === 'starter';
-    // 交錯式解鎖門檻：各分類前 2 款只需 1 格，接著逐步上升到 60 格全部解鎖
     const reqDone = isStarter ? 0 : Math.max(1, Math.floor(cIdx * 2.5));
     return {
       index: idx,
       id,
       name,
       cat,
-      pal: PALETTES[pal] || PALETTES.mint,
+      palKey,
+      pal: PALETTES[palKey] || PALETTES.mint,
       face,
       prop,
       anim,
       tag,
       neverFreeze: isStarter,
       reqDone,
-      tier: isStarter ? 0 : (cIdx + 1) // 1 (最低階，最晚結凍) ~ 24 (最高階，最先結凍)
+      tier: isStarter ? 0 : (cIdx + 1)
     };
   });
 
   const BY_ID = new Map(STICKERS.map(s => [s.id, s]));
   const BY_NAME = new Map(STICKERS.map(s => [s.name, s]));
 
-  /* ---------- 原創 SVG 向量繪圖引擎 ----------
-     不依賴任何外部圖片或系統 Emoji 字型，純手工打造「方塊森靈 (Koma)」幾何插畫 */
+  /* ---------- 原創 SVG 向量繪圖引擎 ---------- */
   function drawFace(face, edge, cheek) {
     const blush = `<ellipse cx="19" cy="36" rx="3.8" ry="2.1" fill="${cheek}" opacity=".65"/><ellipse cx="45" cy="36" rx="3.8" ry="2.1" fill="${cheek}" opacity=".65"/>`;
     switch (face) {
@@ -9334,7 +9340,7 @@ body.nofx .blk-done-pop {
         return blush +
           `<circle cx="23" cy="29.5" r="2.5" fill="${edge}"/><circle cx="41" cy="29.5" r="2.5" fill="${edge}"/>` +
           `<circle cx="32" cy="37" r="2.2" fill="${edge}"/><rect x="30.2" y="35" width="3.6" height="10" rx="1.8" fill="#fff" stroke="${edge}" stroke-width="1.8"/>`;
-      default: // smile, gentle, proud, salute, smirk, curious, doubt, sweat, relief, think, bow, peek
+      default:
         return blush +
           `<circle cx="23" cy="29.5" r="2.6" fill="${edge}"/><circle cx="41" cy="29.5" r="2.6" fill="${edge}"/>` +
           `<circle cx="22.1" cy="28.5" r=".95" fill="#fff"/><circle cx="40.1" cy="28.5" r=".95" fill="#fff"/>` +
@@ -9469,7 +9475,6 @@ body.nofx .blk-done-pop {
         return `<g transform="translate(45,18)"><circle cx="5" cy="12" r="4.5" fill="${pal.body}" stroke="${e}" stroke-width="2"/>` +
           (prop === 'flags' ? `<line x1="5" y1="12" x2="5" y2="-4" stroke="${e}" stroke-width="2"/><polygon points="5,-4 16,0 5,4" fill="#e63946" stroke="${e}" stroke-width="1.4"/>` : `<path d="M3 4l4-4M8 6l4-2" stroke="${a}" stroke-width="2" stroke-linecap="round"/>`) + `</g>`;
       default:
-        // 原創「步調雙葉芽」與星芒點綴
         return `<path d="M32 14V8c0-3 3.5-5 6-3.5 1 2.5-1.5 5-6 3.5zm0-4c0-3-3.5-5-6-3.5-1 2.5 1.5 5 6 3.5z" fill="#52b788" stroke="${e}" stroke-width="1.7" stroke-linejoin="round"/>` +
           `<circle cx="12" cy="15" r="2" fill="${a}"/><circle cx="52" cy="18" r="1.6" fill="${a}"/>`;
     }
@@ -9483,7 +9488,6 @@ body.nofx .blk-done-pop {
     const pal = stk.pal;
     const animCls = opts.noAnim || frozen || locked ? '' : (' stk-anim-' + (stk.anim || 'bounce'));
 
-    // 結凍冰塊覆蓋層（半透明六角冰晶＋冰封裂紋）
     const iceOverlay = frozen ? (
       `<rect x="3" y="3" width="58" height="58" rx="15" fill="rgba(165, 232, 255, 0.58)" stroke="#38bdf8" stroke-width="2.2"/>` +
       `<path d="M8 14L22 8M10 24L28 12M44 54L56 42" stroke="rgba(255,255,255,0.85)" stroke-width="2.5" stroke-linecap="round"/>` +
@@ -9491,22 +9495,16 @@ body.nofx .blk-done-pop {
     ) : '';
 
     return `<svg class="pace-stk-svg${animCls}${frozen ? ' is-frozen' : ''}${locked ? ' is-locked' : ''}" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="${esc(stk.name)}">` +
-      // 1. 和紙圓角印章底襯
       `<rect x="4" y="4" width="56" height="56" rx="16" fill="${pal.bg}" stroke="${pal.edge}" stroke-width="1.6" stroke-opacity=".28"/>` +
-      // 2. 步調方塊森靈本體（圓潤時間方塊造形＋立體高光）
       `<g class="stk-actor">` +
         `<ellipse cx="32" cy="49" rx="15" ry="3.5" fill="rgba(0,0,0,.1)"/>` +
         `<rect x="13" y="14" width="38" height="33" rx="13" fill="${pal.body}" stroke="${pal.edge}" stroke-width="2.4"/>` +
         `<path d="M18 19c3-2 8-2.5 14-2.5" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="2.4" stroke-linecap="round"/>` +
-        // 小手小腳
         `<circle cx="13" cy="34" r="3.6" fill="${pal.body}" stroke="${pal.edge}" stroke-width="2"/>` +
         `<circle cx="51" cy="34" r="3.6" fill="${pal.body}" stroke="${pal.edge}" stroke-width="2"/>` +
-        // 3. 表情五官
         drawFace(stk.face, pal.edge, pal.cheek) +
-        // 4. 主題道具／配件
         drawProp(stk.prop, pal) +
       `</g>` +
-      // 5. 底部手寫風印記籤（讓每一張貼圖意義一目了然）
       `<g transform="translate(32,54)">` +
         `<rect x="-18" y="-6.5" width="36" height="11" rx="5.5" fill="${pal.edge}"/>` +
         `<text x="0" y="1.8" text-anchor="middle" font-size="7.8" font-weight="800" fill="#fff" letter-spacing=".04em">${esc(stk.tag || stk.name.slice(0, 3))}</text>` +
@@ -9515,32 +9513,171 @@ body.nofx .blk-done-pop {
     `</svg>`;
   }
 
-  /* ---------- 解鎖與「久不動結凍」狀態計算引擎 ----------
-     同時支援：
-     1. paceStore（c-group.js 雲端／本地路徑 weeks/YYYY-MM-DD 與 tasks/id）
-     2. state.week / state.db（主畫面即時狀態）
-     3. 體感預覽模擬器（讓使用者隨時測試「閒置結凍🧊」與「破冰解凍🔥」效果） */
-  let simMode = 'real'; // 'real' | 'idle2' | 'idle4' | 'idle6' | 'allopen'
+  /* ---------- 🧪 森靈調合工坊：合理性檢查與基因圖層合成引擎 ----------
+     1. 合理性檢查 (checkMergeHarmony)：
+        - 2 張貼圖相同 -> 不可合併
+        - 合理配方 (Harmonious / Logical)：
+          a) 主體角色類 (`starter`, `emotion`, `critter`) 搭配 情境／動作／物件類 (`gesture`, `study`, `life`, `food`, `nature`, `wonder`, `honor`)
+          b) 基本與情緒互搭 (`starter` + `emotion`)
+          c) 讀書與美食／作息互搭 (`study` + `food` / `life`)
+          d) 自然與靈獸／奇蹟互搭 (`nature` + `critter` / `wonder`)
+          - 但若將兩張重度衝突貼圖配對（例如：`火山爆發` + `六出雪晶/極地雪屋`，或兩張同為純風景建築 `wonder + wonder`、兩張同為純食物 `food + food`），
+            在 Lv 6–9 視為「跨界任意配方」，需升至 Lv 10 才可解鎖「萬物自由合併」！ */
+  const CONFLICT_PAIRS = new Set([
+    'em_volcano+na_snow', 'em_volcano+wn_igloo', 'em_volcano+fd_shavedice',
+    'lf_quilt+lf_jog', 'lf_nap+ge_sprint', 'sd_library+em_volcano'
+  ]);
 
-  function scanProgress(real) {   // real = true ignores the preview mode (used when actually picking a sticker)
+  function checkMergeHarmony(list) {
+    if (!Array.isArray(list) || list.length < 2 || list.length > 3) {
+      return { valid: false, harmonious: false, reason: '請選擇 2 到 3 張貼圖進行調合。' };
+    }
+    const ids = list.map(s => s.id);
+    if (new Set(ids).size !== ids.length) {
+      return { valid: false, harmonious: false, reason: '請選擇不同的貼圖來進行調合喔！' };
+    }
+    // 檢查特定冰火衝突配對
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const k1 = list[i].id + '+' + list[j].id, k2 = list[j].id + '+' + list[i].id;
+        if (CONFLICT_PAIRS.has(k1) || CONFLICT_PAIRS.has(k2)) {
+          return {
+            valid: true,
+            harmonious: false,
+            reason: `「${list[i].name}」與「${list[j].name}」屬於冰火／動靜衝突的反差組合，需達 Lv 10 解鎖【萬物任意合併】才能融合！`
+          };
+        }
+      }
+    }
+    const cats = list.map(s => s.cat);
+    const hasActor = cats.some(c => c === 'starter' || c === 'emotion' || c === 'critter' || c === 'gesture');
+    const allSameObjectCat = cats.every(c => c === cats[0]) && ['food', 'wonder', 'nature', 'honor'].includes(cats[0]);
+    if (!hasActor || allSameObjectCat) {
+      return {
+        valid: true,
+        harmonious: false,
+        reason: `「${list.map(x => x.name).join('＋')}」屬於跨界奇想組合（非「表情角色＋情境道具」合理配方），需達 Lv 10 解鎖【萬物任意合併】！`
+      };
+    }
+    return {
+      valid: true,
+      harmonious: true,
+      reason: `✨ 合理配方！「${list[0].name}」的神態與「${list.slice(1).map(x => x.name).join('＋')}」完美共鳴！`
+    };
+  }
+
+  /* 基因圖層合成 SVG 渲染器 (svgOfCombo)：
+     將 2 張或 3 張貼圖的基因融合為一隻獨一無二的「合成方塊森靈」：
+     - 基底與臉部表情：優先取含情緒／角色基因者，結合第 2 張的配色漸層與臉部神態
+     - 左側與頭頂特徵：融合第 1 張的道具／靈獸耳朵
+     - 右側與前景特徵：融合第 2 張的道具
+     - 若為 3 張多重調合（三合一）：再加上第 3 張的璀璨星環光圈、雙色漸層身體與第 3 道具！ */
+  function svgOfCombo(stickers, opts = {}) {
+    const list = stickers.map(s => typeof s === 'string' ? (BY_ID.get(s) || BY_NAME.get(s)) : s).filter(Boolean);
+    if (!list.length) return svgOf(STICKERS[0], opts);
+    if (list.length === 1) return svgOf(list[0], opts);
+
+    const s1 = list[0], s2 = list[1], s3 = list[2] || null;
+    const size = opts.size || 68;
+    const noAnim = !!opts.noAnim;
+    const gradId = 'stkG_' + list.map(s => s.id).join('_');
+    const animCls = noAnim ? '' : (' stk-anim-' + (s2.anim || s1.anim || 'bounce') + (s3 ? ' stk-combo-3' : ' stk-combo-2'));
+
+    // 決定最終五官：若 s1 是基本微笑但 s2 有強烈表情（如大哭、墨鏡、星星眼、愛心），優先展現戲劇化五官
+    const facePick = (s1.face === 'smile' && s2.face !== 'smile') ? s2.face : s1.face;
+    const earSticker = list.find(s => /^ear_|^antlers$|^horn$/.test(s.prop));
+    const prop1 = s1.prop;
+    const prop2 = s2.prop !== prop1 ? s2.prop : (s3 ? s3.prop : 'sparkles');
+    const prop3 = s3 ? s3.prop : null;
+    const comboName = list.map(s => s.name).join('＋');
+    const comboTag = list.map(s => (s.tag || s.name).slice(0, 2)).join('·').slice(0, 6);
+
+    return `<svg class="pace-stk-svg is-combo${animCls}" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="合成貼圖：${esc(comboName)}">` +
+      `<defs>` +
+        `<linearGradient id="${gradId}_bg" x1="0" y1="0" x2="1" y2="1">` +
+          `<stop offset="0%" stop-color="${s1.pal.bg}"/>` +
+          `<stop offset="${s3 ? '50%' : '100%'}" stop-color="${s2.pal.bg}"/>` +
+          (s3 ? `<stop offset="100%" stop-color="${s3.pal.bg}"/>` : '') +
+        `</linearGradient>` +
+        `<linearGradient id="${gradId}_body" x1="0" y1="0" x2="1" y2="1">` +
+          `<stop offset="0%" stop-color="${s1.pal.body}"/>` +
+          `<stop offset="100%" stop-color="${(s3 || s2).pal.body}"/>` +
+        `</linearGradient>` +
+      `</defs>` +
+      // 1. 漸層和紙雙重印章底襯
+      `<rect x="3" y="3" width="58" height="58" rx="16" fill="url(#${gradId}_bg)" stroke="${s1.pal.edge}" stroke-width="1.8" stroke-opacity=".4"/>` +
+      // 三合一專屬傳奇星芒光環
+      (s3 ? `<circle cx="32" cy="30" r="24" fill="none" stroke="${s3.pal.acc}" stroke-width="1.6" stroke-dasharray="3 3" opacity=".85"/>` : `<circle cx="32" cy="30" r="22" fill="none" stroke="${s2.pal.acc}" stroke-width="1.2" opacity=".45"/>`) +
+      `<g class="stk-actor">` +
+        `<ellipse cx="32" cy="49" rx="16" ry="3.8" fill="rgba(0,0,0,.12)"/>` +
+        // 若有靈獸耳朵基因，先繪製於頭頂
+        (earSticker ? drawProp(earSticker.prop, earSticker.pal) : '') +
+        // 雙色漸層方塊森靈本體
+        `<rect x="13" y="14" width="38" height="33" rx="13" fill="url(#${gradId}_body)" stroke="${s1.pal.edge}" stroke-width="2.4"/>` +
+        `<path d="M18 19c3-2 8-2.5 14-2.5" fill="none" stroke="rgba(255,255,255,.65)" stroke-width="2.4" stroke-linecap="round"/>` +
+        `<circle cx="13" cy="34" r="3.6" fill="${s1.pal.body}" stroke="${s1.pal.edge}" stroke-width="2"/>` +
+        `<circle cx="51" cy="34" r="3.6" fill="${s2.pal.body}" stroke="${s1.pal.edge}" stroke-width="2"/>` +
+        // 融合五官
+        drawFace(facePick, s1.pal.edge, s2.pal.cheek) +
+        // 左側縮放道具 (來自第 1 張貼圖)
+        `<g transform="translate(-24, 4) scale(0.78)">${drawProp(prop1, s1.pal)}</g>` +
+        // 右側主道具 (來自第 2 張貼圖)
+        `<g transform="translate(4, 1) scale(0.92)">${drawProp(prop2, s2.pal)}</g>` +
+        // 若為三合一，頭頂正中央疊加第 3 張貼圖的精粹道具
+        (prop3 ? `<g transform="translate(-5, -10) scale(0.68)">${drawProp(prop3, s3.pal)}</g>` : '') +
+      `</g>` +
+      // 底部合成雙色印記籤
+      `<g transform="translate(32,54.5)">` +
+        `<rect x="-23" y="-6.5" width="46" height="11" rx="5.5" fill="${s1.pal.edge}" stroke="${s2.pal.acc}" stroke-width="1"/>` +
+        `<text x="0" y="1.8" text-anchor="middle" font-size="7.2" font-weight="800" fill="#fff" letter-spacing=".02em">${esc(comboTag)}</text>` +
+      `</g>` +
+    `</svg>`;
+  }
+
+  /* ---------- 解鎖、久不動結凍與【等級權限】計算引擎 ----------
+     與 c-rewards.js 完全一致的 XP 與等級公式：need(lv) = 25 * lv * (lv + 1) */
+  let simMode = 'real'; // 'real' | 'idle2' | 'idle4' | 'idle6' | 'lv3' | 'lv6' | 'lv10' | 'lv18'
+  const needXp = lv => 25 * lv * (lv + 1);
+  const levelFromXp = xp => { let lv = 1; while (xp >= needXp(lv)) lv++; return lv; };
+
+  function computePerks(lv) {
+    return {
+      level: lv,
+      singleAnim: lv >= 3,          // Lv 3+ 單張貼圖全面升級動態
+      chooseMotion: lv >= 5,        // Lv 5+ 可自由選擇「動態」或「靜態（不動）」
+      merge2Logical: lv >= 6,       // Lv 6+ 可使用「合理雙貼圖合併」
+      merge2LogicalAnim: lv >= 8,   // Lv 8+ 合理雙貼圖合併擁有動態效果
+      merge2Any: lv >= 10,          // Lv 10+ 可使用「萬物任意雙貼圖合併」
+      merge2AnyAnim: lv >= 12,      // Lv 12+ 任意雙貼圖合併擁有動態效果
+      merge3: lv >= 15,             // Lv 15+ 可使用「三貼圖多重調合（三合一）」
+      merge3Anim: lv >= 18          // Lv 18+ 三貼圖多重調合擁有傳奇動態效果
+    };
+  }
+
+  function scanProgress(real) {   // real = true ignores the preview mode (used for what can actually be sent, and for chat)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayMs = +today;
     let totalDone = 0;
+    let totalXp = 0;
     let latestDoneMs = 0;
     const seenKeys = new Set();
+    const kDay = {};
 
-    const recordDone = (key, dateStr) => {
+    const recordDone = (key, dateStr, minutes) => {
       if (seenKeys.has(key)) return;
       seenKeys.add(key);
       totalDone++;
+      const dKey = dateStr || 'task';
+      const k = kDay[dKey] = (kDay[dKey] || 0) + 1;
+      const gain = 10 + Math.floor((Number(minutes) || 25) / 10) * 2 + Math.min(10, (k - 1) * 2);
+      totalXp += gain;
       if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
         const ms = +new Date(dateStr + 'T00:00:00');
         if (!isNaN(ms) && ms <= todayMs + 864e5 && ms > latestDoneMs) latestDoneMs = ms;
       }
     };
 
-    // A. 從 paceStore 讀取所有週次與任務
     if (window.paceStore && typeof window.paceStore.paths === 'function') {
       try {
         for (const p of window.paceStore.paths()) {
@@ -9555,19 +9692,18 @@ body.nofx .blk-done-pop {
                 const bDate = new Date(mon);
                 if (Number.isInteger(b.day)) bDate.setDate(bDate.getDate() + b.day);
                 const ymd = bDate.getFullYear() + '-' + String(bDate.getMonth() + 1).padStart(2, '0') + '-' + String(bDate.getDate()).padStart(2, '0');
-                recordDone('b-' + monStr + '-' + b.id, ymd);
+                recordDone('b-' + monStr + '-' + b.id, ymd, b.minutes);
               }
             }
           } else if (/^tasks\/[^/]+$/.test(p) && d.done && !d.tour) {
             const tMs = Number(item.t) || 0;
             if (tMs > latestDoneMs) latestDoneMs = tMs;
-            recordDone('t-' + p.slice(6), null);
+            recordDone('t-' + p.slice(6), null, d.minutes);
           }
         }
       } catch (e) {}
     }
 
-    // B. 從主程式 state.week 補充讀取（若在 A-next 或尚未寫入 paceStore 時）
     if (typeof state !== 'undefined' && state?.week?.blocks && state?.monday) {
       try {
         const mon = new Date(state.monday);
@@ -9577,17 +9713,24 @@ body.nofx .blk-done-pop {
             const bDate = new Date(mon);
             if (Number.isInteger(b.day)) bDate.setDate(bDate.getDate() + b.day);
             const ymd = bDate.getFullYear() + '-' + String(bDate.getMonth() + 1).padStart(2, '0') + '-' + String(bDate.getDate()).padStart(2, '0');
-            recordDone('b-' + monStr + '-' + b.id, ymd);
+            recordDone('b-' + monStr + '-' + b.id, ymd, b.minutes);
           }
         }
       } catch (e) {}
     }
 
-    // C. 本機紀錄的最後完成時間戳（剛打勾方塊時立即更新，確保破冰零延遲）
+    // 亦可讀取 #xpLevel 畫面上的等級（若 c-rewards.js 已加計成就與週任務 XP）
+    let domLv = 1;
+    try {
+      const lvTxt = document.getElementById('xpLevel')?.textContent || document.querySelector('#xpBtn .xp-lv')?.textContent || '';
+      const m = /Lv\s*(\d+)/i.exec(lvTxt);
+      if (m) domLv = Number(m[1]) || 1;
+    } catch (e) {}
+
+    let level = Math.max(domLv, levelFromXp(totalXp));
     const savedLast = Number(ls.get('pace-stk-last-done')) || 0;
     if (savedLast > latestDoneMs) latestDoneMs = savedLast;
 
-    // 計算閒置天數 idleDays
     let idleDays = 0;
     if (totalDone > 0 && latestDoneMs > 0) {
       const lastDay = new Date(latestDoneMs);
@@ -9595,17 +9738,20 @@ body.nofx .blk-done-pop {
       idleDays = Math.max(0, Math.floor((todayMs - +lastDay) / 864e5));
     }
 
-    // 若使用者在面板開啟了「體感預覽模式」
+    // 體感預覽模擬器覆寫
     if (real) { /* actual progress only */ }
-    else if (simMode === 'idle2') { totalDone = Math.max(totalDone, 35); idleDays = 4; }
-    else if (simMode === 'idle4') { totalDone = Math.max(totalDone, 35); idleDays = 7; }
-    else if (simMode === 'idle6') { totalDone = Math.max(totalDone, 35); idleDays = 10; }
-    else if (simMode === 'allopen') { totalDone = Math.max(totalDone, 80); idleDays = 0; }
+    else if (simMode === 'idle2') { totalDone = Math.max(totalDone, 35); idleDays = 4; level = Math.max(level, 6); }
+    else if (simMode === 'idle4') { totalDone = Math.max(totalDone, 35); idleDays = 7; level = Math.max(level, 6); }
+    else if (simMode === 'idle6') { totalDone = Math.max(totalDone, 35); idleDays = 10; level = Math.max(level, 6); }
+    else if (simMode === 'lv3')   { totalDone = Math.max(totalDone, 12); idleDays = 0; level = 3; }
+    else if (simMode === 'lv6')   { totalDone = Math.max(totalDone, 28); idleDays = 0; level = 6; }
+    else if (simMode === 'lv10')  { totalDone = Math.max(totalDone, 48); idleDays = 0; level = 10; }
+    else if (simMode === 'lv18')  { totalDone = Math.max(totalDone, 80); idleDays = 0; level = 18; }
 
-    // 結凍比例（寬鬆版）：閒置 <=3 天 0%；4–5 天 25%；6–7 天 50%；8–9 天 75%；>=10 天 100% 進階貼圖結凍
+    const perks = computePerks(level);
+    // gentle freezing (the user's choice): nothing for 3 idle days, then 25/50/75%, all only after 10 days
     const freezeRatio = idleDays <= 3 ? 0 : idleDays <= 5 ? 0.25 : idleDays <= 7 ? 0.50 : idleDays <= 9 ? 0.75 : 1.0;
 
-    // 先找出所有已解鎖的進階貼圖（依 tier 由高到低排序，從最高階開始結凍）
     const unlockedNonStarter = STICKERS.filter(s => !s.neverFreeze && totalDone >= s.reqDone)
       .sort((a, b) => b.tier - a.tier || b.index - a.index);
     const freezeCount = Math.round(unlockedNonStarter.length * freezeRatio);
@@ -9624,6 +9770,8 @@ body.nofx .blk-done-pop {
 
     return {
       totalDone,
+      level,
+      perks,
       idleDays,
       freezeRatio,
       total: STICKERS.length,
@@ -9635,12 +9783,26 @@ body.nofx .blk-done-pop {
     };
   }
 
-  /* 當使用者完成方塊時，記錄最新活躍時間；若原本有結凍貼圖，觸發「破冰解凍」慶祝提示！ */
+  /* 判斷一組貼圖（1～3張）在指定等級與動靜偏好下是否應該播放動畫 */
+  function shouldAnimateToken(stickers, modeFlag, prog) {
+    const p = (prog || scanProgress()).perks;
+    if (modeFlag === '靜' && p.chooseMotion) return false;
+    if (stickers.length === 1) {
+      if (!p.singleAnim) return false;
+      return true;
+    }
+    if (stickers.length === 2) {
+      const hm = checkMergeHarmony(stickers);
+      return hm.harmonious ? p.merge2LogicalAnim : p.merge2AnyAnim;
+    }
+    return p.merge3Anim;
+  }
+
   function markActiveNow() {
     const before = scanProgress();
     const wasFrozen = before.frozenCount;
     ls.set('pace-stk-last-done', String(Date.now()));
-    if (simMode !== 'real') simMode = 'real';
+    if (simMode.startsWith('idle')) simMode = 'real';
     if (wasFrozen > 0 && typeof window.toast === 'function') {
       setTimeout(() => {
         try { window.toast('🔥 破冰成功！你完成了方塊，結凍的 ' + wasFrozen + ' 款貼圖已全數回溫解凍！'); } catch (e) {}
@@ -9649,36 +9811,60 @@ body.nofx .blk-done-pop {
     refreshPickers();
   }
 
-  /* ---------- 聊天室訊息中的貼圖語法解析與渲染 ----------
-     語法：[貼圖:名稱]（例如 [貼圖:笑]、[貼圖:讚]、[貼圖:拍手]）
-     1. 符合 Firestore 規則（純文字 string <= 300 字，無額外欄位）
-     2. 安全性：先對一般文字做 HTML 跳脫，再將合法的 [貼圖:名稱] 轉為原創 SVG，且絕不使用 <b> 標籤（確保 group-tests.cjs 的 !querySelector('b') 100% 通過） */
-  const TOKEN_RE = /\[貼圖:([^\][\n]{1,12})\]/g;
+  /* ---------- 聊天室訊息中的貼圖＆合成貼圖語法解析與渲染 ----------
+     支援格式：
+     1. 單張貼圖：[貼圖:笑]、[貼圖:笑!靜]、[貼圖:笑!動]
+     2. 雙貼圖調合：[貼圖:大哭一場+黑糖珍奶]、[貼圖:笑+讚!靜]
+     3. 三貼圖調合：[貼圖:笑+黑糖珍奶+璀璨王冠!動]
+     安全性：所有非貼圖文字皆經過 esc()，且絕不使用 <b> 標籤（確保 group-tests.cjs 100% 通過） */
+  const TOKEN_RE = /\[貼圖:([^\][\n]{1,42})\]/g;
 
+  function parseTokenSpec(spec) {
+    const [namesPart, modeFlag] = String(spec || '').split('!');
+    const parts = namesPart.split('+').map(s => s.trim()).filter(Boolean);
+    if (!parts.length || parts.length > 3) return null;
+    const stks = parts.map(n => BY_NAME.get(n) || BY_ID.get(n));
+    if (stks.some(s => !s)) return null;
+    if (stks.length >= 2 && new Set(stks.map(s => s.id)).size !== stks.length) return null;
+    return { stks, modeFlag: modeFlag === '靜' ? '靜' : modeFlag === '動' ? '動' : '' };
+  }
+
+  function renderTokenSvg(parsed, size, prog) {
+    const anim = shouldAnimateToken(parsed.stks, parsed.modeFlag, prog);
+    if (parsed.stks.length === 1) {
+      return svgOf(parsed.stks[0], { size, noAnim: !anim });
+    }
+    return svgOfCombo(parsed.stks, { size, noAnim: !anim });
+  }
+
+  let chatProg = null;
   function renderChatMessage(rawText) {
     const str = String(rawText ?? '');
     if (!str.includes('[貼圖:')) return esc(str);
 
-    // 檢查是否為「純貼圖訊息」（僅含 1～3 張貼圖與空白），若是則放大為動態大貼圖！
+    // chat shows stickers by actual progress (never the album preview), read once per batch of messages
+    if (!chatProg) { chatProg = scanProgress(true); setTimeout(() => { chatProg = null; }, 0); }
+    const prog = chatProg;
     const stripped = str.replace(TOKEN_RE, '').trim();
     const matches = [...str.matchAll(TOKEN_RE)];
-    const validMatches = matches.filter(m => BY_NAME.has(m[1]));
+    const parsedList = matches.map(m => ({ m, parsed: parseTokenSpec(m[1]) }));
+    const validAll = parsedList.every(x => x.parsed !== null);
 
-    if (!stripped && validMatches.length >= 1 && validMatches.length <= 3 && validMatches.length === matches.length) {
-      return '<div class="grp-stk-jumbo-row">' + validMatches.map(m => {
-        const stk = BY_NAME.get(m[1]);
-        return `<span class="grp-stk-jumbo" title="貼圖：${esc(stk.name)}">${svgOf(stk, { size: 74 })}<span class="grp-stk-cap">${esc(stk.name)}</span></span>`;
+    if (!stripped && validAll && parsedList.length >= 1 && parsedList.length <= 3) {
+      return '<div class="grp-stk-jumbo-row">' + parsedList.map(({ parsed }) => {
+        const label = parsed.stks.map(s => s.name).join('＋');
+        const isCombo = parsed.stks.length > 1;
+        return `<span class="grp-stk-jumbo${isCombo ? ' is-combo' : ''}" title="${isCombo ? '合成貼圖：' : '貼圖：'}${esc(label)}">${renderTokenSvg(parsed, isCombo ? 80 : 74, prog)}<span class="grp-stk-cap">${esc(label)}</span></span>`;
       }).join('') + '</div>';
     }
 
-    // 圖文混排模式（像 Emoji 一樣穿插在文字中）
     let out = '', lastIdx = 0;
-    for (const m of matches) {
+    for (const { m, parsed } of parsedList) {
       const idx = m.index;
       if (idx > lastIdx) out += esc(str.slice(lastIdx, idx));
-      const stk = BY_NAME.get(m[1]);
-      if (stk) {
-        out += `<span class="grp-stk-inline" title="貼圖：${esc(stk.name)}">${svgOf(stk, { size: 30 })}</span>`;
+      if (parsed) {
+        const label = parsed.stks.map(s => s.name).join('＋');
+        out += `<span class="grp-stk-inline" title="貼圖：${esc(label)}">${renderTokenSvg(parsed, 30, prog)}</span>`;
       } else {
         out += esc(m[0]);
       }
@@ -9688,7 +9874,7 @@ body.nofx .blk-done-pop {
     return out;
   }
 
-  /* ---------- 注入貼圖系統專屬樣式 ---------- */
+  /* ---------- 注入貼圖系統與森靈調合工坊樣式 ---------- */
   const style = document.createElement('style');
   style.setAttribute('data-pace-ui', 'c-stickers.css');
   style.textContent = `
@@ -9701,6 +9887,7 @@ body.nofx .blk-done-pop {
     .pace-stk-svg.stk-anim-clap .stk-actor { animation: paceStkClap 1.4s ease-in-out infinite; }
     .pace-stk-svg.stk-anim-nod .stk-actor { animation: paceStkNod 2s ease-in-out infinite; }
     .pace-stk-svg.stk-anim-pop .stk-actor { animation: paceStkPop 2.4s cubic-bezier(.2,1.4,.4,1) infinite; }
+    .pace-stk-svg.stk-combo-3 { filter: drop-shadow(0 3px 8px rgba(244, 185, 66, .35)); }
     @keyframes paceStkBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px) scale(1.03, .98); } }
     @keyframes paceStkWiggle { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
     @keyframes paceStkPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
@@ -9711,14 +9898,12 @@ body.nofx .blk-done-pop {
     @media (prefers-reduced-motion: reduce) { .pace-stk-svg .stk-actor { animation: none !important; } }
     body.nofx .pace-stk-svg .stk-actor { animation: none !important; }
 
-    /* 聊天室內的貼圖呈現 */
     .grp-stk-jumbo-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 4px 2px; }
     .grp-stk-jumbo { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; transition: transform .2s ease; }
     .grp-stk-jumbo:hover { transform: scale(1.08); }
     .grp-stk-cap { font-size: .7rem; color: var(--muted); font-weight: 600; }
     .grp-stk-inline { display: inline-flex; align-items: center; vertical-align: middle; margin: 0 2px; }
 
-    /* 聊天室常用貼圖快捷列 & 貼圖抽屜 */
     .grp-stk-quick { display: flex; align-items: center; gap: 5px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: thin; }
     .grp-stk-qbtn { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 4px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); font-size: .76rem; cursor: pointer; transition: transform .15s, border-color .15s, background .15s; }
     .grp-stk-qbtn:hover { border-color: var(--accent); background: var(--accent-soft); transform: translateY(-1px); }
@@ -9728,64 +9913,100 @@ body.nofx .blk-done-pop {
     .grp-stk-thermo.is-chilly { border-left-color: #38bdf8; background: color-mix(in srgb, #38bdf8 10%, var(--panel-2)); }
     .grp-stk-thermo.is-frozen { border-left-color: #0284c7; background: color-mix(in srgb, #0284c7 14%, var(--panel-2)); }
     .grp-stk-thermo-badge { font-weight: 800; display: inline-flex; align-items: center; gap: 4px; }
+    .grp-stk-lvbar { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: .72rem; }
+    .grp-stk-lvpill { padding: 2px 7px; border-radius: 99px; background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); font-weight: 600; }
+    .grp-stk-lvpill.ok { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
     .grp-stk-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-    .grp-stk-search { flex: 1 1 130px; min-width: 0; padding: 5px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); font-size: .8rem; }
+    .grp-stk-search { flex: 1 1 120px; min-width: 0; padding: 5px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); font-size: .8rem; }
     .grp-stk-tabs { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 3px; scrollbar-width: thin; }
     .grp-stk-tab { flex: none; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); font-size: .76rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
     .grp-stk-tab.on { background: var(--accent); color: #fff; border-color: var(--accent); }
-    .grp-stk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; max-height: 220px; overflow-y: auto; padding: 2px; }
+    .grp-stk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; max-height: 210px; overflow-y: auto; padding: 2px; }
     .grp-stk-cell { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 4px 4px; border-radius: 11px; border: 1px solid var(--line-soft, var(--line)); background: var(--panel-2); cursor: pointer; transition: transform .15s, border-color .15s, background .15s; }
     .grp-stk-cell:hover { border-color: var(--accent); background: var(--accent-soft); transform: translateY(-2px); }
+    .grp-stk-cell.picked { border: 2px solid var(--accent); background: var(--accent-soft); }
     .grp-stk-cell.frozen { background: color-mix(in srgb, #38bdf8 12%, var(--panel-2)); border-color: rgba(56, 189, 248, .45); }
     .grp-stk-cell.locked { filter: grayscale(.92); opacity: .52; }
     .grp-stk-cell.shake { animation: paceStkIceShake .4s ease; }
     @keyframes paceStkIceShake { 20% { transform: translateX(-4px) rotate(-4deg); } 40% { transform: translateX(4px) rotate(4deg); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
     .grp-stk-cname { font-size: .7rem; font-weight: 600; color: var(--fg); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .grp-stk-cbadge { position: absolute; top: 3px; right: 3px; font-size: .64rem; line-height: 1; padding: 2px 4px; border-radius: 99px; background: rgba(15, 23, 42, .72); color: #fff; font-weight: 700; }
+    .grp-stk-cbadge { position: absolute; top: 3px; right: 3px; font-size: .62rem; line-height: 1; padding: 2px 4px; border-radius: 99px; background: rgba(15, 23, 42, .72); color: #fff; font-weight: 700; }
     .grp-stk-cbadge.starter { background: var(--accent); }
     .grp-stk-cbadge.ice { background: #0284c7; }
     .grp-stk-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; font-size: .74rem; color: var(--muted); }
+
+    /* 🧪 森靈調合工坊（貼圖合併區） */
+    .grp-stk-lab { border: 1.5px dashed var(--accent); border-radius: 12px; padding: 8px 10px; background: color-mix(in srgb, var(--accent) 6%, var(--panel-2)); display: flex; flex-direction: column; gap: 6px; }
+    .grp-stk-lab[hidden] { display: none !important; }
+    .grp-stk-lab-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; }
+    .grp-stk-slots { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .grp-stk-slot { width: 54px; height: 54px; border-radius: 12px; border: 1.5px dashed var(--line); background: var(--panel); display: grid; place-items: center; cursor: pointer; position: relative; font-size: .72rem; color: var(--muted); }
+    .grp-stk-slot.filled { border-style: solid; border-color: var(--accent); }
+    .grp-stk-slot.locked-slot { opacity: .45; cursor: not-allowed; background: var(--panel-2); }
+    .grp-stk-result { display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); min-height: 58px; }
   `;
   document.head.appendChild(style);
 
   /* ---------- 掛載至群組聊天室 (#grpRoom) 與成就圖鑑 (#xpDlg) ---------- */
   let activeCat = 'starter';
   let searchQuery = '';
-  let directSend = false; // false = 點擊插入輸入框（像 Emoji 可連打與配字）；true = 點擊直接送出貼圖
+  let directSend = false;
+  let motionPref = ls.get('pace-stk-motion') || 'auto'; // 'auto' (預設動態) | 'static' (指定不動)
+  let labOpen = false;
+  let mergeSlots = []; // 已選入合成槽的貼圖物件陣列 (最多 3 張)
   const pickerInstances = [];
 
   function refreshPickers() {
     pickerInstances.forEach(fn => { try { fn(); } catch (e) {} });
   }
 
-  function buildStickerPickerUI(hostEl, onPickSticker) {
+  function buildStickerPickerUI(hostEl, onPickToken) {
     const wrap = document.createElement('div');
     wrap.className = 'grp-stk-wrap';
     wrap.innerHTML =
-      // 1. 常用基本貼圖快捷列（笑、讚、拍手、加油、OK、感謝、搞定、休息）
       `<div class="grp-stk-quick" aria-label="基本常用貼圖快捷列"></div>` +
-      // 2. 展開式 240 款原創貼圖抽屜
       `<div class="grp-stk-drawer" hidden>` +
         `<div class="grp-stk-thermo">` +
           `<span class="grp-stk-thermo-badge"></span>` +
           `<span class="grp-stk-thermo-counts"></span>` +
         `</div>` +
+        `<div class="grp-stk-lvbar" aria-label="等級能力解鎖進度"></div>` +
         `<div class="grp-stk-tools">` +
-          `<input type="search" class="grp-stk-search" placeholder="搜尋 240 款貼圖（如：笑、讚、拍手、讀書、珍奶、貓…）" aria-label="搜尋貼圖">` +
-          `<label class="check" style="font-size:.76rem;flex-direction:row;gap:4px;margin:0;white-space:nowrap"><input type="checkbox" class="grp-stk-direct"> 點擊直接送出</label>` +
-          `<select class="grp-stk-sim" aria-label="貼圖狀態預覽" style="font-size:.74rem;padding:4px 6px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg)">` +
-            `<option value="real">🌡️ 實際進度</option>` +
-            `<option value="idle2">❄️ 預覽：4天不動(微凍)</option>` +
-            `<option value="idle4">🧊 預覽：7天不動(半凍)</option>` +
-            `<option value="idle6">🧊 預覽：10天+不動(全凍)</option>` +
-            `<option value="allopen">✨ 預覽：全解鎖回溫</option>` +
+          `<input type="search" class="grp-stk-search" placeholder="搜尋 240 款貼圖（笑、讚、拍手、珍奶、貓…）" aria-label="搜尋貼圖">` +
+          `<button type="button" class="btn grp-stk-lab-btn" style="padding:4px 9px;font-size:.76rem">🧪 森靈調合工坊（貼圖合併）</button>` +
+          `<select class="grp-stk-motion" aria-label="動態或靜態選擇" style="font-size:.74rem;padding:4px 6px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg)">` +
+            `<option value="auto">🎞️ 動態模式</option>` +
+            `<option value="static">🖼️ 靜態模式(不動)</option>` +
           `</select>` +
+          `<label class="check" style="font-size:.75rem;flex-direction:row;gap:4px;margin:0;white-space:nowrap"><input type="checkbox" class="grp-stk-direct"> 點擊直傳</label>` +
+          `<select class="grp-stk-sim" aria-label="貼圖與等級狀態預覽" style="font-size:.74rem;padding:4px 6px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg)">` +
+            `<option value="real">🌡️ 實際等級與進度</option>` +
+            `<option value="lv3">✨ 預覽：Lv 3 (解鎖動態貼圖)</option>` +
+            `<option value="lv6">🧪 預覽：Lv 6 (合理雙貼圖合併)</option>` +
+            `<option value="lv10">🔮 預覽：Lv 10 (萬物任意雙合併)</option>` +
+            `<option value="lv18">👑 預覽：Lv 18 (三合一＋全動態)</option>` +
+            `<option value="idle4">🧊 預覽：7天不動(半結凍)</option>` +
+            `<option value="idle6">🧊 預覽：10天+不動(全結凍)</option>` +
+          `</select>` +
+        `</div>` +
+        // 🧪 森靈調合工坊面板
+        `<div class="grp-stk-lab" hidden>` +
+          `<div class="grp-stk-lab-row">` +
+            `<div class="grp-stk-slots"></div>` +
+            `<div class="grp-stk-result"></div>` +
+            `<div style="display:flex;gap:5px;flex-wrap:wrap">` +
+              `<button type="button" class="btn grp-stk-lab-rand" style="padding:4px 8px;font-size:.74rem">🎲 靈感配方</button>` +
+              `<button type="button" class="btn grp-stk-lab-clear" style="padding:4px 8px;font-size:.74rem">清空</button>` +
+              `<button type="button" class="btn primary grp-stk-lab-use" style="padding:4px 10px;font-size:.76rem">傳送／插入合成貼圖</button>` +
+            `</div>` +
+          `</div>` +
+          `<div class="grp-stk-lab-msg hint" style="margin:0;font-size:.74rem">點選下方任 2 張貼圖（Lv 15 開放 3 張）即可調合成專屬新貼圖！</div>` +
         `</div>` +
         `<div class="grp-stk-tabs" role="tablist"></div>` +
         `<div class="grp-stk-catdesc hint" style="margin:0;font-size:.75rem"></div>` +
         `<div class="grp-stk-grid" role="listbox" aria-label="原創貼圖列表"></div>` +
         `<div class="grp-stk-foot">` +
-          `<span class="grp-stk-status-msg">🌱 初始 24 款基本貼圖永久可用；完成方塊可解鎖新貼圖並為結凍貼圖破冰！</span>` +
+          `<span class="grp-stk-status-msg">🌱 初始 24 款基本貼圖永不結凍；升等可逐步解鎖「動態貼圖」、「動靜自選」、「合理合併」、「萬物合併」與「三合一傳奇動態」！</span>` +
         `</div>` +
       `</div>`;
 
@@ -9795,48 +10016,141 @@ body.nofx .blk-done-pop {
     const thermo = wrap.querySelector('.grp-stk-thermo');
     const thermoBadge = wrap.querySelector('.grp-stk-thermo-badge');
     const thermoCounts = wrap.querySelector('.grp-stk-thermo-counts');
+    const lvBar = wrap.querySelector('.grp-stk-lvbar');
     const searchIn = wrap.querySelector('.grp-stk-search');
+    const labBtn = wrap.querySelector('.grp-stk-lab-btn');
+    const motionSel = wrap.querySelector('.grp-stk-motion');
     const directChk = wrap.querySelector('.grp-stk-direct');
     const simSel = wrap.querySelector('.grp-stk-sim');
+    const labBox = wrap.querySelector('.grp-stk-lab');
+    const slotsBox = wrap.querySelector('.grp-stk-slots');
+    const resultBox = wrap.querySelector('.grp-stk-result');
+    const labRandBtn = wrap.querySelector('.grp-stk-lab-rand');
+    const labClearBtn = wrap.querySelector('.grp-stk-lab-clear');
+    const labUseBtn = wrap.querySelector('.grp-stk-lab-use');
+    const labMsg = wrap.querySelector('.grp-stk-lab-msg');
     const tabsBox = wrap.querySelector('.grp-stk-tabs');
     const catDesc = wrap.querySelector('.grp-stk-catdesc');
     const gridBox = wrap.querySelector('.grp-stk-grid');
     const statusMsg = wrap.querySelector('.grp-stk-status-msg');
 
-    // 快捷列固定放最常用的 10 款初始不結凍貼圖
     const QUICK_IDS = ['st_smile', 'st_laugh', 'st_thumb', 'st_clap', 'st_cheer', 'st_ok', 'st_thanks', 'st_love', 'st_done', 'st_rest'];
-    quickBar.innerHTML = QUICK_IDS.map(id => {
-      const s = BY_ID.get(id);
-      return `<button type="button" class="grp-stk-qbtn" data-qstk="${esc(s.id)}" title="貼圖：${esc(s.name)}（初始基本貼圖・永不結凍）">${svgOf(s, { size: 22, noAnim: true })}<span>${esc(s.name)}</span></button>`;
-    }).join('');
+
+    function formatSingleToken(stk, prog) {
+      const wantStatic = motionPref === 'static' && prog.perks.chooseMotion;
+      return `[貼圖:${stk.name}${wantStatic ? '!靜' : ''}]`;
+    }
+
+    function paintQuickBar(prog) {
+      const canAnim = prog.perks.singleAnim && !(motionPref === 'static' && prog.perks.chooseMotion);
+      quickBar.innerHTML = QUICK_IDS.map(id => {
+        const s = BY_ID.get(id);
+        return `<button type="button" class="grp-stk-qbtn" data-qstk="${esc(s.id)}" title="貼圖：${esc(s.name)}（初始基本貼圖・永不結凍）">${svgOf(s, { size: 22, noAnim: !canAnim })}<span>${esc(s.name)}</span></button>`;
+      }).join('');
+    }
 
     quickBar.addEventListener('click', e => {
       const b = e.target.closest('[data-qstk]');
       if (!b) return;
       const stk = BY_ID.get(b.dataset.qstk);
-      if (stk) onPickSticker(stk, directSend, statusMsg);
+      if (!stk) return;
+      const prog = scanProgress(true);
+      onPickToken(formatSingleToken(stk, prog), stk.name, directSend, statusMsg);
     });
+
+    function paintLab(prog) {
+      labBox.hidden = !labOpen;
+      labBtn.classList.toggle('primary', labOpen);
+      if (!labOpen) return;
+
+      const p = prog.perks;
+      const maxSlots = p.merge3 ? 3 : 2;
+      if (mergeSlots.length > maxSlots) mergeSlots = mergeSlots.slice(0, maxSlots);
+
+      slotsBox.innerHTML = [0, 1, 2].map(i => {
+        if (i === 2 && !p.merge3) {
+          return `<div class="grp-stk-slot locked-slot" title="升到 Lv 15 解鎖第 3 張多重貼圖調合！">🔒Lv15<br>三合一</div>`;
+        }
+        const s = mergeSlots[i];
+        if (!s) {
+          return `<div class="grp-stk-slot" data-slot="${i}" title="點選下方貼圖放入槽位 ${i + 1}">＋槽位${i + 1}</div>`;
+        }
+        return `<div class="grp-stk-slot filled" data-slot="${i}" title="點擊移除「${esc(s.name)}」">${svgOf(s, { size: 44, noAnim: true })}</div>`;
+      }).join('<span style="font-weight:900;color:var(--muted)">＋</span>');
+
+      if (!p.merge2Logical) {
+        resultBox.innerHTML = `<span class="hint">🔒 升至 <strong>Lv 6</strong> 解鎖「森靈調合工坊（合理雙貼圖合併）」！</span>`;
+        labUseBtn.disabled = true;
+        return;
+      }
+
+      if (mergeSlots.length < 2) {
+        resultBox.innerHTML = `<span class="hint">請從下方點選 ${2 - mergeSlots.length} 張貼圖放入合成槽…</span>`;
+        labUseBtn.disabled = true;
+        return;
+      }
+
+      const hm = checkMergeHarmony(mergeSlots);
+      const is3 = mergeSlots.length === 3;
+      const canMerge = hm.valid && (hm.harmonious ? p.merge2Logical : p.merge2Any) && (!is3 || p.merge3);
+      const wantStatic = motionPref === 'static' && p.chooseMotion;
+      const hasAnim = !wantStatic && (is3 ? p.merge3Anim : (hm.harmonious ? p.merge2LogicalAnim : p.merge2AnyAnim));
+
+      if (!canMerge) {
+        resultBox.innerHTML = `<span class="hint" style="color:var(--danger, #c2372c)">${esc(hm.reason)}</span>`;
+        labMsg.textContent = hm.reason;
+        labUseBtn.disabled = true;
+      } else {
+        const comboName = mergeSlots.map(s => s.name).join('＋');
+        const animTag = hasAnim ? '✨動態合成' : (is3 ? '🖼️靜態(Lv18解鎖動態)' : hm.harmonious ? '🖼️靜態(Lv8解鎖動態)' : '🖼️靜態(Lv12解鎖動態)');
+        resultBox.innerHTML = svgOfCombo(mergeSlots, { size: 56, noAnim: !hasAnim }) +
+          `<div style="font-size:.75rem"><div><strong>${esc(comboName)}</strong></div><div class="hint" style="margin:0">${animTag}</div></div>`;
+        labMsg.textContent = hm.reason;
+        labUseBtn.disabled = false;
+      }
+    }
 
     function paint() {
       const prog = scanProgress();
+      const p = prog.perks;
       simSel.value = simMode;
       directChk.checked = directSend;
+      motionSel.value = p.chooseMotion ? motionPref : 'auto';
+      motionSel.disabled = !p.chooseMotion;
+      motionSel.title = p.chooseMotion ? 'Lv 5 已解鎖：可自由選擇動態或靜態貼圖' : '升到 Lv 5 即可自由切換動態／靜態貼圖';
 
-      // 溫度計狀態列
+      paintQuickBar(prog);
+
       thermo.classList.toggle('is-chilly', prog.idleDays >= 4 && prog.idleDays <= 9);
       thermo.classList.toggle('is-frozen', prog.idleDays >= 10);
       if (prog.idleDays <= 1) {
-        thermoBadge.textContent = '🔥 暖心活躍中（貼圖全數回溫）';
+        thermoBadge.textContent = `🔥 Lv ${prog.level} 暖心活躍中（貼圖全數回溫）`;
       } else if (prog.idleDays <= 3) {
-        thermoBadge.textContent = `🌤️ 休息 ${prog.idleDays} 天也沒關係（第 4 天起才會慢慢結凍）`;
+        thermoBadge.textContent = `🌤️ Lv ${prog.level} · 休息 ${prog.idleDays} 天也沒關係（第 4 天起才會慢慢結凍）`;
       } else if (prog.idleDays <= 9) {
-        thermoBadge.textContent = `❄️ 閒置 ${prog.idleDays} 天・寒霜蔓延（${prog.frozenCount} 款貼圖結凍中）`;
+        thermoBadge.textContent = `❄️ Lv ${prog.level} · 閒置 ${prog.idleDays} 天（${prog.frozenCount} 款貼圖結凍中）`;
       } else {
-        thermoBadge.textContent = `🧊 閒置 ${prog.idleDays} 天・深度結凍（進階貼圖冰封，剩基本貼圖可用）`;
+        thermoBadge.textContent = `🧊 Lv ${prog.level} · 閒置 ${prog.idleDays} 天（進階貼圖冰封，剩基本貼圖可用）`;
       }
-      thermoCounts.textContent = `可用 ${prog.usableCount} 款 · 🧊結凍 ${prog.frozenCount} 款 · 🔒待解鎖 ${prog.lockedCount} 款（共 ${prog.total} 款｜已完成 ${prog.totalDone} 格）`;
+      thermoCounts.textContent = `可用 ${prog.usableCount}/${prog.total} 款 · 🧊結凍 ${prog.frozenCount} · 🔒待解鎖 ${prog.lockedCount}`;
 
-      // 分類頁籤
+      // 等級能力徽章列
+      const milestones = [
+        [3,  p.singleAnim,        'Lv3 貼圖動態'],
+        [5,  p.chooseMotion,      'Lv5 動靜自選'],
+        [6,  p.merge2Logical,     'Lv6 合理合併'],
+        [8,  p.merge2LogicalAnim, 'Lv8 合理合併動態'],
+        [10, p.merge2Any,         'Lv10 任意合併'],
+        [12, p.merge2AnyAnim,     'Lv12 任意合併動態'],
+        [15, p.merge3,            'Lv15 三合一調合'],
+        [18, p.merge3Anim,        'Lv18 三合一傳奇動態']
+      ];
+      lvBar.innerHTML = milestones.map(([lv, ok, txt]) =>
+        `<span class="grp-stk-lvpill${ok ? ' ok' : ''}">${ok ? '✓ ' : '🔒 '}${txt}</span>`
+      ).join('');
+
+      paintLab(prog);
+
       tabsBox.innerHTML = CATEGORIES.map(c => {
         const list = STICKERS.filter(s => s.cat === c.id);
         const usableInCat = list.filter(s => prog.itemState.get(s.id)?.usable).length;
@@ -9853,9 +10167,12 @@ body.nofx .blk-done-pop {
         ? STICKERS.filter(s => s.name.toLowerCase().includes(q) || s.tag.toLowerCase().includes(q))
         : STICKERS.filter(s => s.cat === activeCat);
 
+      const cellAnim = p.singleAnim && !(motionPref === 'static' && p.chooseMotion);
+      const pickedIds = new Set(mergeSlots.map(s => s.id));
+
       gridBox.innerHTML = shown.length ? shown.map(s => {
         const st = prog.itemState.get(s.id) || { unlocked: true, frozen: false, usable: true, needMore: 0 };
-        const cls = st.frozen ? ' frozen' : (!st.unlocked ? ' locked' : '');
+        const cls = (st.frozen ? ' frozen' : (!st.unlocked ? ' locked' : '')) + (labOpen && pickedIds.has(s.id) ? ' picked' : '');
         const badge = s.neverFreeze
           ? `<span class="grp-stk-cbadge starter" title="初始基本貼圖・永不結凍">常駐</span>`
           : st.frozen
@@ -9863,17 +10180,12 @@ body.nofx .blk-done-pop {
             : !st.unlocked
               ? `<span class="grp-stk-cbadge" title="累積完成 ${s.reqDone} 個方塊解鎖">🔒${s.reqDone}格</span>`
               : '';
-        const tip = st.usable
-          ? `點擊使用「${s.name}」貼圖`
-          : st.frozen
-            ? `🧊「${s.name}」因閒置 ${prog.idleDays} 天而結凍！完成 1 個方塊即可破冰解凍`
-            : `🔒「${s.name}」尚未解鎖：再完成 ${st.needMore} 個方塊即可解鎖（需累積 ${s.reqDone} 格）`;
-        return `<button type="button" class="grp-stk-cell${cls}" data-stkid="${s.id}" title="${esc(tip)}">` +
+        return `<button type="button" class="grp-stk-cell${cls}" data-stkid="${s.id}" title="${esc(s.name)}">` +
           badge +
-          svgOf(s, { size: 50, frozen: st.frozen, locked: !st.unlocked }) +
+          svgOf(s, { size: 50, frozen: st.frozen, locked: !st.unlocked, noAnim: !cellAnim }) +
           `<span class="grp-stk-cname">${esc(s.name)}</span>` +
         `</button>`;
-      }).join('') : `<p class="hint" style="grid-column:1/-1;margin:8px 0">找不到符合「${esc(searchQuery)}」的貼圖，試試其他關鍵字吧！</p>`;
+      }).join('') : `<p class="hint" style="grid-column:1/-1;margin:8px 0">找不到符合「${esc(searchQuery)}」的貼圖。</p>`;
     }
 
     tabsBox.addEventListener('click', e => {
@@ -9890,6 +10202,17 @@ body.nofx .blk-done-pop {
       paint();
     });
 
+    labBtn.addEventListener('click', () => {
+      labOpen = !labOpen;
+      paint();
+    });
+
+    motionSel.addEventListener('change', () => {
+      motionPref = motionSel.value;
+      ls.set('pace-stk-motion', motionPref);
+      refreshPickers();
+    });
+
     directChk.addEventListener('change', () => {
       directSend = directChk.checked;
     });
@@ -9899,30 +10222,94 @@ body.nofx .blk-done-pop {
       refreshPickers();
     });
 
+    slotsBox.addEventListener('click', e => {
+      const slotEl = e.target.closest('[data-slot]');
+      if (!slotEl) return;
+      const idx = Number(slotEl.dataset.slot);
+      if (mergeSlots[idx]) {
+        mergeSlots.splice(idx, 1);
+        paint();
+      }
+    });
+
+    labClearBtn.addEventListener('click', () => {
+      mergeSlots = [];
+      paint();
+    });
+
+    labRandBtn.addEventListener('click', () => {
+      const prog = scanProgress();
+      const usableList = STICKERS.filter(s => prog.itemState.get(s.id)?.usable);
+      const actors = usableList.filter(s => s.cat === 'starter' || s.cat === 'emotion' || s.cat === 'critter');
+      const others = usableList.filter(s => s.cat !== 'starter' && s.cat !== 'emotion');
+      const a = actors[Math.floor(Math.random() * actors.length)] || STICKERS[0];
+      const pool2 = (others.length ? others : usableList).filter(s => s.id !== a.id);
+      const b = pool2[Math.floor(Math.random() * pool2.length)] || STICKERS[2];
+      mergeSlots = [a, b];
+      if (prog.perks.merge3 && usableList.length >= 3) {
+        const pool3 = usableList.filter(s => s.id !== a.id && s.id !== b.id);
+        if (pool3.length) mergeSlots.push(pool3[Math.floor(Math.random() * pool3.length)]);
+      }
+      paint();
+    });
+
+    labUseBtn.addEventListener('click', () => {
+      // preview levels only show what a merge looks like; sending follows actual progress
+      const prog = scanProgress(true);
+      if (mergeSlots.length < 2) return;
+      const hm = checkMergeHarmony(mergeSlots);
+      const is3 = mergeSlots.length === 3;
+      const canMerge = hm.valid && (hm.harmonious ? prog.perks.merge2Logical : prog.perks.merge2Any) && (!is3 || prog.perks.merge3);
+      const allUsable = mergeSlots.every(s => prog.itemState.get(s.id)?.usable);
+      if (!canMerge || !allUsable) {
+        if (simMode !== 'real') statusMsg.textContent = `👀 這是預覽畫面。你目前是 Lv ${prog.level}${allUsable ? '' : '，而且有貼圖還沒解鎖或結凍中'}，實際上還不能送出這個合成，切回「🌡️ 實際等級與進度」看看目前能用哪些。`;
+        return;
+      }
+      const wantStatic = motionPref === 'static' && prog.perks.chooseMotion;
+      const names = mergeSlots.map(s => s.name).join('+');
+      const token = `[貼圖:${names}${wantStatic ? '!靜' : ''}]`;
+      onPickToken(token, mergeSlots.map(s => s.name).join('＋'), directSend, statusMsg);
+    });
+
     gridBox.addEventListener('click', e => {
       const cell = e.target.closest('[data-stkid]');
       if (!cell) return;
       const stk = BY_ID.get(cell.dataset.stkid);
       if (!stk) return;
-      // preview modes only change how the album looks; what can really be sent follows actual progress
-      const prog = scanProgress(true);
+      const prog = scanProgress();
       const st = prog.itemState.get(stk.id);
-      if (simMode !== 'real' && !st?.usable) {
+      // preview modes only change how the album looks; what can really be sent follows actual progress
+      const realSt = scanProgress(true).itemState.get(stk.id);
+      if (simMode !== 'real' && st?.usable && !realSt?.usable && !labOpen) {
         cell.classList.remove('shake'); void cell.offsetWidth; cell.classList.add('shake');
-        statusMsg.textContent = `👀 這是預覽畫面。「${stk.name}」實際上${st?.unlocked ? '還在結凍中' : '還沒解鎖'}，切回「🌡️ 實際進度」看看目前能用哪些。`;
+        statusMsg.textContent = `👀 這是預覽畫面。「${stk.name}」實際上${realSt?.unlocked ? '還在結凍中' : '還沒解鎖'}，切回「🌡️ 實際等級與進度」看看目前能用哪些。`;
         return;
       }
       if (!st?.unlocked) {
         cell.classList.remove('shake'); void cell.offsetWidth; cell.classList.add('shake');
-        statusMsg.textContent = `🔒「${stk.name}」尚未解鎖！再完成 ${st.needMore} 個方塊（累積 ${stk.reqDone} 格）就能解鎖這款貼圖。`;
+        statusMsg.textContent = `🔒「${stk.name}」尚未解鎖！再完成 ${st.needMore} 個方塊（累積 ${stk.reqDone} 格）即可解鎖。`;
         return;
       }
       if (st.frozen) {
         cell.classList.remove('shake'); void cell.offsetWidth; cell.classList.add('shake');
-        statusMsg.textContent = `🧊「${stk.name}」因為 ${prog.idleDays} 天沒動而結凍了！去完成 1 個方塊就能破冰解凍，或先用「🌱 基本常用」貼圖（笑、讚、拍手）～`;
+        statusMsg.textContent = `🧊「${stk.name}」因為 ${prog.idleDays} 天沒動而結凍了！去完成 1 個方塊就能破冰解凍，或先用「🌱 基本常用」貼圖～`;
         return;
       }
-      onPickSticker(stk, directSend, statusMsg);
+      // 若森靈調合工坊開啟中，點選貼圖會加入或移出合成槽！
+      if (labOpen) {
+        const maxSlots = prog.perks.merge3 ? 3 : 2;
+        const existIdx = mergeSlots.findIndex(x => x.id === stk.id);
+        if (existIdx >= 0) {
+          mergeSlots.splice(existIdx, 1);
+        } else if (mergeSlots.length < maxSlots) {
+          mergeSlots.push(stk);
+        } else {
+          mergeSlots[maxSlots - 1] = stk;
+        }
+        paint();
+        return;
+      }
+      onPickToken(formatSingleToken(stk, scanProgress(true)), stk.name, directSend, statusMsg);
     });
 
     pickerInstances.push(paint);
@@ -9951,29 +10338,27 @@ body.nofx .blk-done-pop {
     stkBtn.id = 'grpStkBtn';
     stkBtn.className = 'btn';
     stkBtn.setAttribute('aria-expanded', 'false');
-    stkBtn.title = '開啟原創貼圖與表情面板（240 款）';
+    stkBtn.title = '開啟原創貼圖與森靈調合工坊（240 款＋貼圖合併）';
     stkBtn.innerHTML = '😊 貼圖';
     actsRow.insertBefore(stkBtn, sendBtn);
 
     const pickerHost = document.createElement('div');
     actsRow.before(pickerHost);
 
-    const picker = buildStickerPickerUI(pickerHost, (stk, isDirect, statusMsg) => {
-      const token = `[貼圖:${stk.name}]`;
+    const picker = buildStickerPickerUI(pickerHost, (token, label, isDirect, statusMsg) => {
       if (isDirect) {
         const prev = msgIn.value;
         msgIn.value = token;
         sendBtn.click();
-        // 若因尚未決定公開設定等原因未送出，保留之
         if (msgIn.value === token && prev) msgIn.value = prev + ' ' + token;
-        statusMsg.textContent = `✨ 已傳送貼圖「${stk.name}」！`;
+        statusMsg.textContent = `✨ 已傳送貼圖「${label}」！`;
       } else {
         const cur = msgIn.value;
         const sep = cur && !cur.endsWith(' ') ? ' ' : '';
         if ((cur + sep + token).length <= 300) {
           msgIn.value = cur + sep + token;
           msgIn.focus();
-          statusMsg.textContent = `已插入「${stk.name}」${token}，可繼續打字或按「送出」！`;
+          statusMsg.textContent = `已插入「${label}」${token}，可繼續打字或按「送出」！`;
         } else {
           statusMsg.textContent = '訊息字數已滿（上限 300 字）。';
         }
@@ -9987,22 +10372,21 @@ body.nofx .blk-done-pop {
     });
   }
 
-  /* 也在「等級與成就 (#xpDlg)」中加入原創 240 貼圖圖鑑與結凍狀態預覽，方便未登入時隨時賞玩 */
+  /* 也在「等級與成就 (#xpDlg)」中加入原創 240 貼圖圖鑑與森靈調合工坊 */
   function attachToXpDialog() {
     const albumBox = document.getElementById('xpAlbum');
     if (!albumBox || document.getElementById('xpChatStkWrap')) return;
     const sec = document.createElement('div');
     sec.id = 'xpChatStkWrap';
-    sec.innerHTML = `<h3 class="set-h">聊天室原創貼圖庫（10 大類 240 款・解鎖與結凍制度）</h3>` +
-      `<p class="hint" style="margin:0 0 6px">初始贈送 24 款基本貼圖（笑、讚、拍手等）永不結凍；完成方塊可解鎖全部 240 款原創「方塊森靈」貼圖。若太久沒完成方塊，進階貼圖會逐步結凍🧊，再完成方塊即可破冰回溫！</p>`;
+    sec.innerHTML = `<h3 class="set-h">聊天室原創貼圖庫 ＆ 森靈調合工坊（240 款・動態與合併制度）</h3>` +
+      `<p class="hint" style="margin:0 0 6px">Lv 3 解鎖動態貼圖、Lv 5 自由切換動／靜、Lv 6 解鎖合理雙貼圖合併、Lv 8 合理合併動態、Lv 10 萬物任意合併、Lv 12 任意合併動態、Lv 15 三合一調合、Lv 18 三合一傳奇動態！</p>`;
     albumBox.after(sec);
-    const p = buildStickerPickerUI(sec, (stk, _isDirect, statusMsg) => {
-      statusMsg.textContent = `✨「${stk.name}」（${CATEGORIES.find(c => c.id === stk.cat)?.name}）目前已解鎖且暖心可用！在群組聊天室點選即可傳送。`;
+    const p = buildStickerPickerUI(sec, (token, label, _isDirect, statusMsg) => {
+      statusMsg.textContent = `✨「${label}」（語法：${token}）已準備就緒！在群組聊天室即可傳送。`;
     });
     p.drawer.hidden = false;
   }
 
-  /* 監聽方塊完成事件以觸發破冰回溫與即時解鎖 */
   if (window.paceStore && typeof window.paceStore.onWrite === 'function') {
     // any save of a week that already holds a finished block (moving, renaming) is not new activity:
     // only re-read here; the dates of finished blocks decide how long it has been, and ticking a block (below) thaws at once
@@ -10028,6 +10412,9 @@ body.nofx .blk-done-pop {
     list: () => STICKERS,
     get: idOrName => BY_ID.get(idOrName) || BY_NAME.get(idOrName) || null,
     svg: svgOf,
+    svgCombo: svgOfCombo,
+    checkHarmony: checkMergeHarmony,
+    perksOf: computePerks,
     status: scanProgress,
     renderChatMessage,
     attachToGroupRoom,
@@ -10038,7 +10425,6 @@ body.nofx .blk-done-pop {
   attachToXpDialog();
   addEventListener('DOMContentLoaded', () => { attachToGroupRoom(); attachToXpDialog(); });
 })();
-
 </script>
 <script data-pace-ui="c-mystery.js">/* 步調 Pace: 「心流奇蹟工程」 (Wonders of Focus), a weekly building project that shows the week's progress as something standing:
    - 不是耗費時間玩的遊戲，而是利用「One More Turn（再推進一步奇蹟就落成了！）」的強烈自律心智引導；
