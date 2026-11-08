@@ -4,7 +4,7 @@
    - 解鎖與結凍制度：
      1. 初始基本貼圖（第 1 類「基本常用」24 款：笑、大笑、讚、拍手、加油、OK、收到、揮手等）開局免費贈送，且【永遠不會結凍】。
      2. 進階貼圖（其餘 9 大類共 216 款）隨完成方塊／任務數量與連續天數逐步解鎖（每完成 1 格即可解鎖 3 款新貼圖）。
-     3. 久不動結凍機制（🧊）：若超過 2 天未完成任何方塊，已解鎖的進階貼圖會從高階往低階逐步「結凍」（閒置 2 天凍 25%、3 天凍 50%、4 天凍 75%、5 天以上進階貼圖全數結凍，只剩初始基本貼圖可用）。只要再完成 1 個方塊即可瞬間「破冰解凍」！ */
+     3. 久不動結凍機制（🧊）：休息 3 天內完全不凍（週末、段考、生病都不扣）；之後已解鎖的進階貼圖才會從高階往低階慢慢「結凍」（閒置 4–5 天凍 25%、6–7 天凍 50%、8–9 天凍 75%、10 天以上進階貼圖全數結凍，只剩初始基本貼圖可用）。只要再完成 1 個方塊即可瞬間「破冰解凍」！ */
 (() => {
   if (window.paceStickers) return;
   const ls = {
@@ -696,13 +696,13 @@
 
     // 若使用者在面板開啟了「體感預覽模式」
     if (real) { /* actual progress only */ }
-    else if (simMode === 'idle2') { totalDone = Math.max(totalDone, 35); idleDays = 2; }
-    else if (simMode === 'idle4') { totalDone = Math.max(totalDone, 35); idleDays = 4; }
-    else if (simMode === 'idle6') { totalDone = Math.max(totalDone, 35); idleDays = 6; }
+    else if (simMode === 'idle2') { totalDone = Math.max(totalDone, 35); idleDays = 4; }
+    else if (simMode === 'idle4') { totalDone = Math.max(totalDone, 35); idleDays = 7; }
+    else if (simMode === 'idle6') { totalDone = Math.max(totalDone, 35); idleDays = 10; }
     else if (simMode === 'allopen') { totalDone = Math.max(totalDone, 80); idleDays = 0; }
 
-    // 計算結凍比例（閒置 <=1 天：0%；2 天：25%；3 天：50%；4 天：75%；>=5 天：100% 進階貼圖結凍）
-    const freezeRatio = idleDays <= 1 ? 0 : idleDays === 2 ? 0.25 : idleDays === 3 ? 0.50 : idleDays === 4 ? 0.75 : 1.0;
+    // 結凍比例（寬鬆版）：閒置 <=3 天 0%；4–5 天 25%；6–7 天 50%；8–9 天 75%；>=10 天 100% 進階貼圖結凍
+    const freezeRatio = idleDays <= 3 ? 0 : idleDays <= 5 ? 0.25 : idleDays <= 7 ? 0.50 : idleDays <= 9 ? 0.75 : 1.0;
 
     // 先找出所有已解鎖的進階貼圖（依 tier 由高到低排序，從最高階開始結凍）
     const unlockedNonStarter = STICKERS.filter(s => !s.neverFreeze && totalDone >= s.reqDone)
@@ -874,9 +874,9 @@
           `<label class="check" style="font-size:.76rem;flex-direction:row;gap:4px;margin:0;white-space:nowrap"><input type="checkbox" class="grp-stk-direct"> 點擊直接送出</label>` +
           `<select class="grp-stk-sim" aria-label="貼圖狀態預覽" style="font-size:.74rem;padding:4px 6px;border-radius:7px;border:1px solid var(--line);background:var(--panel-2);color:var(--fg)">` +
             `<option value="real">🌡️ 實際進度</option>` +
-            `<option value="idle2">❄️ 預覽：2天不動(微凍)</option>` +
-            `<option value="idle4">🧊 預覽：4天不動(半凍)</option>` +
-            `<option value="idle6">🧊 預覽：5天+不動(全凍)</option>` +
+            `<option value="idle2">❄️ 預覽：4天不動(微凍)</option>` +
+            `<option value="idle4">🧊 預覽：7天不動(半凍)</option>` +
+            `<option value="idle6">🧊 預覽：10天+不動(全凍)</option>` +
             `<option value="allopen">✨ 預覽：全解鎖回溫</option>` +
           `</select>` +
         `</div>` +
@@ -922,11 +922,13 @@
       directChk.checked = directSend;
 
       // 溫度計狀態列
-      thermo.classList.toggle('is-chilly', prog.idleDays >= 2 && prog.idleDays <= 3);
-      thermo.classList.toggle('is-frozen', prog.idleDays >= 4);
+      thermo.classList.toggle('is-chilly', prog.idleDays >= 4 && prog.idleDays <= 9);
+      thermo.classList.toggle('is-frozen', prog.idleDays >= 10);
       if (prog.idleDays <= 1) {
         thermoBadge.textContent = '🔥 暖心活躍中（貼圖全數回溫）';
       } else if (prog.idleDays <= 3) {
+        thermoBadge.textContent = `🌤️ 休息 ${prog.idleDays} 天也沒關係（第 4 天起才會慢慢結凍）`;
+      } else if (prog.idleDays <= 9) {
         thermoBadge.textContent = `❄️ 閒置 ${prog.idleDays} 天・寒霜蔓延（${prog.frozenCount} 款貼圖結凍中）`;
       } else {
         thermoBadge.textContent = `🧊 閒置 ${prog.idleDays} 天・深度結凍（進階貼圖冰封，剩基本貼圖可用）`;
