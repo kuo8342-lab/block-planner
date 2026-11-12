@@ -153,3 +153,16 @@
   #pacePageEyebrow { display:none; }
   body[data-pace-view]:not([data-pace-view="calendar"]) .pace-add { display:none; }
 }
+/* Wide screens: pages use the room they have. Lists run in columns instead of leaving the right half empty. */
+@media(min-width:768px) {
+  .pace-panel:not([hidden]) { max-width:1240px; }
+  .pace-panel #palette { display:grid !important;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px 32px;align-items:start; }
+  .pace-panel #palette .pal-group+.pal-group { margin-top:0; }
+  .pace-panel #palette .chip { min-height:40px;padding:8px 12px;font-size:14px; }
+  .pace-panel :is(#tasks,#goals,#wishes) { display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:10px 14px;align-items:start; }
+  .pace-panel :is(#tasks,#goals,#wishes)>:is(.hint,p,.pace-empty) { grid-column:1/-1; }
+  #paceHoursPanel:not([hidden]),#paceFocusPanel:not([hidden]) { display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));align-items:start; }
+  #paceFocusPanel>.pace-focus-idle { grid-column:1/-1; }
+  #grpRoom.as-page { max-width:980px; }
+}
+@media(min-width:768px) { .pace-panel #palette>:not(.pal-group) { grid-column:1/-1; } }
