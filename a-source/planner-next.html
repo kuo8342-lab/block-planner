@@ -4460,8 +4460,8 @@ body.nofx .blk-done-pop {
 (() => {
   const $=id=>document.getElementById(id), mobile=matchMedia('(max-width:767px)');
   const tr=(zh,en)=>window.paceLang?.()==='en'?en:zh;
-  const icon=name=>({calendar:'▦',tasks:'☑',blocks:'▥',focus:'◷',more:'•••',goals:'◎',wishes:'☆',groups:'♧',coach:'✦',hours:'◴',settings:'⚙',report:'▤'})[name]||'›';
-  const labels={calendar:['時間表','Timetable'],tasks:['任務','Tasks'],blocks:['方塊','Blocks'],focus:['專注','Focus'],more:['更多','More'],goals:['目標','Goals'],wishes:['願望清單','Wishlist'],groups:['共筆群組','Groups'],coach:['AI 與教練','AI & coach'],hours:['本週時數','Weekly hours'],report:['時間報表','Reports']};
+  const icon=name=>({calendar:'▦',tasks:'☑',blocks:'▥',focus:'◷',more:'•••',goals:'◎',wishes:'☆',groups:'♧',coach:'✦',hours:'◴',settings:'⚙',report:'▤',rewards:'✧'})[name]||'›';
+  const labels={calendar:['時間表','Timetable'],tasks:['任務','Tasks'],blocks:['方塊','Blocks'],focus:['專注','Focus'],more:['更多','More'],goals:['目標','Goals'],wishes:['願望清單','Wishlist'],groups:['共筆群組','Groups'],coach:['AI 與教練','AI & coach'],hours:['本週時數','Weekly hours'],report:['時間報表','Reports'],rewards:['等級與成就','Level & rewards']};
   const makeButton=(name,text,fn,cls='btn')=>{const b=document.createElement('button');b.type='button';b.className=cls;b.innerHTML=`<span class="pace-icon" aria-hidden="true">${icon(name)}</span><span>${text}</span>`;b.addEventListener('click',fn);return b;};
   const planner=document.querySelector('.planner'),rail=$('workspaceRail'),main=$('workspaceMain'),top=document.querySelector('.top');
   const baseWidget=setWidget,baseReport=setReport;
@@ -4489,8 +4489,9 @@ body.nofx .blk-done-pop {
   const blockTip=document.createElement('p');blockTip.className='pace-page-hint';blockTip.textContent=tr('點選可編輯與排程；長按後拖動，會自動展開時間表。','Tap to edit or schedule. Hold and drag to reveal the timetable.');panels.blocks.append(blockTip);
   const focusIdle=document.createElement('div');focusIdle.className='pace-focus-idle';focusIdle.innerHTML='<span class="pace-focus-orbit" aria-hidden="true">◷</span><h2>'+tr('一次，只做一件事','One thing at a time')+'</h2><p>'+tr('選一個任務，給自己一段不被打擾的時間。','Choose a task and make a little room to focus.')+'</p>';focusIdle.append(makeButton('tasks',tr('選擇任務','Choose a task'),()=>showView('tasks'),'btn primary'),makeButton('blocks',tr('選擇方塊','Choose a block'),()=>showView('blocks'),'btn'));panels.focus.append(focusIdle);
   const moreGrid=document.createElement('div');moreGrid.className='pace-more-grid';panels.more.append(moreGrid);
-  const descriptions={goals:tr('把大目標拆成小步驟','Small steps toward a bigger goal'),wishes:tr('為想做的事留點空間','Make room for things you enjoy'),groups:tr('一起完成，互相鼓勵','Progress, shared with care'),report:tr('回顧時間花在哪裡','A little perspective on your time'),coach:tr('你的 AI 與讀書建議','Your AI and study suggestions'),hours:tr('本週各科時數與目標','Weekly hours and targets')};
-  ['goals','wishes',window.PACE_HAS_COACH?'coach':'groups','report','hours'].forEach(k=>{const b=makeButton(k,tr(...labels[k]),()=>showView(k),'pace-more-card');const d=document.createElement('small');d.textContent=descriptions[k];b.append(d);moreGrid.append(b);});
+  const descriptions={goals:tr('把大目標拆成小步驟','Small steps toward a bigger goal'),wishes:tr('為想做的事留點空間','Make room for things you enjoy'),groups:tr('一起完成，互相鼓勵','Progress, shared with care'),report:tr('回顧時間花在哪裡','A little perspective on your time'),coach:tr('你的 AI 與讀書建議','Your AI and study suggestions'),hours:tr('本週各科時數與目標','Weekly hours and targets'),rewards:tr('等級、貼圖、環境音和本週奇蹟','Level, stickers, sounds and this week’s wonder')};
+  const openRewards=()=>{const b=$('xpBtn');if(b)b.click();else showView('rewards');};
+  ['goals','wishes',window.PACE_HAS_COACH?'coach':'groups','report','hours','rewards'].forEach(k=>{const b=makeButton(k,tr(...labels[k]),k==='rewards'?openRewards:()=>showView(k),'pace-more-card');const d=document.createElement('small');d.textContent=descriptions[k];b.append(d);moreGrid.append(b);});
   const commands=document.createElement('div');commands.id='paceMoreCommands';commands.className='pace-more-commands';panels.more.append(commands);
   const backupButton=makeButton('tasks',tr('備份與還原','Backup & restore'),()=>openSettings('exportAll'),'btn');commands.append(backupButton);
   const groupInfo=document.createElement('div');groupInfo.className='pace-info-card';groupInfo.innerHTML='<span class="pace-kicker">'+tr('一起前進','TOGETHER')+'</span><h2>'+tr('分享完成，不分享時間表','Share progress, keep your plan private')+'</h2><p>'+tr('可選擇分享完成項目、只分享分鐘數，或完全不分享。','Share completed items, minutes only, or keep all progress private.')+'</p>';groupInfo.append(makeButton('groups',tr('管理群組與隱私','Manage groups & privacy'),()=>openSettings('grpOff'),'btn primary'));panels.groups.append(groupInfo);
@@ -4589,7 +4590,7 @@ body.nofx .blk-done-pop {
   ['calendar','tasks','blocks','focus','more'].forEach(name=>{const b=makeButton(name,tr(...labels[name]),()=>showView(name),'');b.dataset.paceNav=name;navigation.append(b);});
   // Desktop gets every new entry as well, using the same original surfaces.
   const desktopNav=document.querySelector('.workspace-nav');
-  ['wishes','hours','focus',window.PACE_HAS_COACH?'coach':'groups'].forEach(name=>{const b=makeButton(name,tr(...labels[name]),()=>showView(name),'');b.dataset.paceDnav=name;desktopNav.append(b);});
+  ['wishes','hours','focus',window.PACE_HAS_COACH?'coach':'groups','rewards'].forEach(name=>{const b=makeButton(name,tr(...labels[name]),name==='rewards'?openRewards:()=>showView(name),'');b.dataset.paceDnav=name;desktopNav.append(b);});
   $('toGrid').dataset.paceDnav='calendar';$('toReport').dataset.paceDnav='report';
   if(!mobile.matches)showView(view,{silent:true});
   document.addEventListener('click',e=>{if(e.target.closest('#toWidget')){explicitWidget=true;setTimeout(()=>explicitWidget=false,0);}},true);
@@ -7038,6 +7039,19 @@ body.nofx .blk-done-pop {
       '<div class="actions"><button class="btn primary" value="ok">關閉</button></div>' +
     '</form></dialog>' +
     '<div class="xp-stage" id="xpStage" hidden><div class="xp-card" role="dialog" aria-modal="true" aria-labelledby="xpCardT"><div class="xp-burst" id="xpCardIc" aria-hidden="true"></div><div class="xp-cardt" id="xpCardT"></div><p class="xp-cards" id="xpCardS"></p><button class="btn primary" type="button" id="xpCardGo"></button></div></div>');
+  const pageSt = document.createElement('style');
+  pageSt.textContent =
+    '.xp-dlg { overflow-x: hidden; } .xp-dlg form { min-width: 0; } .xp-sec { display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow-wrap: anywhere; } .xp-sec .check { white-space: normal; }' +
+    '#xpDlg.as-page { position: static; inset: auto; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; box-shadow: none; overflow: visible; }' +
+    '#xpDlg.as-page .dtitle, #xpDlg.as-page form > .actions, #xpDlg.as-page::before, #xpDlg.as-page form::before { display: none !important; }' +
+    '#xpDlg.as-page form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }' +
+    '#xpDlg.as-page .xp-sec { margin: 0; padding: 20px 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }' +
+    '#xpDlg.as-page .xp-sec > h3.set-h { margin: 0; padding: 0; border: 0; }' +
+    '#xpDlg.as-page .xp-sec-wide { grid-column: 1 / -1; }' +
+    
+    '#xpDlg.as-page .xp-sec-wide .grp-stk-grid { max-height: 340px; }' +
+    '@media (max-width: 767px) { #xpDlg.as-page form { display: flex; flex-direction: column; gap: 16px; } #xpDlg.as-page .xp-sec { padding: 0 0 16px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; } }';
+  document.head.appendChild(pageSt);
   const st = document.createElement('style');
   st.textContent = '.xp-btn { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; color: var(--accent-ink, var(--accent)); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }' +
     '.xp-btn.in-crumb { margin-left: auto; margin-right: 10px; padding: 3px 11px; min-height: 34px; flex: none; }' +
@@ -7148,7 +7162,31 @@ body.nofx .blk-done-pop {
     const f = Object.assign(document.createElement('div'), { className: 'xp-float', textContent: text }); f.style.left = x + 'px'; f.style.top = y + 'px';
     document.body.appendChild(f); setTimeout(() => f.remove(), 1300);
   }
-  btn.addEventListener('click', () => { paint(); document.getElementById('xpDlg').showModal(); if (!stats) refresh(true); });
+  // Each heading and what follows it becomes one card, so the page can lay them out side by side.
+  function sectionize() {
+    const form = document.querySelector('#xpDlg form'); if (!form || form.dataset.cards) return; form.dataset.cards = '1';
+    let sec = null;
+    for (const el of [...form.children]) {
+      if (el.matches('.dtitle, .actions')) { sec = null; continue; }
+      if (!sec || el.matches('h3.set-h')) { sec = document.createElement('section'); sec.className = 'xp-sec' + (sec ? '' : ' xp-sec-top'); el.before(sec); }
+      sec.append(el);
+    }
+    form.querySelectorAll('.xp-sec').forEach(s => { if (s.querySelector('#xpChatStkWrap, #xpAlbum')) s.classList.add('xp-sec-wide'); });
+  }
+  // With the page layout (notion-mobile.js) this is a full page of its own; without it, the old pop-up.
+  btn.addEventListener('click', () => {
+    const dlg = document.getElementById('xpDlg'), panel = document.getElementById('paceRewardsPanel');
+    paint(); try { sectionize(); } catch (e) {}
+    if (panel && window.paceUI?.showView) {
+      if (dlg.open && document.body.dataset.paceView === 'rewards') { dlg.close(); return; }   // the button again goes back
+      if (dlg.parentNode !== panel) panel.append(dlg);
+      dlg.classList.add('as-page'); if (!dlg.open) dlg.show();
+      window.paceUI.showView('rewards'); panel.scrollTop = 0;
+    } else dlg.showModal();
+    if (!stats) refresh(true);
+  });
+  document.getElementById('xpDlg').addEventListener('close', () => { if (document.body.dataset.paceView === 'rewards') window.paceUI?.showView('calendar'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.dataset.paceView === 'rewards' && !document.querySelector('dialog[open]:not(#xpDlg)') && !e.target.closest?.('input,textarea,select')) document.getElementById('xpDlg').close(); });
   document.getElementById('xpOn').addEventListener('change', e => { ls.set(OFF, e.target.checked ? '0' : '1'); paint(); });
   document.getElementById('xpSnd').addEventListener('change', e => ls.set(MUTE, e.target.checked ? '0' : '1'));
   const saveHealth = () => {
@@ -9722,7 +9760,8 @@ body.nofx .blk-done-pop {
   window.saveWeek = saveWeek = function () { const r = save0.apply(this, arguments); clearTimeout(timer); timer = setTimeout(watch, 1400); return r; };
 })();
 </script>
-<script data-pace="c-zen.js">/* 步調 Pace: ambient sounds for focusing, synthesized with Web Audio: no files, no data used. Lives in the rewards dialog.
+<script data-pace="c-zen.js">/* 步調 Pace: ambient sounds for focusing. On the website (window.PACE_SOUND_BASE, set by build-c.js) they are real recordings,
+   loaded only when played; in A, offline, or if a file fails, the same sounds are synthesized with Web Audio. Lives in the rewards page.
    12 sounds. The first three are free; the rest are rewards that open as the level goes up. A volume slider sets how loud. */
 (() => {
   const host = document.getElementById('xpStreak'); if (!host || typeof playChime === 'undefined') return;
@@ -9734,6 +9773,8 @@ body.nofx .blk-done-pop {
     ['library', '📚', '圖書館白噪音', 5], ['storm', '⛈️', '遠方雷雨', 6], ['birds', '🐦', '清晨鳥鳴', 7],
     ['train', '🚆', '夜行列車', 8], ['chimes', '🎐', '屋簷風鈴', 9], ['space', '🪐', '深空漫遊', 10]
   ];
+  const BASE = typeof window.PACE_SOUND_BASE === 'string' ? window.PACE_SOUND_BASE : '';
+  const RECORDED = new Set(['rain', 'fire', 'stream', 'wind', 'waves', 'crickets', 'library', 'storm', 'birds', 'train', 'chimes']);
   let cur = null, vol = Number(ls.get('pace-zen-vol') ?? .7);
   if (isNaN(vol)) vol = .7;
   vol = Math.min(1, Math.max(0, vol));
@@ -9743,7 +9784,8 @@ body.nofx .blk-done-pop {
     '<p class="hint" style="margin:0">讀書時的背景聲。前三種一開始就有，其他的升等就會解鎖。</p>' +
     '<label class="zen-vol"><span>音量</span><input type="range" id="zenVol" min="0" max="100" step="5" value="' + Math.round(vol * 100) + '" aria-label="環境音音量"><span id="zenVolNum">' + Math.round(vol * 100) + '%</span></label>' +
     '<label class="check zen-auto"><input type="checkbox" id="zenAuto"> 開始專注時自動播放（播你上次選的那一種，專注結束就停）</label>' +
-    '<div class="zen-row">' + KINDS.map(k => '<button type="button" class="btn zen-btn" data-zen="' + k[0] + '" aria-pressed="false"><span class="zen-ico" aria-hidden="true">' + k[1] + '</span><span class="zen-name">' + k[2] + '</span><small class="zen-lock"></small></button>').join('') + '</div>');
+    '<div class="zen-row">' + KINDS.map(k => '<button type="button" class="btn zen-btn" data-zen="' + k[0] + '" aria-pressed="false"><span class="zen-ico" aria-hidden="true">' + k[1] + '</span><span class="zen-name">' + k[2] + '</span><small class="zen-lock"></small></button>').join('') + '</div>' +
+    (BASE ? '<p class="hint zen-credit" style="margin:0">真實錄音，來自開源專案 Moodist（CC0／Pixabay 授權），按了才會下載那一個。離線或載不到時會改用合成聲。</p>' : ''));
   const st = document.createElement('style');
   st.textContent =
     '.zen-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 6px; }' +
@@ -9752,7 +9794,7 @@ body.nofx .blk-done-pop {
     '.zen-btn .zen-lock { font-size: .7rem; color: var(--muted); white-space: nowrap; } .zen-btn .zen-lock:empty { display: none; }' +
     '.zen-btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }' +
     '.zen-btn[aria-pressed="true"] .zen-ico { animation: zen-pulse 1.6s ease-in-out infinite alternate; display: inline-block; } @keyframes zen-pulse { to { transform: scale(1.2); } }' +
-    '.zen-btn.locked { opacity: .55; } .zen-btn.locked .zen-ico { filter: grayscale(1); }' +
+    '.zen-btn.loading { opacity: .7; cursor: progress; } .zen-credit { font-size: .74rem !important; } ' + '.zen-btn.locked { opacity: .55; } .zen-btn.locked .zen-ico { filter: grayscale(1); }' +
     '.zen-auto { flex-direction: row !important; gap: 6px; font-size: .82rem; align-items: center; margin: 0; } .zen-vol span { white-space: nowrap; } .zen-vol { display: flex; flex-direction: row !important; align-items: center; gap: 8px; font-size: .82rem; color: var(--muted); } .zen-vol input { flex: 1 1 auto; min-width: 0; max-width: 260px; accent-color: var(--accent); }' +
     '@media (prefers-reduced-motion: reduce) { .zen-btn .zen-ico { animation: none !important; } } body.nofx .zen-btn .zen-ico { animation: none !important; }';
   document.head.appendChild(st);
@@ -9886,12 +9928,37 @@ body.nofx .blk-done-pop {
 
   function stop() {
     if (!cur) return;
+    if (cur.audio) {
+      const a = cur.audio; cur = null; a.onerror = null;
+      let n = 0; const v0 = a.volume, t = setInterval(() => { n++; try { a.volume = Math.max(0, v0 * (1 - n / 8)); } catch (e) {} if (n >= 8) { clearInterval(t); try { a.pause(); a.removeAttribute('src'); a.load(); } catch (e) {} } }, 50);
+      return;
+    }
     const { gain, comp, ctx, k } = cur; cur = null;
     try { gain.gain.cancelScheduledValues(ctx.currentTime); gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime); gain.gain.linearRampToValueAtTime(.0001, ctx.currentTime + .4); } catch (e) {}
     setTimeout(() => { try { k.stop(); gain.disconnect(); comp.disconnect(); } catch (e) {} }, 500);
   }
   const loud = v => v * v * 2.2;   // the slider feels even; at the default 70% this is several times louder than the old fixed level
   function start(kind) {
+    if (BASE && RECORDED.has(kind) && navigator.onLine !== false) {
+      try {
+        const a = new Audio(); a.loop = true; a.preload = 'auto'; a.volume = 0; a.src = BASE + kind + '.mp3';
+        const me = { kind, audio: a }; cur = me;
+        const fallback = () => { if (cur !== me) return; a.onerror = null; try { a.pause(); } catch (e) {} cur = null; try { startSynth(kind); } catch (e) {} paint(); };
+        a.onerror = fallback;
+        const btn = document.querySelector('.zen-btn[data-zen="' + kind + '"]'); btn?.classList.add('loading');
+        const ready = () => { btn?.classList.remove('loading'); };
+        a.addEventListener('playing', () => {
+          ready(); if (cur !== me) return;
+          let n = 0; const t = setInterval(() => { n++; if (cur !== me) { clearInterval(t); return; } a.volume = Math.min(1, vol * n / 12); if (n >= 12) clearInterval(t); }, 60);   // fade in
+        }, { once: true });
+        const p = a.play(); if (p && p.catch) p.catch(() => { ready(); fallback(); });
+        setTimeout(() => { if (cur === me && a.readyState < 2) { ready(); fallback(); } }, 12000);   // a very slow connection: do not leave silence
+        return;
+      } catch (e) { cur = null; }
+    }
+    startSynth(kind);
+  }
+  function startSynth(kind) {
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     const ctx = playChime.ctx || (playChime.ctx = new AC()); if (ctx.state === 'suspended') ctx.resume();
     const gain = ctx.createGain(), comp = ctx.createDynamicsCompressor();
@@ -9912,7 +9979,8 @@ body.nofx .blk-done-pop {
   document.getElementById('zenVol').addEventListener('input', e => {
     vol = Number(e.target.value) / 100; ls.set('pace-zen-vol', String(vol));
     document.getElementById('zenVolNum').textContent = Math.round(vol * 100) + '%';
-    if (cur) { try { cur.gain.gain.cancelScheduledValues(cur.ctx.currentTime); cur.gain.gain.setTargetAtTime(Math.max(.0001, loud(vol)), cur.ctx.currentTime, .05); } catch (err) {} }
+    if (cur?.audio) { try { cur.audio.volume = Math.min(1, vol); } catch (err) {} }
+    else if (cur) { try { cur.gain.gain.cancelScheduledValues(cur.ctx.currentTime); cur.gain.gain.setTargetAtTime(Math.max(.0001, loud(vol)), cur.ctx.currentTime, .05); } catch (err) {} }
   });
   /* With the focus timer: starting to focus plays the sound you used last, and it stops when the focus ends.
      It is on once you have played a sound yourself, so nobody gets a surprise in a quiet room; the tick box turns it off. */
@@ -9937,7 +10005,7 @@ body.nofx .blk-done-pop {
   const lvEl = document.getElementById('xpLevel');
   if (lvEl) new MutationObserver(paint).observe(lvEl, { childList: true, characterData: true, subtree: true });
   paint();
-  window.paceZen = { auto: () => autoOn, kinds: () => KINDS.map(k => ({ id: k[0], name: k[2], level: k[3] })), playing: () => cur?.kind || null, stop: () => { stop(); paint(); } };
+  window.paceZen = { auto: () => autoOn, source: () => !cur ? null : cur.audio ? 'recording' : 'synth', kinds: () => KINDS.map(k => ({ id: k[0], name: k[2], level: k[3] })), playing: () => cur?.kind || null, stop: () => { stop(); paint(); } };
 })();
 </script>
 <script data-pace="c-rest.js">/* 步調 Pace: rest suggestions. Rest is never something you pay for or earn: after a stretch of study, when today's limit is reached, or when today

@@ -1,4 +1,5 @@
-/* 步調 Pace: ambient sounds for focusing, synthesized with Web Audio: no files, no data used. Lives in the rewards dialog.
+/* 步調 Pace: ambient sounds for focusing. On the website (window.PACE_SOUND_BASE, set by build-c.js) they are real recordings,
+   loaded only when played; in A, offline, or if a file fails, the same sounds are synthesized with Web Audio. Lives in the rewards page.
    12 sounds. The first three are free; the rest are rewards that open as the level goes up. A volume slider sets how loud. */
 (() => {
   const host = document.getElementById('xpStreak'); if (!host || typeof playChime === 'undefined') return;
@@ -10,6 +11,8 @@
     ['library', '📚', '圖書館白噪音', 5], ['storm', '⛈️', '遠方雷雨', 6], ['birds', '🐦', '清晨鳥鳴', 7],
     ['train', '🚆', '夜行列車', 8], ['chimes', '🎐', '屋簷風鈴', 9], ['space', '🪐', '深空漫遊', 10]
   ];
+  const BASE = typeof window.PACE_SOUND_BASE === 'string' ? window.PACE_SOUND_BASE : '';
+  const RECORDED = new Set(['rain', 'fire', 'stream', 'wind', 'waves', 'crickets', 'library', 'storm', 'birds', 'train', 'chimes']);
   let cur = null, vol = Number(ls.get('pace-zen-vol') ?? .7);
   if (isNaN(vol)) vol = .7;
   vol = Math.min(1, Math.max(0, vol));
@@ -19,7 +22,8 @@
     '<p class="hint" style="margin:0">讀書時的背景聲。前三種一開始就有，其他的升等就會解鎖。</p>' +
     '<label class="zen-vol"><span>音量</span><input type="range" id="zenVol" min="0" max="100" step="5" value="' + Math.round(vol * 100) + '" aria-label="環境音音量"><span id="zenVolNum">' + Math.round(vol * 100) + '%</span></label>' +
     '<label class="check zen-auto"><input type="checkbox" id="zenAuto"> 開始專注時自動播放（播你上次選的那一種，專注結束就停）</label>' +
-    '<div class="zen-row">' + KINDS.map(k => '<button type="button" class="btn zen-btn" data-zen="' + k[0] + '" aria-pressed="false"><span class="zen-ico" aria-hidden="true">' + k[1] + '</span><span class="zen-name">' + k[2] + '</span><small class="zen-lock"></small></button>').join('') + '</div>');
+    '<div class="zen-row">' + KINDS.map(k => '<button type="button" class="btn zen-btn" data-zen="' + k[0] + '" aria-pressed="false"><span class="zen-ico" aria-hidden="true">' + k[1] + '</span><span class="zen-name">' + k[2] + '</span><small class="zen-lock"></small></button>').join('') + '</div>' +
+    (BASE ? '<p class="hint zen-credit" style="margin:0">真實錄音，來自開源專案 Moodist（CC0／Pixabay 授權），按了才會下載那一個。離線或載不到時會改用合成聲。</p>' : ''));
   const st = document.createElement('style');
   st.textContent =
     '.zen-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 6px; }' +
@@ -28,7 +32,7 @@
     '.zen-btn .zen-lock { font-size: .7rem; color: var(--muted); white-space: nowrap; } .zen-btn .zen-lock:empty { display: none; }' +
     '.zen-btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }' +
     '.zen-btn[aria-pressed="true"] .zen-ico { animation: zen-pulse 1.6s ease-in-out infinite alternate; display: inline-block; } @keyframes zen-pulse { to { transform: scale(1.2); } }' +
-    '.zen-btn.locked { opacity: .55; } .zen-btn.locked .zen-ico { filter: grayscale(1); }' +
+    '.zen-btn.loading { opacity: .7; cursor: progress; } .zen-credit { font-size: .74rem !important; } ' + '.zen-btn.locked { opacity: .55; } .zen-btn.locked .zen-ico { filter: grayscale(1); }' +
     '.zen-auto { flex-direction: row !important; gap: 6px; font-size: .82rem; align-items: center; margin: 0; } .zen-vol span { white-space: nowrap; } .zen-vol { display: flex; flex-direction: row !important; align-items: center; gap: 8px; font-size: .82rem; color: var(--muted); } .zen-vol input { flex: 1 1 auto; min-width: 0; max-width: 260px; accent-color: var(--accent); }' +
     '@media (prefers-reduced-motion: reduce) { .zen-btn .zen-ico { animation: none !important; } } body.nofx .zen-btn .zen-ico { animation: none !important; }';
   document.head.appendChild(st);
@@ -162,12 +166,37 @@
 
   function stop() {
     if (!cur) return;
+    if (cur.audio) {
+      const a = cur.audio; cur = null; a.onerror = null;
+      let n = 0; const v0 = a.volume, t = setInterval(() => { n++; try { a.volume = Math.max(0, v0 * (1 - n / 8)); } catch (e) {} if (n >= 8) { clearInterval(t); try { a.pause(); a.removeAttribute('src'); a.load(); } catch (e) {} } }, 50);
+      return;
+    }
     const { gain, comp, ctx, k } = cur; cur = null;
     try { gain.gain.cancelScheduledValues(ctx.currentTime); gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime); gain.gain.linearRampToValueAtTime(.0001, ctx.currentTime + .4); } catch (e) {}
     setTimeout(() => { try { k.stop(); gain.disconnect(); comp.disconnect(); } catch (e) {} }, 500);
   }
   const loud = v => v * v * 2.2;   // the slider feels even; at the default 70% this is several times louder than the old fixed level
   function start(kind) {
+    if (BASE && RECORDED.has(kind) && navigator.onLine !== false) {
+      try {
+        const a = new Audio(); a.loop = true; a.preload = 'auto'; a.volume = 0; a.src = BASE + kind + '.mp3';
+        const me = { kind, audio: a }; cur = me;
+        const fallback = () => { if (cur !== me) return; a.onerror = null; try { a.pause(); } catch (e) {} cur = null; try { startSynth(kind); } catch (e) {} paint(); };
+        a.onerror = fallback;
+        const btn = document.querySelector('.zen-btn[data-zen="' + kind + '"]'); btn?.classList.add('loading');
+        const ready = () => { btn?.classList.remove('loading'); };
+        a.addEventListener('playing', () => {
+          ready(); if (cur !== me) return;
+          let n = 0; const t = setInterval(() => { n++; if (cur !== me) { clearInterval(t); return; } a.volume = Math.min(1, vol * n / 12); if (n >= 12) clearInterval(t); }, 60);   // fade in
+        }, { once: true });
+        const p = a.play(); if (p && p.catch) p.catch(() => { ready(); fallback(); });
+        setTimeout(() => { if (cur === me && a.readyState < 2) { ready(); fallback(); } }, 12000);   // a very slow connection: do not leave silence
+        return;
+      } catch (e) { cur = null; }
+    }
+    startSynth(kind);
+  }
+  function startSynth(kind) {
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     const ctx = playChime.ctx || (playChime.ctx = new AC()); if (ctx.state === 'suspended') ctx.resume();
     const gain = ctx.createGain(), comp = ctx.createDynamicsCompressor();
@@ -188,7 +217,8 @@
   document.getElementById('zenVol').addEventListener('input', e => {
     vol = Number(e.target.value) / 100; ls.set('pace-zen-vol', String(vol));
     document.getElementById('zenVolNum').textContent = Math.round(vol * 100) + '%';
-    if (cur) { try { cur.gain.gain.cancelScheduledValues(cur.ctx.currentTime); cur.gain.gain.setTargetAtTime(Math.max(.0001, loud(vol)), cur.ctx.currentTime, .05); } catch (err) {} }
+    if (cur?.audio) { try { cur.audio.volume = Math.min(1, vol); } catch (err) {} }
+    else if (cur) { try { cur.gain.gain.cancelScheduledValues(cur.ctx.currentTime); cur.gain.gain.setTargetAtTime(Math.max(.0001, loud(vol)), cur.ctx.currentTime, .05); } catch (err) {} }
   });
   /* With the focus timer: starting to focus plays the sound you used last, and it stops when the focus ends.
      It is on once you have played a sound yourself, so nobody gets a surprise in a quiet room; the tick box turns it off. */
@@ -213,5 +243,5 @@
   const lvEl = document.getElementById('xpLevel');
   if (lvEl) new MutationObserver(paint).observe(lvEl, { childList: true, characterData: true, subtree: true });
   paint();
-  window.paceZen = { auto: () => autoOn, kinds: () => KINDS.map(k => ({ id: k[0], name: k[2], level: k[3] })), playing: () => cur?.kind || null, stop: () => { stop(); paint(); } };
+  window.paceZen = { auto: () => autoOn, source: () => !cur ? null : cur.audio ? 'recording' : 'synth', kinds: () => KINDS.map(k => ({ id: k[0], name: k[2], level: k[3] })), playing: () => cur?.kind || null, stop: () => { stop(); paint(); } };
 })();

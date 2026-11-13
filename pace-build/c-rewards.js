@@ -157,6 +157,19 @@
       '<div class="actions"><button class="btn primary" value="ok">關閉</button></div>' +
     '</form></dialog>' +
     '<div class="xp-stage" id="xpStage" hidden><div class="xp-card" role="dialog" aria-modal="true" aria-labelledby="xpCardT"><div class="xp-burst" id="xpCardIc" aria-hidden="true"></div><div class="xp-cardt" id="xpCardT"></div><p class="xp-cards" id="xpCardS"></p><button class="btn primary" type="button" id="xpCardGo"></button></div></div>');
+  const pageSt = document.createElement('style');
+  pageSt.textContent =
+    '.xp-dlg { overflow-x: hidden; } .xp-dlg form { min-width: 0; } .xp-sec { display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow-wrap: anywhere; } .xp-sec .check { white-space: normal; }' +
+    '#xpDlg.as-page { position: static; inset: auto; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; box-shadow: none; overflow: visible; }' +
+    '#xpDlg.as-page .dtitle, #xpDlg.as-page form > .actions, #xpDlg.as-page::before, #xpDlg.as-page form::before { display: none !important; }' +
+    '#xpDlg.as-page form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }' +
+    '#xpDlg.as-page .xp-sec { margin: 0; padding: 20px 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }' +
+    '#xpDlg.as-page .xp-sec > h3.set-h { margin: 0; padding: 0; border: 0; }' +
+    '#xpDlg.as-page .xp-sec-wide { grid-column: 1 / -1; }' +
+    
+    '#xpDlg.as-page .xp-sec-wide .grp-stk-grid { max-height: 340px; }' +
+    '@media (max-width: 767px) { #xpDlg.as-page form { display: flex; flex-direction: column; gap: 16px; } #xpDlg.as-page .xp-sec { padding: 0 0 16px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; } }';
+  document.head.appendChild(pageSt);
   const st = document.createElement('style');
   st.textContent = '.xp-btn { display: inline-flex; align-items: center; gap: 7px; font-weight: 800; color: var(--accent-ink, var(--accent)); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }' +
     '.xp-btn.in-crumb { margin-left: auto; margin-right: 10px; padding: 3px 11px; min-height: 34px; flex: none; }' +
@@ -267,7 +280,31 @@
     const f = Object.assign(document.createElement('div'), { className: 'xp-float', textContent: text }); f.style.left = x + 'px'; f.style.top = y + 'px';
     document.body.appendChild(f); setTimeout(() => f.remove(), 1300);
   }
-  btn.addEventListener('click', () => { paint(); document.getElementById('xpDlg').showModal(); if (!stats) refresh(true); });
+  // Each heading and what follows it becomes one card, so the page can lay them out side by side.
+  function sectionize() {
+    const form = document.querySelector('#xpDlg form'); if (!form || form.dataset.cards) return; form.dataset.cards = '1';
+    let sec = null;
+    for (const el of [...form.children]) {
+      if (el.matches('.dtitle, .actions')) { sec = null; continue; }
+      if (!sec || el.matches('h3.set-h')) { sec = document.createElement('section'); sec.className = 'xp-sec' + (sec ? '' : ' xp-sec-top'); el.before(sec); }
+      sec.append(el);
+    }
+    form.querySelectorAll('.xp-sec').forEach(s => { if (s.querySelector('#xpChatStkWrap, #xpAlbum')) s.classList.add('xp-sec-wide'); });
+  }
+  // With the page layout (notion-mobile.js) this is a full page of its own; without it, the old pop-up.
+  btn.addEventListener('click', () => {
+    const dlg = document.getElementById('xpDlg'), panel = document.getElementById('paceRewardsPanel');
+    paint(); try { sectionize(); } catch (e) {}
+    if (panel && window.paceUI?.showView) {
+      if (dlg.open && document.body.dataset.paceView === 'rewards') { dlg.close(); return; }   // the button again goes back
+      if (dlg.parentNode !== panel) panel.append(dlg);
+      dlg.classList.add('as-page'); if (!dlg.open) dlg.show();
+      window.paceUI.showView('rewards'); panel.scrollTop = 0;
+    } else dlg.showModal();
+    if (!stats) refresh(true);
+  });
+  document.getElementById('xpDlg').addEventListener('close', () => { if (document.body.dataset.paceView === 'rewards') window.paceUI?.showView('calendar'); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.dataset.paceView === 'rewards' && !document.querySelector('dialog[open]:not(#xpDlg)') && !e.target.closest?.('input,textarea,select')) document.getElementById('xpDlg').close(); });
   document.getElementById('xpOn').addEventListener('change', e => { ls.set(OFF, e.target.checked ? '0' : '1'); paint(); });
   document.getElementById('xpSnd').addEventListener('change', e => ls.set(MUTE, e.target.checked ? '0' : '1'));
   const saveHealth = () => {

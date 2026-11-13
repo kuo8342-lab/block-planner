@@ -2,8 +2,8 @@
 (() => {
   const $=id=>document.getElementById(id), mobile=matchMedia('(max-width:767px)');
   const tr=(zh,en)=>window.paceLang?.()==='en'?en:zh;
-  const icon=name=>({calendar:'▦',tasks:'☑',blocks:'▥',focus:'◷',more:'•••',goals:'◎',wishes:'☆',groups:'♧',coach:'✦',hours:'◴',settings:'⚙',report:'▤'})[name]||'›';
-  const labels={calendar:['時間表','Timetable'],tasks:['任務','Tasks'],blocks:['方塊','Blocks'],focus:['專注','Focus'],more:['更多','More'],goals:['目標','Goals'],wishes:['願望清單','Wishlist'],groups:['共筆群組','Groups'],coach:['AI 與教練','AI & coach'],hours:['本週時數','Weekly hours'],report:['時間報表','Reports']};
+  const icon=name=>({calendar:'▦',tasks:'☑',blocks:'▥',focus:'◷',more:'•••',goals:'◎',wishes:'☆',groups:'♧',coach:'✦',hours:'◴',settings:'⚙',report:'▤',rewards:'✧'})[name]||'›';
+  const labels={calendar:['時間表','Timetable'],tasks:['任務','Tasks'],blocks:['方塊','Blocks'],focus:['專注','Focus'],more:['更多','More'],goals:['目標','Goals'],wishes:['願望清單','Wishlist'],groups:['共筆群組','Groups'],coach:['AI 與教練','AI & coach'],hours:['本週時數','Weekly hours'],report:['時間報表','Reports'],rewards:['等級與成就','Level & rewards']};
   const makeButton=(name,text,fn,cls='btn')=>{const b=document.createElement('button');b.type='button';b.className=cls;b.innerHTML=`<span class="pace-icon" aria-hidden="true">${icon(name)}</span><span>${text}</span>`;b.addEventListener('click',fn);return b;};
   const planner=document.querySelector('.planner'),rail=$('workspaceRail'),main=$('workspaceMain'),top=document.querySelector('.top');
   const baseWidget=setWidget,baseReport=setReport;
@@ -31,8 +31,9 @@
   const blockTip=document.createElement('p');blockTip.className='pace-page-hint';blockTip.textContent=tr('點選可編輯與排程；長按後拖動，會自動展開時間表。','Tap to edit or schedule. Hold and drag to reveal the timetable.');panels.blocks.append(blockTip);
   const focusIdle=document.createElement('div');focusIdle.className='pace-focus-idle';focusIdle.innerHTML='<span class="pace-focus-orbit" aria-hidden="true">◷</span><h2>'+tr('一次，只做一件事','One thing at a time')+'</h2><p>'+tr('選一個任務，給自己一段不被打擾的時間。','Choose a task and make a little room to focus.')+'</p>';focusIdle.append(makeButton('tasks',tr('選擇任務','Choose a task'),()=>showView('tasks'),'btn primary'),makeButton('blocks',tr('選擇方塊','Choose a block'),()=>showView('blocks'),'btn'));panels.focus.append(focusIdle);
   const moreGrid=document.createElement('div');moreGrid.className='pace-more-grid';panels.more.append(moreGrid);
-  const descriptions={goals:tr('把大目標拆成小步驟','Small steps toward a bigger goal'),wishes:tr('為想做的事留點空間','Make room for things you enjoy'),groups:tr('一起完成，互相鼓勵','Progress, shared with care'),report:tr('回顧時間花在哪裡','A little perspective on your time'),coach:tr('你的 AI 與讀書建議','Your AI and study suggestions'),hours:tr('本週各科時數與目標','Weekly hours and targets')};
-  ['goals','wishes',window.PACE_HAS_COACH?'coach':'groups','report','hours'].forEach(k=>{const b=makeButton(k,tr(...labels[k]),()=>showView(k),'pace-more-card');const d=document.createElement('small');d.textContent=descriptions[k];b.append(d);moreGrid.append(b);});
+  const descriptions={goals:tr('把大目標拆成小步驟','Small steps toward a bigger goal'),wishes:tr('為想做的事留點空間','Make room for things you enjoy'),groups:tr('一起完成，互相鼓勵','Progress, shared with care'),report:tr('回顧時間花在哪裡','A little perspective on your time'),coach:tr('你的 AI 與讀書建議','Your AI and study suggestions'),hours:tr('本週各科時數與目標','Weekly hours and targets'),rewards:tr('等級、貼圖、環境音和本週奇蹟','Level, stickers, sounds and this week’s wonder')};
+  const openRewards=()=>{const b=$('xpBtn');if(b)b.click();else showView('rewards');};
+  ['goals','wishes',window.PACE_HAS_COACH?'coach':'groups','report','hours','rewards'].forEach(k=>{const b=makeButton(k,tr(...labels[k]),k==='rewards'?openRewards:()=>showView(k),'pace-more-card');const d=document.createElement('small');d.textContent=descriptions[k];b.append(d);moreGrid.append(b);});
   const commands=document.createElement('div');commands.id='paceMoreCommands';commands.className='pace-more-commands';panels.more.append(commands);
   const backupButton=makeButton('tasks',tr('備份與還原','Backup & restore'),()=>openSettings('exportAll'),'btn');commands.append(backupButton);
   const groupInfo=document.createElement('div');groupInfo.className='pace-info-card';groupInfo.innerHTML='<span class="pace-kicker">'+tr('一起前進','TOGETHER')+'</span><h2>'+tr('分享完成，不分享時間表','Share progress, keep your plan private')+'</h2><p>'+tr('可選擇分享完成項目、只分享分鐘數，或完全不分享。','Share completed items, minutes only, or keep all progress private.')+'</p>';groupInfo.append(makeButton('groups',tr('管理群組與隱私','Manage groups & privacy'),()=>openSettings('grpOff'),'btn primary'));panels.groups.append(groupInfo);
@@ -131,7 +132,7 @@
   ['calendar','tasks','blocks','focus','more'].forEach(name=>{const b=makeButton(name,tr(...labels[name]),()=>showView(name),'');b.dataset.paceNav=name;navigation.append(b);});
   // Desktop gets every new entry as well, using the same original surfaces.
   const desktopNav=document.querySelector('.workspace-nav');
-  ['wishes','hours','focus',window.PACE_HAS_COACH?'coach':'groups'].forEach(name=>{const b=makeButton(name,tr(...labels[name]),()=>showView(name),'');b.dataset.paceDnav=name;desktopNav.append(b);});
+  ['wishes','hours','focus',window.PACE_HAS_COACH?'coach':'groups','rewards'].forEach(name=>{const b=makeButton(name,tr(...labels[name]),name==='rewards'?openRewards:()=>showView(name),'');b.dataset.paceDnav=name;desktopNav.append(b);});
   $('toGrid').dataset.paceDnav='calendar';$('toReport').dataset.paceDnav='report';
   if(!mobile.matches)showView(view,{silent:true});
   document.addEventListener('click',e=>{if(e.target.closest('#toWidget')){explicitWidget=true;setTimeout(()=>explicitWidget=false,0);}},true);

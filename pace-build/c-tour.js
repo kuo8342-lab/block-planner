@@ -10,16 +10,16 @@
 
   const STEPS = [
     { title: '歡迎使用步調！', text: '跟著走一遍，大約 1 分鐘。過程中會先放一個範例方塊和一個範例任務給你看，最後再問你要不要留下。隨時可以按「略過」。' },
-    { el: card('#palette'), title: '方塊', text: '常做的事做成方塊，拖到時間表上就排好了（手機要先按住一下再拖）。點方塊可以改名、刪除，或直接選時間排進去。' },
+    { el: card('#palette'), title: '方塊', text: '這是「方塊」頁（選單裡每一項都有自己的頁面）。常做的事做成方塊，按住拖一下，畫面會自動回到時間表讓你放下（手機要先按住一下再拖）。點方塊可以改名、刪除，或直接選時間排進去。' },
     { el: () => sample.block && document.querySelector(`[data-bid="${sample.block}"]`), title: '時間表', text: '這是剛放進時間表的範例方塊。點它可以改時間、開始專注；往下拉底部可以改長度；右上角 ✓ 是完成、✗ 是沒做完。灰色斜線是你的固定行程。' },
     { el: card('#qa'), title: '這週的任務', text: '在框框打字按 Enter 就新增任務，到了那週會自動出現。任務可以拖進時間表變成方塊。範例任務就在這裡。' },
     { el: card('#goals'), title: '目標', text: '寫下大目標和期限，拆成每週的小步驟，到那週會自動出現在任務裡。' },
-    { el: () => { const n = $('nowPick'); return n && !n.hidden ? n : null; }, title: '現在做這件', text: '幫你挑「現在最該做的一件事」。按「開始專注」就開始番茄鐘；累了按「⚡ 腦袋累了」，會改推薦輕鬆的事。' },
+    { el: () => { const n = $('nowPick'); return n && !n.hidden ? n : null; }, title: '現在做這件', text: '幫你挑「現在最該做的一件事」。按「開始專注」就開始番茄鐘，可以暫停；累了按「⚡ 腦袋累了」，會改推薦輕鬆的事。用過環境音的話，開始專注時會自動播你上次選的那一種。' },
     { el: card('#wishes'), title: '願望清單', text: '想做但還沒空的事先丟這裡，有空檔時一鍵排進時間表。' },
     { el: () => $('weekMenu'), title: '本週工具', text: '沒做完的方塊一鍵重排到後面的空檔，也可以把排好的一週存成範本、複製上週。' },
     { el: () => $('toReport'), title: '報表', text: '看這週完成多少、各科花了多少時間，還有每週回顧。' },
     { el: () => $('toWidget'), title: '便利貼', text: '把畫面縮成一張小卡，只看現在和接下來要做的事。連點 5 下回到完整畫面。' },
-    { el: () => $('skinBtn'), title: '設定', text: '作息（時間表從幾點到幾點、睡覺時間）、語言、同步登入、共筆群組和備份都在這裡。' },
+    { el: () => $('skinBtn'), title: '設定', text: '作息（時間表從幾點到幾點、睡覺時間）、主題、語言、同步登入和備份都在這裡。右上角的 Lv 按鈕是「等級與成就」：等級、貼圖、環境音和本週奇蹟；選單裡的「共筆群組」可以跟朋友聊天、排大家共用的時間表。' },
     { el: () => { const b = $('installBtn'); return b && !b.hidden ? b : null; }, title: '安裝 App', text: '裝到手機或電腦桌面，用起來像一般 App。Android 還有桌面小工具。' },
     { title: '教學結束！', text: '剛剛的範例方塊和範例任務要留下來嗎？之後也可以在「設定 → 外觀」重新看一次教學。', last: true }
   ];
@@ -66,6 +66,14 @@
     { v: '2026-11-07', steps: [
       { el: () => $('xpBtn'), title: '每週蓋一座奇蹟', text: '在這裡按「本週奇蹟」：完成方塊就砌上一塊基石，10 塊加 3 天達標就落成，收進博物館。完成方塊時的音效和彩帶也換成跟著主題走，櫻花飄花瓣、森林飄葉子。這裡也有 12 種專注環境音（雨聲、壁爐、溪水…），升等會解鎖更多，音量可以自己調。' },
       { el: () => $('xpBtn'), title: '休息提案', text: '讀了一段時間、到達你設的上限，或今天都做完時，會從你自己的清單提議幾種休息，按一下就排進今天的空檔。休息不用賺，也不用付。清單和多久提議一次都在這裡改。' }
+    ] },
+    { v: '2026-11-13', steps: [
+      { title: '版面整理過了', text: '這次把畫面整理得更清楚，東西都還在，只是各自有了自己的頁面。接下來帶你看新的位置。' },
+      { el: () => [...document.querySelectorAll('.mobile-nav, .workspace-nav')].find(n => n.getClientRects().length) || null, title: '選單：一項一頁', text: '電腦左邊的選單現在只放連結：目標、方塊、這週任務、願望清單、本週時數、專注、共筆群組，點哪個就只看那一頁，寬螢幕會排成好幾欄。選單右上的「<|」可以把它收起來。拖方塊時會自動回到時間表。' },
+      { el: () => $('xpBtn'), title: '等級與成就變成完整一頁', text: '按這顆 Lv 按鈕（或選單的「等級與成就」）會打開一整頁，不再擠在小視窗：等級、本週任務、本週奇蹟、環境音、貼圖圖鑑、成就和健康界線各有一張卡片。再按一次就回時間表。' },
+      { el: () => $('xpBtn'), title: '12 種環境音，跟著專注自動播', text: '環境音從 3 種變 12 種，有音量滑桿；前三種一開始就有，其他的升等解鎖。播過一次以後，開始專注就會自動播你上次選的那一種，專注結束就停，不想要可以取消勾選。本週奇蹟的 12 座建築也重新畫過了。' },
+      { el: () => $('xpBtn'), title: '240 款貼圖和調合工坊', text: '貼圖圖鑑也在這一頁：完成方塊解鎖新貼圖，太久沒動（4 天以上）才會慢慢結凍，完成一個方塊就解凍。升等可以把兩三張貼圖合成一張，做好的會出現在聊天室貼圖的「⭐ 常用」。每張貼圖都有自己的動作。' },
+      { el: () => { const c = $('grpCard'); return c && !c.hidden ? c : null; }, title: '群組：聊天、成員、共用行程', text: '群組聊天室現在是「共筆群組」裡的一頁，分成三個分頁。「聊天」按 😊 傳貼圖，點一下就送出；「成員」看每個人的達成率；「共用行程」是一張大家共有的週時間表，點空白的時間就能新增，所有人都看得到。' }
     ] }
   ];
   const LATEST = WHATS_NEW[WHATS_NEW.length - 1].v;
@@ -181,7 +189,7 @@
       : (i > 0 ? '<button type="button" class="btn" id="tourPrev">上一步</button>' : '') + `<button type="button" class="btn primary" id="tourNext">${i === 0 && mode === 'full' ? '開始' : '下一步'}</button>`;
     revealSpotlight(); place(); setTimeout(place, 400);
   }
-  function close() { restoreScrollInset(); root.hidden = true; document.body.classList.remove('touring'); target = null; try { localStorage.setItem(SEEN, LATEST); } catch (e) {} }
+  function close() { restoreScrollInset(); try { if (!window.paceUI?.isMobile?.() && document.body.dataset.paceView && document.body.dataset.paceView !== 'rewards') window.paceUI.showView('calendar'); } catch (e) {} root.hidden = true; document.body.classList.remove('touring'); target = null; try { localStorage.setItem(SEEN, LATEST); } catch (e) {} }
   function finish(keep) {
     close();
     if (mode === 'new') return;   // the what's-new walk-through has no samples

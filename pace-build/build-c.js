@@ -350,7 +350,7 @@ rep('</body>', '<script data-pace-ui="c-sounds.js">' + fs.readFileSync(path.join
 rep('</body>', '<script data-pace-ui="c-rewards.js">' + fs.readFileSync(path.join(__dirname, 'c-rewards.js'), 'utf8') + '</script>\n</body>');   // XP, levels, achievements, weekly quest
 rep('</body>', '<script data-pace-ui="c-stickers.js">' + fs.readFileSync(path.join(__dirname, 'c-stickers.js'), 'utf8') + '</script>\n</body>');   // 240 original Koma stickers with unlock & freeze mechanics
 rep('</body>', '<script data-pace-ui="c-mystery.js">' + fs.readFileSync(path.join(__dirname, 'c-mystery.js'), 'utf8') + '</script>\n</body>');   // the weekly wonder
-rep('</body>', '<script data-pace-ui="c-zen.js">' + fs.readFileSync(path.join(__dirname, 'c-zen.js'), 'utf8') + '</script>\n</body>');   // ambient sounds
+rep('</body>', '<script data-pace-ui="c-zen.js">window.PACE_SOUND_BASE = "sounds/";\n' + fs.readFileSync(path.join(__dirname, 'c-zen.js'), 'utf8') + '</script>\n</body>');   // ambient sounds
 rep('</body>', '<script data-pace-ui="c-rest.js">' + fs.readFileSync(path.join(__dirname, 'c-rest.js'), 'utf8') + '</script>\n</body>');   // rest suggestions
 rep('</body>', '<script data-pace-ui="c-folder.js">' + fs.readFileSync(path.join(__dirname, 'c-folder.js'), 'utf8') + '</script>\n</body>');   // pull A's newest backup file out of a folder
 /* contact address for reports and the privacy policy: pace-build/contact.txt (one line). Without it the report links stay hidden. */
