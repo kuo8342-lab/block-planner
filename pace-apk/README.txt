@@ -21,3 +21,6 @@ assetlinks.json      網站驗證檔（部署在 /.well-known/assetlinks.json；
   WidgetLinkActivity.java（接收網站「設定 → 同步 → 連結 Android 桌面小工具」送來的 refresh token，intent scheme pacewidget://link）。
   res/values/firebase.xml 由 pace-build/firebase-config.json 產生（公開的網頁設定）。
   測試：app/src/test/.../TodayDataTest.java，需要 Firebase emulator（auth 9099、firestore 8080、project demo-pace）和 PACE_RT/PACE_UID 環境變數。
+
+v1.4.0（2026-11-14）：「步調・今天」每 5 分鐘自己更新（PaceTodayWidget.schedule：AlarmManager.setRepeating，ELAPSED_REALTIME 非喚醒，
+  手機睡著時不吵它，醒來就補跑）；onUpdate 會重新排程，所以重開機和更新 App 後都還在。點小工具標題列也會立刻更新。

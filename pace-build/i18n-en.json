@@ -621,7 +621,6 @@
  "讀 {0}h": "Study {0}h",
  "{0} 的金鑰在這裡建立：{1}": "Create a {0} key here: {1}",
  "連結 Android 桌面小工具": "Link Android widget",
- "按一下，桌面的「步調・今天」小工具就會顯示你今天的方塊（大約每 30 分鐘更新）。只會連結這支手機。": "Tap once and the \"Pace · Today\" home-screen widget shows today's blocks (updates about every 30 minutes). Only this phone is linked.",
  "已送到 App。如果沒有反應，請先安裝最新版的 Android App（設定 → 安裝 App）。": "Sent to the app. If nothing happens, install the latest Android app first (Settings → Install app).",
  "這天排不下了：{0} 個方塊超過 {1} 被疊在最後，拖到別天或週末的緩衝時間吧": "This day is full: {0} block(s) run past {1}. Drag them to another day or a weekend buffer.",
  "作息": "Your hours",
@@ -1176,5 +1175,14 @@
  "風車": "Windmill",
  "燈塔": "Lighthouse",
  "熱氣球": "Balloon",
- "彩虹": "Rainbow"
+ "彩虹": "Rainbow",
+ "按一下，桌面的「步調・今天」小工具就會顯示你今天的方塊。不用開 App，大約每 5 分鐘自動更新，點小工具上的 ↻ 會立刻更新。只會連結這支手機。": "Tap once and the \"Pace · Today\" home-screen widget shows today’s blocks. The app does not need to be open: it updates about every 5 minutes, and ↻ on the widget updates it right away. Only this phone is linked.",
+ "連結電腦桌面便利貼": "Link desktop sticky note",
+ "下載桌面便利貼（Windows）": "Download the desktop note (Windows)",
+ "桌面便利貼是一支 Windows 小程式，會顯示今天的行程和這週任務：開啟時、點一下便利貼、每 5 分鐘都會自動同步，不用開著瀏覽器。": "The desktop note is a small Windows program showing today’s plan and this week’s tasks. It syncs when it starts, when you click it and every 5 minutes, with no browser open.",
+ "用法：下載後解壓縮，點兩下 pace-note.vbs 打開便利貼；回來按上面的按鈕複製連結碼，再點一下便利貼就完成了。連結碼等於你的登入，不要貼給別人。": "How: download and unzip, then double-click pace-note.vbs to open the note. Come back, press the button above to copy a link code, and click the note once. The link code is your sign-in: never paste it to anyone.",
+ "連結碼已複製。現在點一下桌面上的便利貼就完成了（便利貼會把剪貼簿清掉）。": "Link code copied. Now click the sticky note on your desktop once (the note clears the clipboard).",
+ "複製不了連結碼，請換用 Chrome 或 Edge 再試一次。": "Could not copy the link code. Please try again in Chrome or Edge.",
+ "桌面便利貼會自己同步了": "The desktop note now syncs by itself",
+ "電腦：設定 → 同步 可以下載「桌面便利貼」，它直接讀你的同步帳號，開啟時、點一下、每 5 分鐘都會自動更新，不用開著瀏覽器。Android：「步調・今天」小工具改成大約每 5 分鐘更新，不用開 App（要先更新到 App 1.4.0）。iPhone 沒有辦法做桌面小工具，可以把步調加到主畫面。": "Computer: Settings → Sync now offers a desktop sticky note for Windows. It reads your synced account directly and updates when it starts, when you click it and every 5 minutes, with no browser open. Android: the \"Pace · Today\" widget now updates about every 5 minutes without opening the app (update to app 1.4.0 first). iPhone cannot have a home-screen widget from a website; add Pace to your Home Screen instead."
 }

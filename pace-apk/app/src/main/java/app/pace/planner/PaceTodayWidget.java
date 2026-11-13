@@ -1,5 +1,6 @@
 package app.pace.planner;
 
+import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
@@ -7,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.SystemClock;
 import android.widget.RemoteViews;
 
 import org.json.JSONArray;
@@ -20,14 +22,18 @@ import java.util.Locale;
 /**
  * 「步調・今天」 widget: what to do now / next and the rest of today's blocks, plus the shortcut buttons.
  * Data comes from the signed-in user's cloud copy (see TodayData); the last result is cached so the widget
- * still shows something offline. Android refreshes it about every 30 minutes; the ↻ button refreshes now.
+ * still shows something offline. A repeating alarm refreshes it about every 5 minutes without the app being open
+ * (Android's own widget update, 30 minutes at the fastest, stays as a fallback); tapping the header refreshes now.
  */
 public class PaceTodayWidget extends AppWidgetProvider {
     static final String PREFS = "pace_widget", REFRESH = "app.pace.planner.REFRESH_TODAY";
+    static final String TICK = "app.pace.planner.TICK_TODAY";
+    static final long EVERY = 5 * 60 * 1000L;
     static final String K_RT = "rt", K_UID = "uid", K_CACHE = "cache", K_STATE = "state";
 
     @Override
     public void onUpdate(Context context, AppWidgetManager manager, int[] ids) {
+        schedule(context);   // also runs after a restart of the phone and after an app update
         renderAll(context);
         refreshInBackground(context, goAsync());
     }
@@ -40,8 +46,31 @@ public class PaceTodayWidget extends AppWidgetProvider {
             refreshInBackground(context, goAsync());
             return;
         }
+        if (TICK.equals(intent.getAction())) {   // the 5-minute alarm: refresh quietly, keeping what is on screen meanwhile
+            if (ids(context).length == 0) { cancel(context); return; }
+            renderAll(context);
+            refreshInBackground(context, goAsync());
+            return;
+        }
         super.onReceive(context, intent);
     }
+
+    @Override public void onEnabled(Context context) { schedule(context); }
+    @Override public void onDisabled(Context context) { cancel(context); }
+
+    private static PendingIntent tick(Context c) {
+        return PendingIntent.getBroadcast(c, 15, new Intent(TICK).setClass(c, PaceTodayWidget.class), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+    /** Every 5 minutes while the phone is awake. Not a wake-up alarm: a sleeping phone is left alone and the refresh runs as soon as it wakes. */
+    static void schedule(Context c) {
+        AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+        if (am != null) am.setRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + EVERY, EVERY, tick(c));
+    }
+    static void cancel(Context c) {
+        AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+        if (am != null) am.cancel(tick(c));
+    }
+    private static int[] ids(Context c) { return AppWidgetManager.getInstance(c).getAppWidgetIds(new ComponentName(c, PaceTodayWidget.class)); }
 
     static SharedPreferences prefs(Context c) { return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE); }
 
@@ -130,8 +159,10 @@ public class PaceTodayWidget extends AppWidgetProvider {
         v.setOnClickPendingIntent(R.id.today_note, PaceWidget.open(c, "#widget", 11));
         v.setOnClickPendingIntent(R.id.today_add, PaceWidget.open(c, "#add", 12));
         v.setOnClickPendingIntent(R.id.today_focus, PaceWidget.open(c, "#focus", 13));
-        v.setOnClickPendingIntent(R.id.today_refresh, PendingIntent.getBroadcast(c, 14,
-                new Intent(REFRESH).setClass(c, PaceTodayWidget.class), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        PendingIntent refresh = PendingIntent.getBroadcast(c, 14,
+                new Intent(REFRESH).setClass(c, PaceTodayWidget.class), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        v.setOnClickPendingIntent(R.id.today_head, refresh);   // the whole header row, not just the small ↻
+        v.setOnClickPendingIntent(R.id.today_refresh, refresh);
         return v;
     }
 

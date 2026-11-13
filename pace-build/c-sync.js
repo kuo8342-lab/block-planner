@@ -26,7 +26,9 @@
     '<div id="syncInBox" hidden><p style="margin:0">已登入：<b id="syncWho"></b></p>' +
       '<div class="sync-acts"><button class="btn" type="button" id="syncOutBtn">登出</button><button class="btn danger" type="button" id="syncWipe">刪除雲端資料</button><button class="btn danger" type="button" id="syncDelAcct">刪除帳號和所有資料</button></div>' +
       '<div id="widgetLinkBox" hidden><button class="btn" type="button" id="widgetLink">連結 Android 桌面小工具</button>' +
-      '<p class="hint" style="margin:0">按一下，桌面的「步調・今天」小工具就會顯示你今天的方塊（大約每 30 分鐘更新）。只會連結這支手機。</p></div></div>' +
+      '<p class="hint" style="margin:0">按一下，桌面的「步調・今天」小工具就會顯示你今天的方塊。不用開 App，大約每 5 分鐘自動更新，點小工具上的 ↻ 會立刻更新。只會連結這支手機。</p></div>' +
+      '<div id="noteLinkBox" hidden><button class="btn" type="button" id="noteLink">連結電腦桌面便利貼</button> <a class="btn plain" href="pace-note.zip" download>下載桌面便利貼（Windows）</a>' +
+      '<p class="hint" style="margin:0">桌面便利貼是一支 Windows 小程式，會顯示今天的行程和這週任務：開啟時、點一下便利貼、每 5 分鐘都會自動同步，不用開著瀏覽器。</p><p class="hint" style="margin:0">用法：下載後解壓縮，點兩下 pace-note.vbs 打開便利貼；回來按上面的按鈕複製連結碼，再點一下便利貼就完成了。連結碼等於你的登入，不要貼給別人。</p></div></div>' +
     '<p class="hint" id="syncMsg" aria-live="polite" style="margin:0"></p>';
   privacyHead.before(...box.childNodes);
   const msg = t => { $('syncMsg').textContent = t; };
@@ -95,6 +97,13 @@
     if (!user) return;
     toApp({ rt: user.refreshToken, uid: user.uid, lang: window.paceLang?.() || 'zh' });
     linked(true); msg('已送到 App。如果沒有反應，請先安裝最新版的 Android App（設定 → 安裝 App）。');
+  });
+  /* ---------- Windows desktop note (pace-note.ps1): it has no browser, so the sign-in goes over as a code in the clipboard ---------- */
+  $('noteLinkBox').hidden = !/Windows/.test(navigator.userAgent);
+  $('noteLink').addEventListener('click', async () => {
+    if (!user) return;
+    try { await navigator.clipboard.writeText('pace-note:' + btoa(JSON.stringify({ rt: user.refreshToken, uid: user.uid }))); msg('連結碼已複製。現在點一下桌面上的便利貼就完成了（便利貼會把剪貼簿清掉）。'); }
+    catch (e) { msg('複製不了連結碼，請換用 Chrome 或 Edge 再試一次。'); }
   });
   const unlinkWidget = () => { try { if (isAndroid && localStorage.getItem('pace-widget-linked') === '1') { linked(false); toApp({ rt: '', uid: '' }); } } catch (e) {} };
 
