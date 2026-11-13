@@ -96,6 +96,20 @@
     '.brd-list { display: flex; flex-direction: column; gap: 6px; } .brd-it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 10px; background: var(--panel-2); font-size: .84rem; }' +
     '.brd-it .when { font-family: var(--f-mono); font-size: .74rem; color: var(--muted); } .brd-it .who { font-size: .72rem; color: var(--muted); } .brd-it.past { opacity: .5; }' +
     '.brd-acts0 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }' +
+    '.brd-shared-note { margin: 0; padding: 8px 12px; border-radius: 10px; border-left: 3px solid var(--accent); background: var(--accent-soft); font-size: .84rem; line-height: 1.6; }' +
+    '.brd-nav { display: flex; align-items: center; gap: 6px; } .brd-nav .btn { min-height: 36px; padding: 4px 10px; } .brd-range { font-size: .95rem; margin-left: 6px; white-space: nowrap; }' +
+    '.brd-week { max-height: min(560px, calc(var(--pace-visual-height, 100dvh) - 330px)); min-height: 220px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overscroll-behavior: contain; scrollbar-width: thin; }' +
+    '.brd-grid { display: grid; grid-template-columns: 46px repeat(7, minmax(84px, 1fr)); min-width: 640px; position: relative; }' +
+    '.brd-corner, .brd-head { position: sticky; top: 0; z-index: 3; background: var(--panel); border-bottom: 1px solid var(--line); min-height: 46px; }' +
+    '.brd-head { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border-left: 1px solid var(--line-soft, var(--line)); color: var(--muted); } .brd-head small { font-size: .7rem; } .brd-head b { font-size: 1.05rem; color: var(--fg); }' +
+    '.brd-head.today b { background: var(--accent); color: #fff; border-radius: 7px; padding: 0 7px; }' +
+    '.brd-times, .brd-col { position: relative; height: var(--brd-h); } .brd-times span { position: absolute; right: 6px; transform: translateY(-50%); font-size: .68rem; color: var(--muted); font-family: var(--f-mono, monospace); } .brd-times span:first-child { transform: none; }' +
+    '.brd-col { border-left: 1px solid var(--line-soft, var(--line)); cursor: cell; } .brd-col i { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line-soft, var(--line)); opacity: .7; pointer-events: none; }' +
+    '.brd-col.today { background: color-mix(in srgb, var(--accent) 7%, transparent); } .brd-col.past { background: color-mix(in srgb, var(--fg) 2.5%, transparent); }' +
+    '.brd-blk { position: absolute; left: 3px; right: 3px; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 0; overflow: hidden; text-align: left; padding: 3px 6px; border: 0; border-left: 3px solid currentColor; border-radius: 7px; font: inherit; font-size: .76rem; line-height: 1.3; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.12); }' +
+    '.brd-blk:hover, .brd-blk:focus-visible { filter: brightness(1.06); z-index: 2; outline: 2px solid var(--accent); outline-offset: 1px; } .brd-blk .t { font-size: .64rem; opacity: .8; font-family: var(--f-mono, monospace); white-space: nowrap; } .brd-blk .n { font-weight: 650; overflow-wrap: anywhere; } .brd-blk .w { font-size: .66rem; opacity: .8; } .brd-blk .brd-tag { color: inherit; }' +
+    '.brd-blk.declined { opacity: .45; text-decoration: line-through; } .brd-col.past .brd-blk { opacity: .6; }' +
+    '.brd-foot { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; justify-content: space-between; }' +
     '.brd-bar { position: fixed; z-index: 70; top: calc(10px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); width: min(660px, calc(100vw - 24px));' +
     '  display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 14px;' +
     '  background: var(--panel); color: var(--fg); border: 2px solid var(--danger); box-shadow: 0 12px 34px rgba(0,0,0,.22); font-size: .86rem; }' +
@@ -104,34 +118,75 @@
     '@media (prefers-reduced-motion: reduce) { .brd-bar.flash { animation: none; } }';
   document.head.appendChild(st);
 
+  /* The group's shared timetable: the same week grid as 我的時間表, but it belongs to everyone in the group.
+     Tap an empty time to add, tap an item to open it. Items that started more than 14 days ago are not loaded. */
+  var boardWeek = null;   // Monday of the week shown (var: paintList can run during start-up, before this line)
+  var PX = .8;            // pixels per minute in this grid
+  function mondayOf0(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; }
   function paintList() {
     const box = $('grpBoard'); if (!box) return;
-    if (!roomGid) { box.innerHTML = ''; return; }
-    const today = ymd(new Date()), mine = PG.user()?.uid;
-    const list = all().filter(x => x.gid === roomGid).sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
-    box.innerHTML = '<div class="brd-acts0"><button class="btn primary" type="button" id="brdAdd">＋ 新增共用行程</button>' +
-      '<label class="check" style="flex-direction:row;gap:6px;font-size:.8rem"><input type="checkbox" id="brdShow"' + (show() ? ' checked' : '') + '> 在我的時間表上顯示群組行程</label></div>' +
-      (list.length ? '<div class="brd-list">' + list.map(x => {
-        const d = new Date(x.date + 'T00:00:00');
-        return '<div class="brd-it' + (x.date < today ? ' past' : '') + '"><span class="when">' + (d.getMonth() + 1) + '/' + d.getDate() + ' 週' + DAYN[(d.getDay() + 6) % 7] + ' ' + esc2(x.start) + '–' + hm(toMin(x.start) + x.minutes) + '</span>' +
-          '<span>' + esc2(x.title) + ' <span class="who">· ' + esc2(x.uid === mine ? '我' : x.name || '') + (x.by && x.by !== x.name ? '（' + esc2(x.by) + ' 改過）' : '') + '</span>' + (x.locked ? ' 🔒' : '') + rsvpTag(x) + '</span>' +
-          '<button class="btn" type="button" data-brd="' + esc2(keyOf(x)) + '">打開</button></div>';
-      }).join('') + '</div>' : '<p class="hint" style="margin:0">還沒有共用行程。按「新增共用行程」放入小組討論、社團練習或報告截止，群組裡每個人都會看到。</p>');
+    if (!roomGid) { box.innerHTML = ''; boardWeek = null; return; }
+    if (!boardWeek) boardWeek = mondayOf0(new Date()); if (PX === undefined) PX = .8;
+    const today = ymd(new Date()), mine = PG.user()?.uid, g = PG.list().find(x => x.id === roomGid);
+    const from = typeof START === 'number' ? START : 480, to = typeof END === 'number' ? END : 1440;
+    const days = [0, 1, 2, 3, 4, 5, 6].map(i => addDays(boardWeek, i)), keys = days.map(ymd);
+    const list = all().filter(x => x.gid === roomGid && keys.includes(x.date));
+    const thisWeek = ymd(boardWeek) === ymd(mondayOf0(new Date())), oldest = ymd(addDays(new Date(), -14));
+    const total = all().filter(x => x.gid === roomGid && x.date >= today).length;
+    const hours = []; for (let m = Math.ceil(from / 60) * 60; m < to; m += 60) hours.push(m);
+    box.innerHTML =
+      '<p class="brd-shared-note">👥 這是「' + esc2(g?.name || '群組') + '」' + (g ? g.members.length + ' 個人' : '大家') + '共有的時間表：誰新增、誰改，所有人都會看到。跟你自己的時間表是分開的。</p>' +
+      '<div class="brd-acts0"><div class="brd-nav"><button class="btn" type="button" id="brdPrev" aria-label="上一週"' + (keys[0] <= oldest ? ' disabled' : '') + '>‹</button>' +
+        '<button class="btn" type="button" id="brdThis"' + (thisWeek ? ' disabled' : '') + '>本週</button><button class="btn" type="button" id="brdNext" aria-label="下一週">›</button>' +
+        '<strong class="brd-range">' + (days[0].getMonth() + 1) + '/' + days[0].getDate() + ' – ' + (days[6].getMonth() + 1) + '/' + days[6].getDate() + '</strong></div>' +
+        '<button class="btn primary" type="button" id="brdAdd">＋ 新增共用行程</button></div>' +
+      '<div class="brd-week" role="region" aria-label="群組共用時間表" tabindex="0"><div class="brd-grid" style="--brd-h:' + Math.round((to - from) * PX) + 'px">' +
+        '<div class="brd-corner"></div>' + days.map((d, i) => '<div class="brd-head' + (keys[i] === today ? ' today' : '') + '"><small>週' + DAYN[i] + '</small><b>' + d.getDate() + '</b></div>').join('') +
+        '<div class="brd-times">' + hours.map(m => '<span style="top:' + Math.round((m - from) * PX) + 'px">' + hm(m) + '</span>').join('') + '</div>' +
+        days.map((d, i) => '<div class="brd-col' + (keys[i] === today ? ' today' : '') + (keys[i] < today ? ' past' : '') + '" data-brdday="' + keys[i] + '">' +
+          hours.map(m => '<i style="top:' + Math.round((m - from) * PX) + 'px"></i>').join('') +
+          list.filter(x => x.date === keys[i]).sort((p, q) => p.start.localeCompare(q.start)).map(x => {
+            const s0 = Math.max(from, toMin(x.start)), e0 = Math.min(to, toMin(x.start) + x.minutes), ans = (x.going || {})[mine];
+            if (e0 <= s0) return '';
+            return '<button type="button" class="brd-blk cat-' + (CATS[x.cat] ? x.cat : 'life') + (ans === 'no' ? ' declined' : '') + '" data-brd="' + esc2(keyOf(x)) + '" style="top:' + Math.round((s0 - from) * PX) + 'px;height:' + Math.max(22, Math.round((e0 - s0) * PX) - 2) + 'px"' +
+              ' title="' + esc2(x.start + '–' + hm(toMin(x.start) + x.minutes) + ' ' + x.title + '（' + (x.uid === mine ? '我' : x.name || '') + ' 新增）') + '">' +
+              '<span class="t">' + esc2(x.start) + '–' + hm(toMin(x.start) + x.minutes) + (x.locked ? ' 🔒' : '') + '</span><span class="n">' + esc2(x.title) + '</span>' +
+              '<span class="w">' + esc2(x.uid === mine ? '我' : x.name || '') + rsvpTag(x) + '</span></button>';
+          }).join('') + '</div>').join('') +
+      '</div></div>' +
+      '<div class="brd-foot"><span class="hint" style="margin:0">' + (list.length ? '點空白的時間可以新增，點行程可以看誰會到、修改或放進自己的行程。' : (total ? '這一週沒有共用行程。' : '還沒有共用行程。') + '點空白的時間，放入小組討論、社團練習或報告截止。') + '</span>' +
+        '<label class="check" style="flex-direction:row;gap:6px;font-size:.8rem;margin:0"><input type="checkbox" id="brdShow"' + (show() ? ' checked' : '') + '> 也顯示在我的時間表上</label></div>';
     $('brdAdd').onclick = () => openItem(null);
     $('brdShow').onchange = e => { ls.set(SHOW, e.target.checked ? '1' : '0'); renderGrid(); };
-    box.querySelectorAll('[data-brd]').forEach(b => { b.onclick = () => { const it = all().find(x => keyOf(x) === b.dataset.brd); if (it) openItem(it); }; });
+    $('brdPrev').onclick = () => { boardWeek = addDays(boardWeek, -7); paintList(); };
+    $('brdNext').onclick = () => { boardWeek = addDays(boardWeek, 7); paintList(); };
+    $('brdThis').onclick = () => { boardWeek = mondayOf0(new Date()); paintList(); };
+    box.querySelector('.brd-grid').onclick = e => {
+      const blk = e.target.closest('[data-brd]');
+      if (blk) { const it = all().find(x => keyOf(x) === blk.dataset.brd); if (it) openItem(it); return; }
+      const col = e.target.closest('[data-brdday]'); if (!col) return;
+      const min = Math.max(from, Math.min(to - 30, from + Math.floor((e.clientY - col.getBoundingClientRect().top) / PX / 30) * 30));
+      openItem(null, { date: col.dataset.brdday, start: hm(min) });
+    };
+    // open on the part of the day that matters: the first item this week, or around now
+    const first = list.length ? Math.min(...list.map(x => toMin(x.start))) : new Date().getHours() * 60;
+    boardTop = Math.max(0, (first - from) * PX - 40); scrollBoard();
   }
+  var boardTop = 0;
+  function scrollBoard() { const sc = document.querySelector('#grpBoard .brd-week'); if (sc) sc.scrollTop = boardTop || 0; }
+  // the grid is painted while its tab may be hidden (nothing to scroll yet): place it again when the tab opens
+  document.addEventListener('click', e => { if (e.target.closest?.('[data-grptab="board"]')) setTimeout(scrollBoard, 0); });
 
   function rsvpTag(x) { const v = Object.values(x.going || {}), y = v.filter(a => a === 'yes').length, n = v.filter(a => a === 'no').length; return y || n ? ' <span class="brd-tag">✓' + y + ' ✗' + n + '</span>' : ''; }
   let editing = null, editGid = null;
-  function openItem(it) {
+  function openItem(it, at) {
     editing = it; editGid = it ? it.gid : roomGid;
     if (!editGid) return;
     const g = PG.list().find(x => x.id === editGid), me = PG.user()?.uid;
     $('brdTitle').textContent = (it ? '共用行程' : '新增共用行程') + ' · ' + gname(editGid);
     $('brdWho').textContent = it ? (it.uid === me ? '你' : it.name || '') + ' 新增的' + (it.by && it.by !== it.name ? '，' + it.by + ' 最後修改' : '') : '';
     const d = new Date(); d.setMinutes(Math.ceil(d.getMinutes() / 30) * 30 + 60, 0, 0);
-    $('brdName').value = it ? it.title : ''; $('brdDate').value = it ? it.date : ymd(d); $('brdStart').value = it ? it.start : hm(d.getHours() * 60 + d.getMinutes());
+    $('brdName').value = it ? it.title : ''; $('brdDate').value = it ? it.date : at ? at.date : ymd(d); $('brdStart').value = it ? it.start : at ? at.start : hm(d.getHours() * 60 + d.getMinutes());
     $('brdMin').value = it ? it.minutes : 60; $('brdCat').value = it && CATS[it.cat] ? it.cat : 'study';
     const boss = !!it && (it.uid === me || g?.owner === me), may = !it || canEdit(it);
     $('brdDel').hidden = !boss; $('brdMine').hidden = !it; $('brdMsg').textContent = it && !may ? '這個行程鎖定了，只有新增的人和群組建立者可以修改。' : '';

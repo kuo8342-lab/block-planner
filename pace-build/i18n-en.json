@@ -1135,5 +1135,6 @@
  "屋簷風鈴": "Wind chimes",
  "深空漫遊": "Deep space",
  "音量": "Volume",
- "讀書時的背景聲。前三種一開始就有，其他的升等就會解鎖。": "Background sound for studying. The first three are free; the rest unlock as you level up."
+ "讀書時的背景聲。前三種一開始就有，其他的升等就會解鎖。": "Background sound for studying. The first three are free; the rest unlock as you level up.",
+ "開始專注時自動播放（播你上次選的那一種，專注結束就停）": "Play automatically when I start focusing (your last sound; stops when the focus ends)"
 }

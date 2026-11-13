@@ -18,6 +18,7 @@
     '<h3 class="set-h">專注環境音</h3>' +
     '<p class="hint" style="margin:0">讀書時的背景聲。前三種一開始就有，其他的升等就會解鎖。</p>' +
     '<label class="zen-vol"><span>音量</span><input type="range" id="zenVol" min="0" max="100" step="5" value="' + Math.round(vol * 100) + '" aria-label="環境音音量"><span id="zenVolNum">' + Math.round(vol * 100) + '%</span></label>' +
+    '<label class="check zen-auto"><input type="checkbox" id="zenAuto"> 開始專注時自動播放（播你上次選的那一種，專注結束就停）</label>' +
     '<div class="zen-row">' + KINDS.map(k => '<button type="button" class="btn zen-btn" data-zen="' + k[0] + '" aria-pressed="false"><span class="zen-ico" aria-hidden="true">' + k[1] + '</span><span class="zen-name">' + k[2] + '</span><small class="zen-lock"></small></button>').join('') + '</div>');
   const st = document.createElement('style');
   st.textContent =
@@ -28,7 +29,7 @@
     '.zen-btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }' +
     '.zen-btn[aria-pressed="true"] .zen-ico { animation: zen-pulse 1.6s ease-in-out infinite alternate; display: inline-block; } @keyframes zen-pulse { to { transform: scale(1.2); } }' +
     '.zen-btn.locked { opacity: .55; } .zen-btn.locked .zen-ico { filter: grayscale(1); }' +
-    '.zen-vol span { white-space: nowrap; } .zen-vol { display: flex; flex-direction: row !important; align-items: center; gap: 8px; font-size: .82rem; color: var(--muted); } .zen-vol input { flex: 1 1 auto; min-width: 0; max-width: 260px; accent-color: var(--accent); }' +
+    '.zen-auto { flex-direction: row !important; gap: 6px; font-size: .82rem; align-items: center; margin: 0; } .zen-vol span { white-space: nowrap; } .zen-vol { display: flex; flex-direction: row !important; align-items: center; gap: 8px; font-size: .82rem; color: var(--muted); } .zen-vol input { flex: 1 1 auto; min-width: 0; max-width: 260px; accent-color: var(--accent); }' +
     '@media (prefers-reduced-motion: reduce) { .zen-btn .zen-ico { animation: none !important; } } body.nofx .zen-btn .zen-ico { animation: none !important; }';
   document.head.appendChild(st);
 
@@ -96,9 +97,14 @@
       K.every(.05, .28, t => K.tone(rnd(1800, 4200), t, .05, rnd(.01, .035)));
     },
     fire(K) {
-      const a = K.noise('brown', 'lowpass', 420, .8); K.lfo(a.g.gain, .35, .22); K.noise('pink', 'bandpass', 900, .12, .7);
-      K.every(.04, .35, t => K.burst('white', 'bandpass', rnd(1500, 5000), t, rnd(.008, .03), rnd(.08, .32), 2));
-      K.every(1.5, 5, t => K.burst('brown', 'lowpass', 260, t, .25, .5));
+      const a = K.noise('brown', 'lowpass', 300, .42); K.lfo(a.g.gain, .5, .14); K.lfo(a.g.gain, 2.3, .07);     // the flame itself, fluttering
+      K.noise('pink', 'bandpass', 1200, .05, .8);
+      // dry wood crackling: little runs of sharp snaps
+      K.every(.08, .5, t => { const n = 1 + Math.floor(Math.random() * 5); for (let i = 0; i < n; i++) K.burst('white', 'highpass', rnd(2500, 7000), t + i * rnd(.012, .05), rnd(.004, .014), rnd(.25, .7)); });
+      // a log popping: a short woody knock with a snap on top
+      K.every(.8, 3.2, t => { const f = rnd(140, 320); K.tone(f, t, rnd(.04, .09), rnd(.22, .45), 'triangle', f * .5); K.burst('white', 'bandpass', rnd(900, 2200), t, .025, .5, 1.2); });
+      // now and then a log settles and the embers hiss
+      K.every(6, 16, t => { K.burst('brown', 'lowpass', 400, t, .35, .6); K.tone(rnd(90, 130), t, .18, .3, 'triangle', 60); K.burst('white', 'highpass', 5000, t + .05, .9, .05); });
     },
     stream(K) {
       const a = K.noise('white', 'bandpass', 1900, .22, .8); K.lfo(a.f.frequency, .23, 500); K.noise('pink', 'lowpass', 900, .32);
@@ -175,8 +181,8 @@
   document.querySelector('.zen-row').addEventListener('click', e => {
     const b = e.target.closest('.zen-btn'); if (!b) return;
     if (b.classList.contains('locked')) { const k = KINDS.find(x => x[0] === b.dataset.zen); if (typeof toast === 'function') toast('升到 Lv ' + k[3] + ' 就能解鎖「' + k[2] + '」'); return; }
-    const same = cur && cur.kind === b.dataset.zen; stop();
-    try { if (!same) start(b.dataset.zen); } catch (err) {}
+    const same = cur && cur.kind === b.dataset.zen; stop(); autoOn = false;
+    try { if (!same) { start(b.dataset.zen); ls.set('pace-zen-last', b.dataset.zen); if (ls.get('pace-zen-auto') === null) { ls.set('pace-zen-auto', '1'); autoBox.checked = true; } } } catch (err) {}
     paint();
   });
   document.getElementById('zenVol').addEventListener('input', e => {
@@ -184,8 +190,28 @@
     document.getElementById('zenVolNum').textContent = Math.round(vol * 100) + '%';
     if (cur) { try { cur.gain.gain.cancelScheduledValues(cur.ctx.currentTime); cur.gain.gain.setTargetAtTime(Math.max(.0001, loud(vol)), cur.ctx.currentTime, .05); } catch (err) {} }
   });
+  /* With the focus timer: starting to focus plays the sound you used last, and it stops when the focus ends.
+     It is on once you have played a sound yourself, so nobody gets a surprise in a quiet room; the tick box turns it off. */
+  const autoBox = document.getElementById('zenAuto');
+  let autoOn = false, autoTimer = 0;
+  const wantAuto = () => ls.get('pace-zen-auto') === '1';
+  autoBox.checked = wantAuto();
+  autoBox.addEventListener('change', () => { ls.set('pace-zen-auto', autoBox.checked ? '1' : '0'); if (!autoBox.checked && autoOn) { autoOn = false; stop(); paint(); } });
+  const focusing = () => { try { return typeof focus !== 'undefined' && !!focus; } catch (e) { return false; } };
+  function autoStart() {
+    if (!wantAuto() || cur || !focusing()) return;
+    let kind = ls.get('pace-zen-last'); const k = KINDS.find(x => x[0] === kind);
+    if (!k || level() < k[3]) kind = 'rain';
+    try { start(kind); autoOn = true; paint(); } catch (e) {}
+    clearInterval(autoTimer);
+    autoTimer = setInterval(() => { if (!focusing()) { clearInterval(autoTimer); if (autoOn) { autoOn = false; stop(); paint(); } } }, 1000);
+  }
+  if (typeof startFocus === 'function') {
+    const sf0 = startFocus;
+    window.startFocus = startFocus = function () { const r = sf0.apply(this, arguments); try { autoStart(); } catch (e) {} return r; };
+  }
   const lvEl = document.getElementById('xpLevel');
   if (lvEl) new MutationObserver(paint).observe(lvEl, { childList: true, characterData: true, subtree: true });
   paint();
-  window.paceZen = { kinds: () => KINDS.map(k => ({ id: k[0], name: k[2], level: k[3] })), playing: () => cur?.kind || null, stop: () => { stop(); paint(); } };
+  window.paceZen = { auto: () => autoOn, kinds: () => KINDS.map(k => ({ id: k[0], name: k[2], level: k[3] })), playing: () => cur?.kind || null, stop: () => { stop(); paint(); } };
 })();
