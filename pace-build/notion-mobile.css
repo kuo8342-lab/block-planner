@@ -166,3 +166,18 @@
   #grpRoom.as-page { max-width:980px; }
 }
 @media(min-width:768px) { .pace-panel #palette>:not(.pal-group) { grid-column:1/-1; } }
+
+/* 設定 as a page of cards (the dialog itself, moved into its panel) */
+#skinDlg.as-page { position:static;inset:auto;margin:0;width:100% !important;max-width:none;max-height:none;padding:0;border:0;border-radius:0;background:transparent;color:inherit;box-shadow:none;overflow:visible; }
+#skinDlg.as-page::before,#skinDlg.as-page form::before,#skinDlg.as-page .dtitle { display:none !important; }
+#skinDlg.as-page form { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:start;max-height:none;overflow:visible; }
+#skinDlg.as-page .set-sec { display:flex;flex-direction:column;gap:12px;min-width:0;margin:0;padding:20px 22px;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow-wrap:anywhere; }
+#skinDlg.as-page .set-sec>h3.set-h { margin:0;padding:0;border:0; }
+#skinDlg.as-page .set-sec-wide,#skinDlg.as-page form>.actions { grid-column:1/-1; }
+#skinDlg.as-page form>.actions { justify-content:flex-start;position:static;background:none;border:0;padding:0;margin:0; }
+@media(max-width:1099px) { #skinDlg.as-page form { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:767px) { #skinDlg.as-page form { display:flex;flex-direction:column;gap:16px; } #skinDlg.as-page .set-sec { padding:0 0 16px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent; } }
+@media(min-width:768px) { #skinDlg.as-page .skins { grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); } #skinDlg.as-page .set-sec-wide>:not(.skins):not(h3):not(.hint):not(p) { max-width:440px; } }
+
+/* 便利貼 and 設定 are in the menu; the header keeps only the week tools */
+@media(min-width:768px) { .top .actions-top>#toWidget,.top .actions-top>#skinBtn,.top #toWidget,.top #skinBtn { display:none; } }

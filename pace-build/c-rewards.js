@@ -159,6 +159,7 @@
     '<div class="xp-stage" id="xpStage" hidden><div class="xp-card" role="dialog" aria-modal="true" aria-labelledby="xpCardT"><div class="xp-burst" id="xpCardIc" aria-hidden="true"></div><div class="xp-cardt" id="xpCardT"></div><p class="xp-cards" id="xpCardS"></p><button class="btn primary" type="button" id="xpCardGo"></button></div></div>');
   const pageSt = document.createElement('style');
   pageSt.textContent =
+    '.xp-btn .xp-mini, .xp-btn .xp-fire { display: none !important; }' +   /* the chip only says the level; the bar and the streak are on the page */
     '.xp-dlg { overflow-x: hidden; } .xp-dlg form { min-width: 0; } .xp-sec { display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow-wrap: anywhere; } .xp-sec .check { white-space: normal; }' +
     '#xpDlg.as-page { position: static; inset: auto; margin: 0; width: 100%; max-width: none; max-height: none; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; box-shadow: none; overflow: visible; }' +
     '#xpDlg.as-page .dtitle, #xpDlg.as-page form > .actions, #xpDlg.as-page::before, #xpDlg.as-page form::before { display: none !important; }' +

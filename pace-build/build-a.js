@@ -52,7 +52,7 @@ rep('</body>', '<script data-pace="a-brand">' + `
 })();` + '</script>\n</body>');
 
 /* 4. the themes script reads A's skin globals, so it goes after A's own script */
-rep('</body>', '<script data-pace="c-skins.js">window.PACE_KEEP_ORIGINAL_WORDS = true;\n' + read('c-skins.js') + '</script>\n<script data-pace="c-scenes.js">' + read('c-scenes.js') + '</script>\n<script data-pace="c-sounds.js">' + read('c-sounds.js') + '</script>\n<script data-pace="c-rewards.js">' + read('c-rewards.js') + '</script>\n<script data-pace="c-stickers.js">' + read('c-stickers.js') + '</script>\n<script data-pace="c-mystery.js">' + read('c-mystery.js') + '</script>\n<script data-pace="c-zen.js">' + read('c-zen.js') + '</script>\n<script data-pace="c-rest.js">' + read('c-rest.js') + '</script>\n<!-- A-next: Pace layout, themes and sounds (2026-11-04) -->\n</body>');
+rep('</body>', '<script data-pace="c-skins.js">window.PACE_KEEP_ORIGINAL_WORDS = true;\n' + read('c-skins.js') + '</script>\n<script data-pace="c-scenes.js">' + read('c-scenes.js') + '</script>\n<script data-pace="c-sounds.js">' + read('c-sounds.js') + '</script>\n<script data-pace="c-rewards.js">' + read('c-rewards.js') + '</script>\n<script data-pace="c-stickers.js">' + read('c-stickers.js') + '</script>\n<script data-pace="c-island.js">' + read('c-island.js') + '</script>\n<script data-pace="c-zen.js">' + read('c-zen.js') + '</script>\n<script data-pace="c-rest.js">' + read('c-rest.js') + '</script>\n<!-- A-next: Pace layout, themes and sounds (2026-11-04) -->\n</body>');
 
 fs.writeFileSync(out, s);
 console.log('built', out, (s.length / 1024).toFixed(0) + ' KB');

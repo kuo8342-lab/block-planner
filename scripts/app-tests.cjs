@@ -133,7 +133,8 @@ const ok=(name,pass,info)=>{results.checks.push({name,pass:!!pass,...(info?{info
       await page.evaluate(id=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());const d=document.getElementById(id);d.showModal();},id);
       await page.waitForTimeout(300);
       const geometry=await page.evaluate(id=>{const d=document.getElementById(id),r=d.getBoundingClientRect();return {id,width:innerWidth,left:r.left,right:r.right,top:r.top,bottom:r.bottom,viewportHeight:innerHeight,internalOverflow:d.scrollWidth>d.clientWidth+1};},id);
-      results.dialogs.push(geometry);ok(`${width}: ${id} fits viewport`,geometry.left>=-1&&geometry.right<=width+1&&geometry.top>=-1&&geometry.bottom<=geometry.viewportHeight+1&&!geometry.internalOverflow,JSON.stringify(geometry));
+      results.dialogs.push(geometry);if(id==='skinDlg')ok(`${width}: settings page is never wider than the screen`,geometry.left>=-1&&geometry.right<=width+1&&!geometry.internalOverflow&&await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),JSON.stringify(geometry));
+      else ok(`${width}: ${id} fits viewport`,geometry.left>=-1&&geometry.right<=width+1&&geometry.top>=-1&&geometry.bottom<=geometry.viewportHeight+1&&!geometry.internalOverflow,JSON.stringify(geometry));
       if(['goalDlg','skinDlg','dlg'].includes(id))await page.screenshot({path:path.join(out,`after-${width}-${id}.png`)});
       await page.keyboard.press('Escape');
     }
@@ -157,7 +158,7 @@ const ok=(name,pass,info)=>{results.checks.push({name,pass:!!pass,...(info?{info
   await oldPage.goto(previewUrl,{waitUntil:'domcontentloaded'});await oldPage.waitForFunction(()=>state.ready&&state.config);await oldPage.waitForTimeout(650);
   ok('existing synthetic records remain byte-for-byte unchanged on boot',await oldPage.evaluate(expected=>localStorage.getItem('pace-db-v1')===JSON.stringify(expected),oldStore));
   ok('existing sync metadata remains unchanged on boot',await oldPage.evaluate(()=>localStorage.getItem('pace-db-meta')==='{"weeks/2026-10-26":12345}'));
-  await oldPage.locator('#skinBtn').click();
+  await oldPage.locator('.rail-utilities [data-pace-dnav="settings"]').click();   // 設定 lives in the menu now
   ok('saved API key is not exposed as readable form value',await oldPage.evaluate(()=>!document.documentElement.outerHTML.includes('SYNTHETIC_QA_SECRET_DO_NOT_LEAK_123456')&&(document.getElementById('aiKey')?.value??'')===''&&!Object.keys(localStorage).some(k=>/^pace-api-key/.test(k))));
   const backupEvent=oldPage.waitForEvent('download');await oldPage.locator('#exportAll').click();const backup=await backupEvent;const backupPath=path.join(out,'synthetic-backup.json');await backup.saveAs(backupPath);
   const backupData=fs.readFileSync(backupPath,'utf8');ok('backup excludes saved API key',!backupData.includes('SYNTHETIC_QA_SECRET_DO_NOT_LEAK_123456'));
