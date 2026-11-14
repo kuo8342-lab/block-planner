@@ -360,6 +360,8 @@ rep('<head>', '<head>\n<script>window.PACE_CONTACT = ' + JSON.stringify(contact)
 if (!contact) console.warn('WARNING: no contact email (pace-build/contact.txt): report links are hidden and the privacy page has no address');
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, 'index.html'), s.replace(/\r\n/g, '\n'));
+{ const from = path.join(__dirname, '../pace-note'), to = path.join(out, 'note');   // Windows desktop note: installer + the two files it fetches
+  if (fs.existsSync(from)) { fs.mkdirSync(to, { recursive: true }); for (const f of ['setup.cmd', 'setup.ps1', 'pace-note.ps1', 'pace-note.vbs']) fs.copyFileSync(path.join(from, f), path.join(to, f)); } }
 { const t = path.join(__dirname, 'privacy.template.html');
   const day = new Date().toISOString().slice(0, 10);
   fs.writeFileSync(path.join(out, 'privacy.html'), fs.readFileSync(t, 'utf8').replace(/\{\{CONTACT\}\}/g, contact || '（聯絡信箱尚未設定）').replace(/\{\{DATE\}\}/g, day)); }

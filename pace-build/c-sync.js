@@ -27,8 +27,8 @@
       '<div class="sync-acts"><button class="btn" type="button" id="syncOutBtn">登出</button><button class="btn danger" type="button" id="syncWipe">刪除雲端資料</button><button class="btn danger" type="button" id="syncDelAcct">刪除帳號和所有資料</button></div>' +
       '<div id="widgetLinkBox" hidden><button class="btn" type="button" id="widgetLink">連結 Android 桌面小工具</button>' +
       '<p class="hint" style="margin:0">按一下，桌面的「步調・今天」小工具就會顯示你今天的方塊。不用開 App，大約每 5 分鐘自動更新，點小工具上的 ↻ 會立刻更新。只會連結這支手機。</p></div>' +
-      '<div id="noteLinkBox" hidden><button class="btn" type="button" id="noteLink">連結電腦桌面便利貼</button> <a class="btn plain" href="pace-note.zip" download>下載桌面便利貼（Windows）</a>' +
-      '<p class="hint" style="margin:0">桌面便利貼是一支 Windows 小程式，會顯示今天的行程和這週任務：開啟時、點一下便利貼、每 5 分鐘都會自動同步，不用開著瀏覽器。</p><p class="hint" style="margin:0">用法：下載後解壓縮，點兩下 pace-note.vbs 打開便利貼；回來按上面的按鈕複製連結碼，再點一下便利貼就完成了。連結碼等於你的登入，不要貼給別人。</p></div></div>' +
+      '<div id="noteLinkBox" hidden><button class="btn" type="button" id="noteLink">連結電腦桌面便利貼</button>' +
+      '<p class="hint" style="margin:0">還沒安裝？到選單的「便利貼」頁按「安裝桌面便利貼」。已經裝好的話，按這顆按鈕，桌面的便利貼幾秒內就會自己連上。</p></div></div>' +
     '<p class="hint" id="syncMsg" aria-live="polite" style="margin:0"></p>';
   privacyHead.before(...box.childNodes);
   const msg = t => { $('syncMsg').textContent = t; };
@@ -99,12 +99,39 @@
     linked(true); msg('已送到 App。如果沒有反應，請先安裝最新版的 Android App（設定 → 安裝 App）。');
   });
   /* ---------- Windows desktop note (pace-note.ps1): it has no browser, so the sign-in goes over as a code in the clipboard ---------- */
-  $('noteLinkBox').hidden = !/Windows/.test(navigator.userAgent);
-  $('noteLink').addEventListener('click', async () => {
-    if (!user) return;
-    try { await navigator.clipboard.writeText('pace-note:' + btoa(JSON.stringify({ rt: user.refreshToken, uid: user.uid }))); msg('連結碼已複製。現在點一下桌面上的便利貼就完成了（便利貼會把剪貼簿清掉）。'); }
-    catch (e) { msg('複製不了連結碼，請換用 Chrome 或 Edge 再試一次。'); }
-  });
+  const onWindows = /Windows/.test(navigator.userAgent) && !matchMedia('(pointer: coarse)').matches;
+  $('noteLinkBox').hidden = !onWindows;
+  // the code is this sign-in; the note reads it from the clipboard, links itself and clears the clipboard
+  const copyNoteCode = async () => { if (!user) return false; try { await navigator.clipboard.writeText('pace-note:' + btoa(JSON.stringify({ rt: user.refreshToken, uid: user.uid }))); return true; } catch (e) { return false; } };
+  $('noteLink').addEventListener('click', async () => { if (!user) return; msg(await copyNoteCode() ? '已送出連結，桌面的便利貼幾秒內就會出現你的行程。' : '複製不了連結碼，請換用 Chrome 或 Edge 再試一次。'); });
+  /* install card under the sticky note page: one button downloads the installer and hands over the sign-in */
+  if (onWindows && $('widget')) {
+    const card = document.createElement('div'); card.id = 'noteInstall'; card.className = 'note-install';
+    card.innerHTML = '<h2>把便利貼放到電腦桌面</h2>' +
+      '<p class="ni-lead">桌面便利貼會一直貼在 Windows 桌面上，不用開瀏覽器，每 5 分鐘自動同步。</p>' +
+      '<div class="ni-acts"><button class="btn primary" type="button" id="noteInstallBtn">安裝桌面便利貼</button><button class="btn" type="button" id="noteRelink">連結桌面便利貼</button><button class="btn" type="button" id="noteSignIn">先登入同步</button></div>' +
+      '<p class="hint" id="noteInstallMsg" aria-live="polite"></p>' +
+      '<ol class="ni-steps" id="noteSteps" hidden><li>打開剛下載的「安裝步調便利貼」（在瀏覽器的下載清單或「下載」資料夾）。</li>' +
+      '<li>瀏覽器或 Windows 如果跳出警告，選「保留」，或按「其他資訊 → 仍要執行」。這是因為它是新的小程式。</li>' +
+      '<li>等幾秒，便利貼出現在桌面右上角，而且已經連好你的帳號。</li></ol>' +
+      '<a id="noteSetupFile" href="note/setup.cmd" download="安裝步調便利貼.cmd" hidden></a>';
+    $('widget').after(card);
+    const say = t => { $('noteInstallMsg').textContent = t; };
+    const paint = () => { const on = !!user; $('noteInstallBtn').hidden = !on; $('noteRelink').hidden = !on; $('noteSignIn').hidden = on; if (!on) { $('noteSteps').hidden = true; say('要先登入同步帳號，桌面便利貼才讀得到你的計畫。'); } else if ($('noteSteps').hidden) say(''); };
+    userHooks.push(paint); paint();
+    $('noteInstallBtn').addEventListener('click', async () => {
+      const ok = await copyNoteCode();
+      $('noteSetupFile').click(); $('noteSteps').hidden = false;
+      say(ok ? '安裝檔下載好了，照下面三步做。' : '安裝檔下載好了。裝好之後，請回來按一次「連結桌面便利貼」。');
+    });
+    $('noteRelink').addEventListener('click', async () => { say(await copyNoteCode() ? '已送出連結，桌面的便利貼幾秒內就會出現你的行程。' : '複製不了連結碼，請換用 Chrome 或 Edge 再試一次。'); });
+    $('noteSignIn').addEventListener('click', () => { $('skinBtn')?.click(); setTimeout(() => $('syncGoogle')?.scrollIntoView({ block: 'center' }), 300); });
+    const css = document.createElement('style');
+    css.textContent = '.note-install{display:none;width:100%;box-sizing:border-box;max-width:min(440px,100%);margin:18px auto 24px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink,inherit);flex-direction:column;gap:10px}' +
+      'body.w .note-install{display:flex}.note-install h2{margin:0;font-size:1rem}.note-install p{margin:0}.note-install .ni-lead{font-size:.9rem}' +
+      '.note-install .ni-acts{display:flex;flex-wrap:wrap;gap:8px}.note-install .ni-steps{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px;font-size:.9rem}';
+    document.head.append(css);
+  }
   const unlinkWidget = () => { try { if (isAndroid && localStorage.getItem('pace-widget-linked') === '1') { linked(false); toApp({ rt: '', uid: '' }); } } catch (e) {} };
 
   /* ---------- buttons ---------- */

@@ -123,7 +123,7 @@ if ($Sync) { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointMana
 # ---------- the note ----------
 if (-not $Snapshot) {
     $created = $false
-    $script:mutex = New-Object System.Threading.Mutex($true, 'PaceDesktopNote', [ref]$created)
+    $script:mutex = New-Object System.Threading.Mutex($true, $(if ($DataDir) { 'PaceDesktopNoteTest' } else { 'PaceDesktopNote' }), [ref]$created)
     if (-not $created) { return }
 }
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml
@@ -241,8 +241,8 @@ function Render {
     $ui.NowCard.Background = Brush $p.card; $ui.NowLabel.Foreground = Brush $p.sub
     if (-not $linked -or $state -eq 'relink' -or -not $script:data) {
         $ui.Body.Visibility = 'Collapsed'; $ui.Holiday.Visibility = 'Collapsed'
-        if (-not $linked) { $ui.NowLabel.Text = '還沒連結步調'; $ui.NowName.Text = '點這裡連結'; $ui.NowLeft.Text = '先在步調按「設定 → 同步 → 連結電腦桌面便利貼」，再回來點一下這張便利貼。' }
-        elseif ($state -eq 'relink') { $ui.NowLabel.Text = '需要重新連結'; $ui.NowName.Text = '登入過期了'; $ui.NowLeft.Text = '請在步調再按一次「連結電腦桌面便利貼」，再回來點一下這張便利貼。' }
+        if (-not $linked) { $ui.NowLabel.Text = '還沒連結步調'; $ui.NowName.Text = '等你按「連結」'; $ui.NowLeft.Text = '打開步調網站的「便利貼」頁，按「連結桌面便利貼」，這裡就會自動出現你的行程。' }
+        elseif ($state -eq 'relink') { $ui.NowLabel.Text = '需要重新連結'; $ui.NowName.Text = '登入過期了'; $ui.NowLeft.Text = '打開步調網站的「便利貼」頁，再按一次「連結桌面便利貼」就好。' }
         elseif ($state -eq 'offline') { $ui.NowLabel.Text = '連不上網路'; $ui.NowName.Text = '稍後會再試'; $ui.NowLeft.Text = '點一下可以馬上重試。' }
         else { $ui.NowLabel.Text = '步調'; $ui.NowName.Text = '同步中…'; $ui.NowLeft.Text = '' }
         $ui.Foot.Text = $(if ($script:hint) { $script:hint } else { '右鍵有更多選項' }); return
@@ -320,6 +320,7 @@ if ($Snapshot) {
 # the first time it runs, set it to start with Windows (can be turned off from the right-click menu)
 $firstRun = Join-Path $dir 'installed'
 if (-not (Test-Path $firstRun)) { try { Set-Startup $true } catch {}; Set-Content -Encoding UTF8 $firstRun (Get-Date).ToString('o') }
+elseif (Test-Path $startupLnk) { try { Set-Startup $true } catch {} }   # installed again somewhere else: keep the shortcut pointing at this copy
 
 # drag to move; one click syncs now (or links, when a link code is in the clipboard); 5 quick clicks open the app
 $script:taps = 0; $script:lastTap = [datetime]::MinValue
@@ -332,7 +333,7 @@ $win.Add_MouseLeftButtonDown({
     $script:lastTap = $nowTap; $script:taps++
     if ($script:taps -ge 5) { $script:taps = 0; Start-Process $appUrl; return }
     $linkedNow = Try-Link
-    if (-not (Test-Path $linkPath)) { $script:hint = '剪貼簿裡沒有連結碼：請先在步調按「連結電腦桌面便利貼」'; Render; return }
+    if (-not (Test-Path $linkPath)) { $script:hint = '還沒收到連結：請先在步調的「便利貼」頁按「連結桌面便利貼」'; Render; return }
     if ($linkedNow -or ($nowTap - $script:lastSync).TotalSeconds -gt 3) { Start-Sync }
     Render
 })
@@ -364,7 +365,14 @@ $timer.Add_Tick({
 $timer.Start()
 # a quicker check while a sync is running, so the result shows as soon as it lands
 $fast = New-Object System.Windows.Threading.DispatcherTimer; $fast.Interval = [TimeSpan]::FromMilliseconds(700)
-$fast.Add_Tick({ try { if ($script:worker -and $script:worker.HasExited) { $script:worker = $null; $script:hint = ''; Render } } catch {} })
+$script:fastN = 0
+$fast.Add_Tick({ try {
+    if ($script:worker -and $script:worker.HasExited) { $script:worker = $null; $script:hint = ''; Render }
+    # not linked yet: watch for the link code the web app copies, so pressing 安裝 / 連結 there is all it takes
+    $script:fastN++
+    if ($script:fastN % 3 -eq 0 -and (-not (Test-Path $linkPath) -or (Read-Json $statusPath).state -eq 'relink')) { if (Try-Link) { Start-Sync; Render } }
+} catch {} })
 $fast.Start()
+if (-not (Test-Path $linkPath)) { [void](Try-Link) }
 if (Test-Path $linkPath) { Start-Sync; Render }
 [void]$win.ShowDialog()
