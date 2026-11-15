@@ -222,6 +222,7 @@ rep("Array.from({ length: 16 }, (_, i) => `<div style=\"top:${i * 60 + OFF}px\">
   if (slot === nightSlot) return;
   nightSlot = slot;
   const bed = hm(PACE_HOURS.bed), late = past < 180;
+  try { if (window.guardWrap) window.guardWrap(now); } catch (e) {}
   const msg = late ? \`已經 \${hm(n)} 了，過了你設定的睡覺時間 \${bed}。存好檔、放下手機，去睡吧\` : \`\${hm(n)} 了，收尾準備睡覺，\${bed} 前上床\`;
   document.getElementById('nightText').textContent = msg;
   bar.hidden = false; bar.classList.remove('flash'); void bar.offsetWidth; bar.classList.add('flash');
@@ -353,6 +354,7 @@ rep('</body>', '<script data-pace-ui="c-island.js">' + fs.readFileSync(path.join
 rep('</body>', '<script data-pace-ui="c-zen.js">window.PACE_SOUND_BASE = "sounds/";\n' + fs.readFileSync(path.join(__dirname, 'c-zen.js'), 'utf8') + '</script>\n</body>');   // ambient sounds
 rep('</body>', '<script data-pace-ui="c-rest.js">' + fs.readFileSync(path.join(__dirname, 'c-rest.js'), 'utf8') + '</script>\n</body>');   // rest suggestions
 rep('</body>', '<script data-pace-ui="c-folder.js">' + fs.readFileSync(path.join(__dirname, 'c-folder.js'), 'utf8') + '</script>\n</body>');   // pull A's newest backup file out of a folder
+rep('</body>', '<script data-pace-ui="a-guard.js">' + fs.readFileSync(path.join(__dirname, 'a-guard.js'), 'utf8') + '</script>\n</body>');   // who has to agree, daily question, wrap-up, calibration, cap, code gate
 /* contact address for reports and the privacy policy: pace-build/contact.txt (one line). Without it the report links stay hidden. */
 const contact = (fs.existsSync(path.join(__dirname, 'contact.txt')) ? fs.readFileSync(path.join(__dirname, 'contact.txt'), 'utf8').trim() : '') || process.env.PACE_CONTACT || '';
 if (contact && !/^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(contact)) throw new Error('contact.txt is not an email address');

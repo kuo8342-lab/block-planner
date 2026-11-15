@@ -54,5 +54,12 @@ rep('</body>', '<script data-pace="a-brand">' + `
 /* 4. the themes script reads A's skin globals, so it goes after A's own script */
 rep('</body>', '<script data-pace="c-skins.js">window.PACE_KEEP_ORIGINAL_WORDS = true;\n' + read('c-skins.js') + '</script>\n<script data-pace="c-scenes.js">' + read('c-scenes.js') + '</script>\n<script data-pace="c-sounds.js">' + read('c-sounds.js') + '</script>\n<script data-pace="c-rewards.js">' + read('c-rewards.js') + '</script>\n<script data-pace="c-stickers.js">' + read('c-stickers.js') + '</script>\n<script data-pace="c-island.js">' + read('c-island.js') + '</script>\n<script data-pace="c-zen.js">' + read('c-zen.js') + '</script>\n<script data-pace="c-rest.js">' + read('c-rest.js') + '</script>\n<!-- A-next: Pace layout, themes and sounds (2026-11-04) -->\n</body>');
 
+/* 5. A only: the three guards (who has to agree, the daily question, wrap-up before bed) and an earlier bedtime: wrap up from 22:45, in bed by 23:00 */
+rep("  if (!(h >= 23 || h < 3)) { nightSlot = null; return; }", "  if (!(h >= 23 || h < 3 || (h === 22 && m >= 45))) { nightSlot = null; return; }");
+rep("  const late = h >= 23 && m >= 30 || h < 3;\n  const msg = late ? `已經 ${hm(h * 60 + m)} 了，超過 23:30。存好檔、放下手機，去睡吧` : `${hm(h * 60 + m)} 了，收尾準備睡覺，23:30 前上床`;",
+  "  const late = h >= 23 || h < 3;\n  const msg = late ? `已經 ${hm(h * 60 + m)} 了，超過 23:00。存好檔、放下手機，去睡吧` : `${hm(h * 60 + m)} 了，開始收尾：寫下「下一步」，23:00 上床`;\n  try { if (window.guardWrap) window.guardWrap(now); } catch (e) {}");
+rep('<input type="checkbox" id="prefNight"> 23:00 後每 10 分鐘晚睡警告（', '<input type="checkbox" id="prefNight"> 22:45 收尾提醒，23:00 後每 10 分鐘晚睡警告（');
+rep('</body>', '<script data-pace="a-guard.js">window.GUARD_A = true;\n' + read('a-guard.js') + '</script>\n</body>');
+
 fs.writeFileSync(out, s);
 console.log('built', out, (s.length / 1024).toFixed(0) + ' KB');
