@@ -10,6 +10,7 @@ try {
     $files = 'pace-note.ps1', 'pace-note.vbs'
     $web = New-Object Net.WebClient
     foreach ($f in $files) { $web.DownloadFile($base + $f, (Join-Path $dir ($f + '.new'))) }   # download everything first, so a broken connection leaves the old copy working
+    Get-CimInstance Win32_Process -Filter "Name='wscript.exe'" | Where-Object { $_.CommandLine -like '*pace-note.vbs*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }   # the launcher first, or it would start the old note again
     Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" | Where-Object { $_.CommandLine -like '*-File*pace-note.ps1*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
     Start-Sleep -Milliseconds 500
     foreach ($f in $files) { Move-Item -Force (Join-Path $dir ($f + '.new')) (Join-Path $dir $f) }

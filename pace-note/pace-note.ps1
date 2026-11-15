@@ -13,6 +13,7 @@ $dataPath = Join-Path $dir 'data.json'      # last good copy of today's data
 $statusPath = Join-Path $dir 'status.json'  # how the last sync went
 $linkPath = Join-Path $dir 'link.dat'       # the sign-in, encrypted for this Windows user only
 $posPath = Join-Path $dir 'position.json'
+$keepPath = Join-Path $dir 'keep-open'     # present = 一直開著: pace-note.vbs starts the note again whenever it closes
 $appUrl = 'https://block-planner-beta.vercel.app'
 $apiKey = 'AIzaSyADaHf4Xhn6JyGLfaxINxWlwDQV2Vei-Ew'   # the public web config of the Pace Firebase project
 $project = 'pace-planner-83998'
@@ -124,7 +125,7 @@ if ($Sync) { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointMana
 if (-not $Snapshot) {
     $created = $false
     $script:mutex = New-Object System.Threading.Mutex($true, $(if ($DataDir) { 'PaceDesktopNoteTest' } else { 'PaceDesktopNote' }), [ref]$created)
-    if (-not $created) { return }
+    if (-not $created) { exit 3 }   # already open; 3 tells pace-note.vbs not to keep retrying
 }
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml
 
@@ -293,9 +294,12 @@ function Try-Link {
 }
 
 # ---------- start with Windows ----------
-$startupLnk = Join-Path ([Environment]::GetFolderPath('Startup')) '步調便利貼.lnk'
+# 「一直開著」 = a Startup shortcut (comes back after a restart) + the keep-open flag (comes back after it closes or crashes).
+# Test runs (-DataDir) keep their shortcut in the test folder, so they never touch the real Startup folder.
+$startupLnk = if ($DataDir) { Join-Path $DataDir 'startup.lnk' } else { Join-Path ([Environment]::GetFolderPath('Startup')) '步調便利貼.lnk' }
 function Set-Startup([bool]$on) {
-    if (-not $on) { Remove-Item -Force -ErrorAction SilentlyContinue $startupLnk; return }
+    if (-not $on) { Remove-Item -Force -ErrorAction SilentlyContinue $startupLnk, $keepPath; return }
+    Set-Content -Encoding ASCII $keepPath 'on'
     $sh = New-Object -ComObject WScript.Shell; $l = $sh.CreateShortcut($startupLnk)
     $l.TargetPath = Join-Path $env:WINDIR 'System32\wscript.exe'; $l.Arguments = '"' + (Join-Path $here 'pace-note.vbs') + '"'; $l.WorkingDirectory = $here; $l.Description = '步調 Pace 桌面便利貼'; $l.Save()
 }
@@ -321,6 +325,18 @@ if ($Snapshot) {
 $firstRun = Join-Path $dir 'installed'
 if (-not (Test-Path $firstRun)) { try { Set-Startup $true } catch {}; Set-Content -Encoding UTF8 $firstRun (Get-Date).ToString('o') }
 elseif (Test-Path $startupLnk) { try { Set-Startup $true } catch {} }   # installed again somewhere else: keep the shortcut pointing at this copy
+else { Remove-Item -Force -ErrorAction SilentlyContinue $keepPath }
+
+# stay on the desktop through 「顯示桌面」 (Win+D) and minimize-all: belong to the desktop window instead of standing alone
+try {
+    Add-Type -Namespace PaceNote -Name Win -MemberDefinition @'
+[DllImport("user32.dll")] public static extern IntPtr GetShellWindow();
+[DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] static extern IntPtr SetLong64(IntPtr h, int i, IntPtr v);
+[DllImport("user32.dll", EntryPoint = "SetWindowLongW")] static extern int SetLong32(IntPtr h, int i, int v);
+public static void OwnBy(IntPtr h, IntPtr owner) { if (IntPtr.Size == 8) SetLong64(h, -8, owner); else SetLong32(h, -8, owner.ToInt32()); }
+'@
+    $win.Add_SourceInitialized({ try { $desk = [PaceNote.Win]::GetShellWindow(); if ($desk -ne [IntPtr]::Zero) { [PaceNote.Win]::OwnBy((New-Object System.Windows.Interop.WindowInteropHelper $win).Handle, $desk) } } catch {} })
+} catch {}
 
 # drag to move; one click syncs now (or links, when a link code is in the clipboard); 5 quick clicks open the app
 $script:taps = 0; $script:lastTap = [datetime]::MinValue
@@ -339,9 +355,12 @@ $win.Add_MouseLeftButtonDown({
 })
 
 $menu = New-Object System.Windows.Controls.ContextMenu
-$miStart = New-Object System.Windows.Controls.MenuItem; $miStart.Header = '開機時自動啟動'; $miStart.IsCheckable = $true
+$miStart = New-Object System.Windows.Controls.MenuItem; $miStart.Header = '一直開著（開機自動出現、關掉會自己回來）'; $miStart.IsCheckable = $true
 $miStart.Add_Click({ try { Set-Startup $miStart.IsChecked } catch {} })
-$menu.Add_Opened({ $miStart.IsChecked = Test-Path $startupLnk })
+$menu.Add_Opened({
+    $on = (Test-Path $startupLnk) -and (Test-Path $keepPath); $miStart.IsChecked = $on
+    $miClose.IsEnabled = -not $on; $miClose.Header = $(if ($on) { '要關掉便利貼，請先取消上面的「一直開著」' } else { '關閉便利貼' })
+})
 foreach ($entry in @(
         @('立刻同步', { Start-Sync; Render }),
         @('打開步調', { Start-Process $appUrl }),
@@ -349,7 +368,7 @@ foreach ($entry in @(
     $mi = New-Object System.Windows.Controls.MenuItem; $mi.Header = $entry[0]; $mi.Add_Click($entry[1]); [void]$menu.Items.Add($mi)
 }
 [void]$menu.Items.Add($miStart)
-$miClose = New-Object System.Windows.Controls.MenuItem; $miClose.Header = '關閉便利貼'; $miClose.Add_Click({ $win.Close() }); [void]$menu.Items.Add($miClose)
+$miClose = New-Object System.Windows.Controls.MenuItem; $miClose.Header = '關閉便利貼'; $miClose.Add_Click({ if (-not (Test-Path $keepPath)) { $win.Close() } }); [void]$menu.Items.Add($miClose)
 $win.ContextMenu = $menu
 
 # every 15 seconds: redraw the clock; pick up a finished sync; sync again after 5 minutes or when the day changes
@@ -357,6 +376,7 @@ $timer = New-Object System.Windows.Threading.DispatcherTimer; $timer.Interval = 
 $timer.Add_Tick({
     try {
         if ($script:worker -and $script:worker.HasExited) { $script:worker = $null; $script:hint = '' }
+        if ((Test-Path $keepPath) -and -not (Test-Path $startupLnk)) { Remove-Item -Force -ErrorAction SilentlyContinue $keepPath }   # Startup shortcut deleted by hand: 一直開著 is off
         $today = (Now).Date
         if ((Test-Path $linkPath) -and (((Get-Date) - $script:lastSync).TotalSeconds -ge $syncEvery -or $today -ne $script:lastDay)) { $script:lastDay = $today; Start-Sync }
         Render
