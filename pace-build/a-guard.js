@@ -368,6 +368,25 @@
     };
   }
 
+  /* ---------- tasks can be deleted (they could only be ticked) ---------- */
+  function paintTaskDel() {
+    document.querySelectorAll('#tasks .task, #doneTasks .item').forEach(row => {
+      const id = row.querySelector('[data-tdone]')?.dataset.tdone; if (!id || row.querySelector('[data-gtdel]')) return;
+      (row.querySelector('.meta') || row).insertAdjacentHTML('beforeend', `<button type="button" class="btn plain danger" data-gtdel="${esc(id)}" style="padding:0 8px;font-size:.72rem;margin-left:auto" aria-label="刪除這個任務">刪除</button>`);
+    });
+  }
+  const tasks1 = renderTasks;
+  renderTasks = function () { const r = tasks1.apply(this, arguments); try { paintTaskDel(); } catch (e) {} return r; };
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-gtdel]'); if (!btn) return;
+    const t = state.tasks.find(x => x.id === btn.dataset.gtdel); if (!t) return;
+    state.tasks = state.tasks.filter(x => x !== t);
+    state.week.blocks.forEach(b => { if (b.taskId === t.id) delete b.taskId; });
+    if (state.db) queue(() => state.db.doc('tasks/' + t.id).delete());
+    render();
+    toast(`已刪除任務「${t.title}」`, () => { state.tasks.push(t); saveTask(t); render(); });
+  });
+
   /* ---------- switches in Settings ---------- */
   const anchor = $('prefNight')?.closest('label');
   if (anchor) {
